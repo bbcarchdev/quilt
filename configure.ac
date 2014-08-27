@@ -38,6 +38,7 @@ BT_REQUIRE_LIBRDF
 BT_REQUIRE_LIBXML2
 BT_REQUIRE_LIBURI_INCLUDED
 BT_REQUIRE_LIBSPARQLCLIENT_INCLUDED
+BT_REQUIRE_LIBJSONDATA_INCLUDED
 
 AC_CHECK_HEADERS([strings.h])
 
@@ -70,6 +71,7 @@ Makefile
 libsupport/Makefile
 m4/Makefile
 libnegotiate/Makefile
+libliquify/Makefile
 ])
 
 AC_OUTPUT

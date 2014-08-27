@@ -1,0 +1,4 @@
+/liquify-parse
+/liquify-apply
+*.liquid
+*.json

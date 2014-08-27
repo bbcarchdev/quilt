@@ -18,9 +18,9 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-DIST_SUBDIRS = m4 libsupport liburi libsparqlclient libnegotiate
+DIST_SUBDIRS = m4 libsupport liburi libsparqlclient libnegotiate jsondata
 
-SUBDIRS = libsupport @subdirs@ libnegotiate .
+SUBDIRS = libsupport @subdirs@ libnegotiate libliquify .
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \

@@ -10,3 +10,6 @@
 [submodule "libsparqlclient"]
 	path = libsparqlclient
 	url = git://github.com/bbcarchdev/libsparqlclient.git
+[submodule "jsondata"]
+	path = jsondata
+	url = git://github.com/bbcarchdev/jsondata.git
