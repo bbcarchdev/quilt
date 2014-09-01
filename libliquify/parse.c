@@ -258,6 +258,28 @@ add_filter_param(struct liquify_filter *filter)
 	return p;
 }
 
+static struct liquify_param *
+add_tag_param(struct liquify_part *tag)
+{
+	struct liquify_param *p;
+	
+	p = (struct liquify_param *) calloc(1, sizeof(struct liquify_param));
+	if(!p)
+	{
+		return NULL;
+	}
+	if(tag->d.tag.pfirst)
+	{
+		tag->d.tag.plast->next = p;
+	}
+	else
+	{
+		tag->d.tag.pfirst = p;
+	}
+	tag->d.tag.plast = p;
+	return p;
+}
+
 /* parse a filter, which has the form 'foo' or 'foo:"param1","param2"' */
 static const char *
 parse_filter(struct liquify_template *tpl, struct liquify_part *part, struct liquify_filter *filter, const char *cur, int flags)
@@ -383,110 +405,82 @@ parse_var(struct liquify_template *tpl, const char *cur)
 static const char *
 parse_tag(struct liquify_template *tpl, const char *cur)
 {
-	const char *end;
 	struct liquify_part *part;
 	struct liquify_expression *expr;
-	int q, finished;
-	size_t varlen;
-	
+	struct liquify_param *param;
+	int finished, first;
+	const char *ident;
+
 	part = add_part(tpl, LPT_TAG);
 	if(!part)
 	{
 		return NULL;
 	}
-	expr = &(part->d.tag.expr);
+	first = 1;
 	cur += 2, tpl->pos += 2, tpl->col += 2;
-	cur = liquify_expression_(tpl, part, expr, cur, TKF_TAG);
-	if(!cur)
+	while(!finished && tpl->pos < tpl->len)
 	{
-		return NULL;
-	}
-	finished = 0;
-	if(expr->last)
-	{
-		if(expr->last->type == TOK_END)
+		if(first)
 		{
-			finished = 1;
+			expr = &(part->d.tag.expr);
+			first = 0;
 		}
 		else
 		{
-			liquify_parse_error_(tpl, part, "expected: end-of-tag ('%}') or parameters");
+			param = add_tag_param(part);
+			expr = &(param->expr);
+		}
+		cur = liquify_expression_(tpl, part, expr, cur, TKF_TAG);
+		if(!cur)
+		{
 			return NULL;
 		}
-		liquify_token_free_(expr->last);
-		expr->last = NULL;
-	}
-	q = 0;
-	end = cur;
-	while(!finished && tpl->pos < tpl->len)
-	{
-		if(q && *end == q)
+		finished = 0;
+		if(expr->last)
 		{
-			q = 0;
-			tpl->pos++, tpl->col++, end++;
-			continue;
-		}
-		switch(*end)
-		{
-		case 0:
-		case '\r':
-			tpl->pos++, end++;
-			break;
-		case '\n':
-		case '\f':
-		case '\v':
-			tpl->pos++, tpl->line++, end++;
-			tpl->col = 1;
-			break;
-		case '\t':
-			tpl->pos++, end++;
-			tpl->col += TABSIZE;
-			break;
-		case '\'':
-		case '"':
-			if(!q)
+			if(expr->last->type == TOK_END)
 			{
-				q = *end;
-			}
-			tpl->pos++, tpl->col++, end++;
-			break;
-		case '%':
-			if(q)
-			{
-				tpl->pos++, tpl->col++, end++;
-				break;
-			}
-			if(tpl->pos + 1 < tpl->len && end[1] == '}')
-			{
-				tpl->pos += 2, tpl->col += 2, end += 2;
 				finished = 1;
-				break;
 			}
-			/* fallthrough */
-		default:
-			tpl->pos++, tpl->col++, end++;
+			else
+			{
+				liquify_parse_error_(tpl, part, "expected: end-of-tag ('%}') or parameters");
+				return NULL;
+			}
+			liquify_token_free_(expr->last);
+			expr->last = NULL;
 		}
-		if(finished)
-		{
-			break;
-		}
-	}
+	}	
 	if(!finished)
 	{
 		liquify_parse_error_(tpl, part, "expected end-of-tag ('%}'), but reached end of template");
 		return NULL;
 	}
-	if(end > cur)
+	expr = &(part->d.tag.expr);
+	if(!EXPR_IS(expr, TOK_IDENT))
 	{
-		varlen = end - cur;
-		part->d.tag.len = varlen;
-		part->d.tag.text = (char *) malloc(varlen + 1);
-		if(!part->d.tag.text)
-		{
-			return NULL;
-		}
-		strncpy(part->d.tag.text, cur, varlen);
-		part->d.tag.text[varlen] = 0;
+		liquify_parse_error_(tpl, part, "expected: identifier at start of tag");
+		return NULL;
 	}
-	return end;
+	ident = EXPR_IDENT(expr);
+	if(!strncmp(ident, "end", 3))
+	{
+		if(liquify_is_block_(ident + 3))
+		{
+			part->d.tag.kind = TPK_END;
+			return cur;
+		}
+	}
+	if(liquify_is_block_(ident))
+	{
+		part->d.tag.kind = TPK_BEGIN;
+		return cur;
+	}
+	if(liquify_is_tag_(ident))
+	{
+		part->d.tag.kind = TPK_TAG;
+		return cur;
+	}
+	liquify_parse_error_(tpl, part, "expected: tag name");
+	return NULL;
 }

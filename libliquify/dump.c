@@ -45,11 +45,18 @@ liquify_dump(LIQUIFY *tpl, FILE *f)
 		case LPT_TAG:
 			fputs("tag: ", f);
 			dump_expression(&(part->d.tag.expr), f);
-			if(part->d.tag.text)
+			if(part->d.tag.pfirst)
 			{
-				fputs(" [ ", f);
-				dump_text(part->d.tag.text, f);
-				fputs(" ] ", f);
+				fputs(" ( ", f);
+				for(param = part->d.tag.pfirst; param; param = param->next)
+				{
+					if(param != part->d.tag.pfirst)
+					{
+						fputs(", ", f);
+					}
+					dump_expression(&(param->expr), f);
+				}
+				fputs(" )", f);
 			}
 			fputc('\n', f);
 			break;

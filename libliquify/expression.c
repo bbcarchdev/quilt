@@ -4,6 +4,8 @@
 
 #include "p_libliquify.h"
 
+static int insert_token(struct liquify_expression *expr, struct liquify_token *token);
+
 /* This is not a real expression parser - it reads a token, which must be an
  * identifier or a string literal, and will be followed by a terminator of
  * some kind (either an end-of-variable, end-of-tag, vertical bar, colon
@@ -17,7 +19,11 @@ liquify_expression_(struct liquify_template *tpl, struct liquify_part *part, str
 {
 	const char *start;
 	int line, col, pos;
-	
+
+	if(!expr->cur)
+	{
+		expr->cur = &(expr->root);
+	}
 	while(tpl->pos < tpl->len)
 	{
 		start = cur;
@@ -46,6 +52,26 @@ liquify_expression_(struct liquify_template *tpl, struct liquify_part *part, str
 		{
 			return cur;
 		}
+		if(!expr->cur->right)
+		{
+			if(expr->last->type != TOK_IDENT)
+			{
+				liquify_parse_error_(tpl, part, "expected: identifier");
+				return NULL;
+			}
+			expr->cur->right = expr->last;
+			continue;
+		}
+		if(expr->last->type == TOK_DOT)
+		{
+			if(expr->cur->right->type != TOK_IDENT)
+			{
+				liquify_parse_error_(tpl, part, "object accessors can only follow identifiers");
+				return NULL;
+			}
+			insert_token(expr, expr->last);
+			continue;
+		}
 		/* Not something we recognise as a valid continuation of an expression,
 		 * so back-track to the beginning of the token
 		 */
@@ -60,26 +86,78 @@ liquify_expression_(struct liquify_template *tpl, struct liquify_part *part, str
 	return NULL;
 }
 
+/* Push the current token down the tree */
+static int
+insert_token(struct liquify_expression *expr, struct liquify_token *tok)
+{
+	struct liquify_token save;
+	
+	save = *(expr->cur->right);
+	*(expr->cur->right) = *tok;
+	*tok = save;
+	expr->cur->right->left = tok;
+	expr->cur = expr->cur->right;
+	return 0;
+}
+
+static jd_var *
+liquify_locate_(struct liquify_token *tok, jd_var *dict, int vivify)
+{
+	jd_var *left;
+
+	if(!tok || !dict)
+	{
+		return NULL;
+	}
+	switch(tok->type)
+	{
+	case TOK_DOT:
+		left = liquify_locate_(tok->left, dict, 0);
+		if(!left)
+		{
+			return NULL;
+		}
+		return liquify_locate_(tok->right, left, vivify);
+	case TOK_IDENT:
+		return jd_get_ks(dict, tok->text, vivify);
+	}
+	return NULL;
+}
+
 /* Evaluate an expression */
 int
-liquify_eval_(struct liquify_expression *expr, jd_var *dict, jd_var **dest)
+liquify_eval_(struct liquify_expression *expr, jd_var *dict, jd_var *dest, int vivify)
+{
+	jd_var *key;
+	
+	switch(expr->root.right->type)
+	{
+	case TOK_DOT:		
+	case TOK_IDENT:
+		key = liquify_locate_(expr->root.right, dict, vivify);
+		if(key)
+		{
+			jd_assign(dest, key);
+		}
+		return 0;
+	case TOK_STRING:
+		jd_set_string(dest, expr->root.right->text);
+		return 0;
+	}
+	return -1;
+}
+
+/* Assign a value to an expression */
+int
+liquify_assign_(struct liquify_expression *expr, jd_var *dict, jd_var *newval)
 {
 	jd_var *key;
 	
 	switch(expr->root.right->type)
 	{
 	case TOK_IDENT:
-		key = jd_get_ks(dict, expr->root.right->text, 0);
-		if(key)
-		{
-			jd_retain(key);
-			*dest = key;
-		}
-		return 0;
-	case TOK_STRING:
-		*dest = jd_nv();
-		jd_retain(*dest);
-		jd_set_string(*dest, expr->root.right->text);
+		key = jd_get_ks(dict, expr->root.right->text, 1);
+		jd_assign(key, newval);
 		return 0;
 	}
 	return -1;

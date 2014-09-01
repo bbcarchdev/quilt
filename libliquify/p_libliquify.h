@@ -22,6 +22,7 @@
 # include <string.h>
 # include <stdlib.h>
 # include <ctype.h>
+# include <errno.h>
 
 # include "libliquify.h"
 
@@ -40,6 +41,7 @@
 # define TOK_END                       'e'
 # define TOK_COLON                     ':'
 # define TOK_COMMA                     ','
+# define TOK_DOT                       '.'
 
 /* Tokeniser flags */
 # define TKF_NONE                      0
@@ -48,6 +50,19 @@
 # define TKF_FILTERS                   (1<<2)
 # define TKF_COLON                     (1<<3)
 # define TKF_COMMA                     (1<<4)
+
+/* Tag kinds */
+# define TPK_TAG                       1
+# define TPK_BEGIN                     2
+# define TPK_END                       3
+
+# define EXPR_IS(e, t) \
+	((e)->root.type == TOK_NONE && \
+	 (e)->root.right && \
+	 (e)->root.right->type == t)
+
+# define EXPR_IDENT(e) \
+	(EXPR_IS(e, TOK_IDENT) ? (e)->root.right->text : NULL)
 
 struct liquify_token
 {
@@ -62,6 +77,7 @@ struct liquify_token
 struct liquify_expression
 {
 	struct liquify_token root;
+	struct liquify_token *cur;
 	struct liquify_token *last;
 };
 
@@ -93,8 +109,8 @@ struct liquify_var_part
 struct liquify_tag_part
 {
 	struct liquify_expression expr;
-	char *text;
-	size_t len;
+	struct liquify_param *pfirst, *plast;
+	int kind;
 };
 
 struct liquify_part
@@ -127,18 +143,32 @@ struct liquify_template
 struct liquify_capture
 {
 	struct liquify_capture *prev;
+	struct liquify_stack *owner;
+	int inhibit;
 	char *buf;
 	size_t buflen;
 	size_t bufsize;
+};
+
+struct liquify_stack
+{
+	struct liquify_stack *prev;
+	struct liquify_part *begin, *end;
+	const char *ident;
+	void *data;
 };
 
 struct liquify_context
 {
 	struct liquify_template *tpl;
 	struct liquify_capture *capture;
+	struct liquify_part *cp;
+	jd_var *dict;
 	char *buf;
 	size_t buflen;
 	size_t bufsize;
+	int jumped;
+	struct liquify_stack *stack;
 };
 
 /* Parse a single token */
@@ -150,6 +180,27 @@ void liquify_parse_error_(struct liquify_template *tpl, struct liquify_part *par
 /* Parse an expression */
 const char *liquify_expression_(struct liquify_template *tpl, struct liquify_part *part, struct liquify_expression *expr, const char *cur, int flags);
 /* Evaluate an expression */
-int liquify_eval_(struct liquify_expression *expr, jd_var *dict, jd_var **dest);
+int liquify_eval_(struct liquify_expression *expr, jd_var *dict, jd_var *dest, int vivify);
+int liquify_assign_(struct liquify_expression *expr, jd_var *dict, jd_var *newval);
+
+/* Determine whether a tag is a block */
+int liquify_is_block_(const char *name);
+int liquify_block_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, const char *name, struct liquify_stack *sp);
+int liquify_block_end_(LIQUIFYCTX *ctx, struct liquify_part *part, const char *name, struct liquify_stack *sp);
+int liquify_block_cleanup_(LIQUIFYCTX *ctx, const char *name, struct liquify_stack *stack);
+
+/* Determine whether a tag is a non-block tag */
+int liquify_is_tag_(const char *name);
+
+/* Push a new node on the block stack */
+struct liquify_stack *liquify_push_(LIQUIFYCTX *ctx, struct liquify_part *begin);
+/* Pop a node off the block stack */
+int liquify_pop_(LIQUIFYCTX *ctx);
+
+/* Inhibit further output for this block */
+int liquify_inhibit_(LIQUIFYCTX *ctx);
+
+/* Jump to a particular location in the template */
+int liquify_goto_(LIQUIFYCTX *ctx, struct liquify_part *where);
 
 #endif /*!P_LIBLIQUIFY_H_*/

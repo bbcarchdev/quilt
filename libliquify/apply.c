@@ -32,22 +32,29 @@ liquify_apply(struct liquify_template *template, jd_var *dict)
 	LIQUIFYCTX context;
 	struct liquify_part *part;
 	struct liquify_filter *filter;
-	jd_var empty = JD_INIT;
-	jd_var *value;
+	struct liquify_stack *sp;
+	jd_var value = JD_INIT;
 	size_t len;
 	int r;
 	char *str, *buf;
 	
 	memset(&context, 0, sizeof(LIQUIFYCTX));
 	context.tpl = template;
-	part = template->first;
+	context.cp = template->first;
+	context.dict = dict;
 	str = NULL;
 	r = 0;
-	while(part)
+	while(context.cp)
 	{
+		part = context.cp;
+		context.jumped = 0;
 		switch(part->type)
 		{
 		case LPT_TEXT:
+			if(context.capture && context.capture->inhibit)
+			{
+				break;
+			}
 			if(liquify_emit(&context, part->d.text.text, part->d.text.len))
 			{
 				free(context.buf);
@@ -55,28 +62,25 @@ liquify_apply(struct liquify_template *template, jd_var *dict)
 			}
 			break;
 		case LPT_VAR:
+			if(context.capture && context.capture->inhibit)
+			{
+				break;
+			}
 			JD_SCOPE
 			{
-				value = &empty;
-				liquify_eval_(&(part->d.var.expr), dict, &value);
+				liquify_eval_(&(part->d.var.expr), dict, &value, 0);
 				if(part->d.var.ffirst)
 				{
 					if(liquify_capture(&context))
 					{
-						if(value != &empty)
-						{
-							jd_release(value);
-						}
+						jd_release(&value);
 						r = -1;
 					}
 				}
 				if(!r)
 				{
-					liquify_emit_json(&context, value);
-					if(value != &empty)
-					{
-						jd_release(value);
-					}
+					liquify_emit_json(&context, &value);
+					jd_release(&value);
 					if(part->d.var.ffirst)
 					{
 						for(filter = part->d.var.ffirst; filter; filter = filter->next)
@@ -102,8 +106,75 @@ liquify_apply(struct liquify_template *template, jd_var *dict)
 					}
 				}
 			}
+			break;
+		case LPT_TAG:
+			if(part->d.tag.kind == TPK_END)
+			{
+				if(!context.stack ||
+				   (context.stack->end && context.stack->end != part) ||
+				   strcmp(context.stack->ident, EXPR_IDENT(&(part->d.tag.expr)) + 3))
+				{
+					fprintf(stderr, "tag mismatch: %s does not match %s\n", EXPR_IDENT(&(part->d.tag.expr)), context.stack->ident);
+					r = -1;
+					break;
+				}
+				context.stack->end = part;
+				if(context.capture && context.capture->inhibit)
+				{
+					sp = context.stack;
+					liquify_block_cleanup_(&context, context.stack->ident, context.stack);
+					if(context.capture->owner == sp)
+					{
+						liquify_capture_end(&context, NULL);
+					}
+					liquify_pop_(&context);
+					break;
+				}
+				
+				if(liquify_block_end_(&context, part, context.stack->ident, context.stack))
+				{
+					r = -1;
+					break;
+				}
+				if(!context.jumped)
+				{
+					liquify_block_cleanup_(&context, context.stack->ident, context.stack);
+					liquify_pop_(&context);
+				}
+			}
+			else if(part->d.tag.kind == TPK_BEGIN)
+			{
+				if(context.capture && context.capture->inhibit)
+				{
+					if(!liquify_push_(&context, part))
+					{
+						r = 1;
+					}
+					break;
+				}
+				if(!context.stack || context.stack->begin != part)
+				{
+					if(!liquify_push_(&context, part))
+					{
+						r = -1;
+						break;
+					}
+				}
+				if(liquify_block_begin_(&context, part, EXPR_IDENT(&(part->d.tag.expr)), context.stack))
+				{
+					r = -1;
+					break;
+				}
+			}
+			else if(part->d.tag.kind == TPK_TAG)
+			{
+			}
+			break;
 		}
-		part = part->next;
+		if(!context.jumped)
+		{
+			context.cp = context.cp->next;
+		}
 	}
 	if(r)
 	{
@@ -128,7 +199,7 @@ liquify_emit_json(LIQUIFYCTX *ctx, jd_var *value)
 	int r;
 	
 	JD_SCOPE
-	{
+	{		
 		jd_stringify(&str, value);
 		len = 0;
 		p = jd_bytes(&str, &len);
@@ -192,6 +263,19 @@ liquify_capture(LIQUIFYCTX *ctx)
 	return 0;
 }
 
+/* Inhibit further output for this block */
+int
+liquify_inhibit_(LIQUIFYCTX *ctx)
+{
+	if(liquify_capture(ctx))
+	{
+		return -1;
+	}
+	ctx->capture->inhibit = 1;
+	ctx->capture->owner = ctx->stack;
+	return 0;
+}
+
 /* Finish capturing */
 char *
 liquify_capture_end(LIQUIFYCTX *ctx, size_t *len)
@@ -209,6 +293,11 @@ liquify_capture_end(LIQUIFYCTX *ctx, size_t *len)
 	if(len)
 	{
 		*len = p->buflen;
+	}
+	if(p->inhibit)
+	{
+		free(p);
+		return NULL;
 	}
 	free(p);
 	if(!buf)
@@ -228,5 +317,46 @@ apply_filter(LIQUIFYCTX *ctx, char *buf, size_t len, struct liquify_filter *filt
 	liquify_emit(ctx, " [", 2);
 	liquify_emit(ctx, buf, len);
 	liquify_emit(ctx, "] }", 3);
+	return 0;
+}
+
+int
+liquify_goto_(LIQUIFYCTX *ctx, struct liquify_part *where)
+{
+	ctx->cp = where;
+	ctx->jumped = 1;
+	return 0;
+}
+
+struct liquify_stack *
+liquify_push_(LIQUIFYCTX *ctx, struct liquify_part *begin)
+{
+	struct liquify_stack *node;
+
+	node = (struct liquify_stack *) calloc(1, sizeof(struct liquify_stack));
+	if(!node)
+	{
+		return NULL;
+	}
+	node->begin = begin;
+	node->prev = ctx->stack;
+	node->ident = EXPR_IDENT(&(begin->d.tag.expr));
+	ctx->stack = node;
+	return node;
+}
+
+int
+liquify_pop_(LIQUIFYCTX *ctx)
+{
+	struct liquify_stack *node;
+
+	if(!ctx->stack)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+	node = ctx->stack;
+	ctx->stack = node->prev;
+	free(node);
 	return 0;
 }

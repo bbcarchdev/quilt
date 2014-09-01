@@ -78,6 +78,15 @@ liquify_token_(struct liquify_template *tpl, struct liquify_part *part, struct l
 			return cur;
 		}
 	}
+	if(*cur == '.')
+	{
+		if(!add_token(expr, tpl->line, tpl->col, TOK_DOT, NULL, 0))
+		{
+			return NULL;
+		}
+		tpl->pos++, tpl->col++, cur++;
+		return cur;
+	}
 	if((flags & TKF_FILTERS) && *cur == '|')
 	{
 		if(!add_token(expr, tpl->line, tpl->col, TOK_VBAR, NULL, 0))
