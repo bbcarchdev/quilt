@@ -30,6 +30,7 @@
 static librdf_world *quilt_world = NULL;
 
 static int quilt_librdf_logger_(void *data, librdf_log_message *message);
+static int quilt_ns_cb_(const char *key, const char *value, void *data);
 
 /* Initialise the librdf execution context, quilt_world */
 int
@@ -151,7 +152,6 @@ quilt_model_serialize(librdf_model *model, const char *mime)
 	char *buf;
 	librdf_serializer *serializer;
 	const char *name;
-	librdf_uri *ns;
 
 	if(quilt_librdf_init())
 	{
@@ -193,13 +193,37 @@ quilt_model_serialize(librdf_model *model, const char *mime)
 		return NULL;
 	}
 
-	ns = librdf_new_uri(quilt_world, (const unsigned char *) "http://purl.org/dc/terms/");
-	librdf_serializer_set_namespace(serializer, ns, "dct");
-	librdf_free_uri(ns);
-	
+	config_get_all("namespaces", NULL, quilt_ns_cb_, (void *) serializer);
+
 	buf = (char *) librdf_serializer_serialize_model_to_string(serializer, NULL, model);
 	librdf_free_serializer(serializer);
 	return buf;
+}
+
+static int
+quilt_ns_cb_(const char *key, const char *value, void *data)
+{
+	librdf_serializer *serializer;
+	const char *prefix = "namespaces:";
+	size_t l;
+	librdf_uri *uri;
+
+	serializer = (librdf_serializer *) data;
+	l = strlen(prefix);
+	if(strncmp(key, prefix, l))
+	{
+		return 0;
+	}
+	key += l;
+	uri = librdf_new_uri(quilt_world, (const unsigned char *) value);
+	if(!uri)
+	{
+		log_printf(LOG_ERR, "failed to create new URI from <%s>\n", value);
+		return 0;
+	}
+	librdf_serializer_set_namespace(serializer, uri, key);
+	librdf_free_uri(uri);
+	return 0;
 }
 
 int
