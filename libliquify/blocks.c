@@ -120,7 +120,6 @@ for_begin(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stac
 	jd_var empty = JD_INIT;
 	jd_var *v;
 
-	printf("beginning of loop\n");
 	if(stack->data)
 	{
 		data = (struct for_data *) stack->data;
@@ -166,7 +165,6 @@ for_begin(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stac
 	else
 	{		
 		liquify_inhibit_(ctx);
-		printf("inhibiting further output for this block\n");
 	}
 	return 0;
 }
@@ -180,7 +178,6 @@ for_end(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack)
 
 	(void) part;
 
-	printf("ending loop\n");
 	data = (struct for_data *) stack->data;
 	data->idx++;
 	finished = 1;
@@ -210,7 +207,6 @@ for_cleanup(LIQUIFYCTX *ctx, struct liquify_stack *stack)
 
 	(void) ctx;
 
-	printf("cleaning up loop\n");
 	data = (struct for_data *) stack->data;
 	if(!data)
 	{
