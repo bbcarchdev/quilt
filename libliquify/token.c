@@ -185,8 +185,11 @@ liquify_token_(struct liquify_template *tpl, struct liquify_part *part, struct l
 int
 liquify_token_free_(struct liquify_token *tok)
 {
-	free(tok->text);
-	free(tok);
+	if(tok)
+	{
+		free(tok->text);
+		free(tok);
+	}
 	return 0;
 }
 
