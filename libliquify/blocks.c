@@ -135,20 +135,20 @@ for_begin(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stac
 		param = part->d.tag.pfirst;
 		if(liquify_assign_(&(param->expr), ctx->dict, &empty))
 		{
-			liquify_parse_error_(ctx->tpl, part, "expected: lvalue as iterator");
+			PARTERRS(ctx->tpl, part, "expected: lvalue as iterator");
 			return -1;
 		}
 		data->self = &(param->expr);
 		param = param->next;
 		if(!param || !EXPR_IS(&(param->expr), TOK_IDENT) || strcmp(EXPR_IDENT(&(param->expr)), "in"))
 		{
-			liquify_parse_error_(ctx->tpl, part, "expected: 'in'");
+			PARTERRS(ctx->tpl, part, "expected: 'in'");
 			return -1;
 		}
 		param = param->next;
 		if(liquify_eval_(&(param->expr), ctx->dict, &(data->list), 0))
 		{
-			liquify_parse_error_(ctx->tpl, part, "expected: identifier");
+			PARTERRS(ctx->tpl, part, "expected: identifier");
 			return -1;
 		}
 		if(data->list.type == HASH)

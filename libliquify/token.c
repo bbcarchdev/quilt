@@ -29,12 +29,12 @@
 #define ISOCTDIGIT(n) \
 	((n) >= '0' && (n) <= '7')
 
-static struct liquify_token *add_token(struct liquify_expression *expr, int line, int col, int type, const char *text, size_t textlen);
+static struct liquify_token *add_token(LIQUIFYTPL *tpl, struct liquify_expression *expr, int line, int col, int type, const char *text, size_t textlen);
 static int copy_string(char *dest, const char *src, size_t srclen, int qmode);
 
-/* Parse a token and add it to an expression */
+/* Parse a single token and add it to an expression */
 const char *
-liquify_token_(struct liquify_template *tpl, struct liquify_part *part, struct liquify_expression *expr, const char *cur, int flags)
+liquify_token_(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_expression *expr, const char *cur, int flags)
 {
 	int q, e, line, col;
 	const char *start;
@@ -70,7 +70,7 @@ liquify_token_(struct liquify_template *tpl, struct liquify_part *part, struct l
 		if(((flags & TKF_VAR) && cur[0] == '}' && cur[1] == '}') ||
 			((flags & TKF_TAG) && cur[0] == '%' && cur[1] == '}'))
 		{
-			if(!add_token(expr, tpl->line, tpl->col, TOK_END, NULL, 0))
+			if(!add_token(tpl, expr, tpl->line, tpl->col, TOK_END, NULL, 0))
 			{
 				return NULL;
 			}
@@ -80,7 +80,7 @@ liquify_token_(struct liquify_template *tpl, struct liquify_part *part, struct l
 	}
 	if(*cur == '.')
 	{
-		if(!add_token(expr, tpl->line, tpl->col, TOK_DOT, NULL, 0))
+		if(!add_token(tpl, expr, tpl->line, tpl->col, TOK_DOT, NULL, 0))
 		{
 			return NULL;
 		}
@@ -89,7 +89,7 @@ liquify_token_(struct liquify_template *tpl, struct liquify_part *part, struct l
 	}
 	if((flags & TKF_FILTERS) && *cur == '|')
 	{
-		if(!add_token(expr, tpl->line, tpl->col, TOK_VBAR, NULL, 0))
+		if(!add_token(tpl, expr, tpl->line, tpl->col, TOK_VBAR, NULL, 0))
 		{
 			return NULL;
 		}
@@ -98,7 +98,7 @@ liquify_token_(struct liquify_template *tpl, struct liquify_part *part, struct l
 	}
 	if((flags & TKF_COLON) && *cur == ':')
 	{
-		if(!add_token(expr, tpl->line, tpl->col, TOK_COLON, NULL, 0))
+		if(!add_token(tpl, expr, tpl->line, tpl->col, TOK_COLON, NULL, 0))
 		{
 			return NULL;
 		}
@@ -107,7 +107,7 @@ liquify_token_(struct liquify_template *tpl, struct liquify_part *part, struct l
 	}
 	if((flags & TKF_COMMA) && *cur == ',')
 	{
-		if(!add_token(expr, tpl->line, tpl->col, TOK_COMMA, NULL, 0))
+		if(!add_token(tpl, expr, tpl->line, tpl->col, TOK_COMMA, NULL, 0))
 		{
 			return NULL;
 		}
@@ -128,7 +128,7 @@ liquify_token_(struct liquify_template *tpl, struct liquify_part *part, struct l
 			if(!e && *cur == q)
 			{
 				tpl->pos++, tpl->col++, cur++;
-				if(!add_token(expr, line, col, TOK_STRING, start, cur - start))
+				if(!add_token(tpl, expr, line, col, TOK_STRING, start, cur - start))
 				{
 					return NULL;
 				}
@@ -162,7 +162,7 @@ liquify_token_(struct liquify_template *tpl, struct liquify_part *part, struct l
 			}
 			e = 0;
 		}
-		liquify_parse_error_(tpl, part, "expected end of quoted literal but reached end-of-template");
+		PARTERRS(tpl, part, "expected end of quoted literal but reached end-of-template");
 		return NULL;
 	}
 	if(isalpha(*cur) || *cur == '_' || *cur == '$')
@@ -172,27 +172,28 @@ liquify_token_(struct liquify_template *tpl, struct liquify_part *part, struct l
 		{
 			tpl->pos++, tpl->col++, cur++;
 		}
-		if(!add_token(expr, line, col, TOK_IDENT, start, cur - start))
+		if(!add_token(tpl, expr, line, col, TOK_IDENT, start, cur - start))
 		{
 			return NULL;
 		}
 		return cur;
 	}
-	liquify_parse_error_(tpl, part, "expected: expression");
+	PARTERRS(tpl, part, "expected: expression");
 	return NULL;
 }
 
 int
-liquify_token_free_(struct liquify_token *tok)
+liquify_token_free_(LIQUIFYTPL *tpl, struct liquify_token *tok)
 {
 	if(tok)
 	{
-		free(tok->text);
-		free(tok);
+		liquify_free(tpl->env, tok->text);
+		liquify_free(tpl->env, tok);
 	}
 	return 0;
 }
 
+/* Copy a quoted string from src to dest, processing any escape sequences */
 static int
 copy_string(char *dest, const char *src, size_t srclen, int qmode)
 {
@@ -315,27 +316,21 @@ copy_string(char *dest, const char *src, size_t srclen, int qmode)
 	return 0;
 }
 
+/* Add a token to an expression, optionally including a copy of the literal
+ * text associated with it.
+ */
 static struct liquify_token *
-add_token(struct liquify_expression *expr, int line, int col, int type, const char *text, size_t textlen)
+add_token(LIQUIFYTPL *tpl, struct liquify_expression *expr, int line, int col, int type, const char *text, size_t textlen)
 {
 	struct liquify_token *p;
 	
-	p = (struct liquify_token *) calloc(1, sizeof(struct liquify_expression));
-	if(!p)
-	{
-		return NULL;
-	}
+	p = (struct liquify_token *) liquify_alloc(tpl->env, sizeof(struct liquify_expression));
 	p->line = line;
 	p->col = col;
 	p->type = type;
 	if(text)
 	{
-		p->text = (char *) malloc(textlen+1);
-		if(!p->text)
-		{
-			free(p);
-			return NULL;
-		}
+		p->text = (char *) liquify_alloc(tpl->env, textlen+1);
 		if(type == TOK_STRING)
 		{
 			copy_string(p->text, text, textlen, (*text == '"' ? 1 : 0));

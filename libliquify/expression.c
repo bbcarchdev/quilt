@@ -5,6 +5,7 @@
 #include "p_libliquify.h"
 
 static int insert_token(struct liquify_expression *expr, struct liquify_token *token);
+static jd_var *locate_var(struct liquify_token *tok, jd_var *dict, int vivify);
 
 /* This is not a real expression parser - it reads a token, which must be an
  * identifier or a string literal, and will be followed by a terminator of
@@ -15,7 +16,7 @@ static int insert_token(struct liquify_expression *expr, struct liquify_token *t
  * input buffer.
  */
 const char *
-liquify_expression_(struct liquify_template *tpl, struct liquify_part *part, struct liquify_expression *expr, const char *cur, int flags)
+liquify_expression_(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_expression *expr, const char *cur, int flags)
 {
 	const char *start;
 	int line, col, pos;
@@ -39,7 +40,7 @@ liquify_expression_(struct liquify_template *tpl, struct liquify_part *part, str
 		{
 			if(expr->last->type != TOK_IDENT && expr->last->type != TOK_STRING)
 			{
-				liquify_parse_error_(tpl, part, "expected: identifier or literal value");
+				PARTERRS(tpl, part, "expected: identifier or literal value");
 				return NULL;
 			}
 			expr->root.right = expr->last;
@@ -56,7 +57,7 @@ liquify_expression_(struct liquify_template *tpl, struct liquify_part *part, str
 		{
 			if(expr->last->type != TOK_IDENT)
 			{
-				liquify_parse_error_(tpl, part, "expected: identifier");
+				PARTERRS(tpl, part, "expected: identifier");
 				return NULL;
 			}
 			expr->cur->right = expr->last;
@@ -66,7 +67,7 @@ liquify_expression_(struct liquify_template *tpl, struct liquify_part *part, str
 		{
 			if(expr->cur->right->type != TOK_IDENT)
 			{
-				liquify_parse_error_(tpl, part, "object accessors can only follow identifiers");
+				PARTERRS(tpl, part, "object accessors can only follow identifiers");
 				return NULL;
 			}
 			insert_token(expr, expr->last);
@@ -75,52 +76,14 @@ liquify_expression_(struct liquify_template *tpl, struct liquify_part *part, str
 		/* Not something we recognise as a valid continuation of an expression,
 		 * so back-track to the beginning of the token
 		 */
-		liquify_token_free_(expr->last);
+		liquify_token_free_(tpl, expr->last);
 		expr->last = NULL;
 		tpl->line = line;
 		tpl->col = col;
 		tpl->pos = pos;
 		return start;
 	}
-	liquify_parse_error_(tpl, part, "expected: expression");
-	return NULL;
-}
-
-/* Push the current token down the tree */
-static int
-insert_token(struct liquify_expression *expr, struct liquify_token *tok)
-{
-	struct liquify_token save;
-	
-	save = *(expr->cur->right);
-	*(expr->cur->right) = *tok;
-	*tok = save;
-	expr->cur->right->left = tok;
-	expr->cur = expr->cur->right;
-	return 0;
-}
-
-static jd_var *
-liquify_locate_(struct liquify_token *tok, jd_var *dict, int vivify)
-{
-	jd_var *left;
-
-	if(!tok || !dict)
-	{
-		return NULL;
-	}
-	switch(tok->type)
-	{
-	case TOK_DOT:
-		left = liquify_locate_(tok->left, dict, 0);
-		if(!left)
-		{
-			return NULL;
-		}
-		return liquify_locate_(tok->right, left, vivify);
-	case TOK_IDENT:
-		return jd_get_ks(dict, tok->text, vivify);
-	}
+	PARTERRS(tpl, part, "expected: expression");
 	return NULL;
 }
 
@@ -134,7 +97,7 @@ liquify_eval_(struct liquify_expression *expr, jd_var *dict, jd_var *dest, int v
 	{
 	case TOK_DOT:		
 	case TOK_IDENT:
-		key = liquify_locate_(expr->root.right, dict, vivify);
+		key = locate_var(expr->root.right, dict, vivify);
 		if(key)
 		{
 			jd_assign(dest, key);
@@ -161,4 +124,43 @@ liquify_assign_(struct liquify_expression *expr, jd_var *dict, jd_var *newval)
 		return 0;
 	}
 	return -1;
+}
+
+/* Push the current token down the tree */
+static int
+insert_token(struct liquify_expression *expr, struct liquify_token *tok)
+{
+	struct liquify_token save;
+	
+	save = *(expr->cur->right);
+	*(expr->cur->right) = *tok;
+	*tok = save;
+	expr->cur->right->left = tok;
+	expr->cur = expr->cur->right;
+	return 0;
+}
+
+/* Locate an lvalue within dict based upon the contents of tok */
+static jd_var *
+locate_var(struct liquify_token *tok, jd_var *dict, int vivify)
+{
+	jd_var *left;
+
+	if(!tok || !dict)
+	{
+		return NULL;
+	}
+	switch(tok->type)
+	{
+	case TOK_DOT:
+		left = locate_var(tok->left, dict, 0);
+		if(!left)
+		{
+			return NULL;
+		}
+		return locate_var(tok->right, left, vivify);
+	case TOK_IDENT:
+		return jd_get_ks(dict, tok->text, vivify);
+	}
+	return NULL;
 }

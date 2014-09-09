@@ -124,7 +124,8 @@ readfile(const char *path)
 int
 main(int argc, char **argv)
 {
-	LIQUIFY *template;
+	LIQUIFY *env;
+	LIQUIFYTPL *template;
 	char *buf;
 	jd_var dict = JD_INIT;
 	
@@ -138,7 +139,12 @@ main(int argc, char **argv)
 	{
 		return 1;
 	}
-	template = liquify_parse(template_file, buf, strlen(buf));
+	env = liquify_create();
+	if(!env)
+	{
+		return 1;
+	}
+	template = liquify_parse(env, template_file, buf, strlen(buf));
 	free(buf);
 	if(!template)
 	{

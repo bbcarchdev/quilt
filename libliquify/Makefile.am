@@ -16,7 +16,8 @@
 
 noinst_LTLIBRARIES = libliquify.la
 
-libliquify_la_SOURCES = parse.c token.c expression.c dump.c apply.c blocks.c \
+libliquify_la_SOURCES = libliquify.h p_libliquify.h \
+	env.c parse.c token.c expression.c dump.c apply.c blocks.c \
 	tags.c filters.c
 libliquify_la_LIBADD = $(LIBJSONDATA_LOCAL_LIBS) $(LIBJSONDATA_LIBS)
 

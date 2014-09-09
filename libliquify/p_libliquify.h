@@ -23,10 +23,13 @@
 # include <stdlib.h>
 # include <ctype.h>
 # include <errno.h>
+# include <syslog.h>
 
 # include "libliquify.h"
 
 # define TABSIZE                       8
+
+# define MAX_INCLUDE_DEPTH             32
 
 /* Part types */
 # define LPT_TEXT                      0
@@ -63,6 +66,11 @@
 
 # define EXPR_IDENT(e) \
 	(EXPR_IS(e, TOK_IDENT) ? (e)->root.right->text : NULL)
+
+# define PARTERR(tpl, part, fmt, ...)									\
+	liquify_logf((tpl)->env, LOG_ERR, "%s:%d:%d: " fmt, (tpl)->name, (part)->line, (part)->col, __VA_ARGS__)
+# define PARTERRS(tpl, part, fmt)									\
+	liquify_logf((tpl)->env, LOG_ERR, "%s:%d:%d: " fmt, (tpl)->name, (part)->line, (part)->col)
 
 struct liquify_token
 {
@@ -127,8 +135,19 @@ struct liquify_part
 	} d;
 };
 
-struct liquify_template
+struct liquify_struct
 {
+	LIQUIFYTPL *first, *last;
+	void (*vlogf)(int level, const char *fmt, va_list ap);
+	LIQUIFYTPL *(*loader)(LIQUIFY *liquify, const char *name, void *data);
+	void *loaddata;
+	int depth;
+};
+
+struct liquify_template_struct
+{
+	struct liquify_struct *env;
+	LIQUIFYTPL *next;
 	/* Template components */
 	struct liquify_part *first, *last;
 	/* Parser state */
@@ -158,9 +177,9 @@ struct liquify_stack
 	void *data;
 };
 
-struct liquify_context
+struct liquify_context_struct
 {
-	struct liquify_template *tpl;
+	LIQUIFYTPL *tpl;
 	struct liquify_capture *capture;
 	struct liquify_part *cp;
 	jd_var *dict;
@@ -172,13 +191,13 @@ struct liquify_context
 };
 
 /* Parse a single token */
-const char *liquify_token_(struct liquify_template *tpl, struct liquify_part *part, struct liquify_expression *expr, const char *cur, int flags);
+const char *liquify_token_(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_expression *expr, const char *cur, int flags);
+/* Free a template */
+int liquify_tpl_free_(LIQUIFYTPL *template);
 /* Free a token */
-int liquify_token_free_(struct liquify_token *tok);
-/* Generate a parse error */
-void liquify_parse_error_(struct liquify_template *tpl, struct liquify_part *part, const char *message);
+int liquify_token_free_(LIQUIFYTPL *template, struct liquify_token *tok);
 /* Parse an expression */
-const char *liquify_expression_(struct liquify_template *tpl, struct liquify_part *part, struct liquify_expression *expr, const char *cur, int flags);
+const char *liquify_expression_(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_expression *expr, const char *cur, int flags);
 /* Evaluate an expression */
 int liquify_eval_(struct liquify_expression *expr, jd_var *dict, jd_var *dest, int vivify);
 int liquify_assign_(struct liquify_expression *expr, jd_var *dict, jd_var *newval);
@@ -191,6 +210,9 @@ int liquify_block_cleanup_(LIQUIFYCTX *ctx, const char *name, struct liquify_sta
 
 /* Determine whether a tag is a non-block tag */
 int liquify_is_tag_(const char *name);
+/* Invoked once a tag has been parsed */
+int liquify_tag_parsed_(LIQUIFYTPL *template, struct liquify_part *part, const char *name);
+int liquify_tag_(LIQUIFYCTX *ctx, struct liquify_part *part, const char *name);
 
 /* Push a new node on the block stack */
 struct liquify_stack *liquify_push_(LIQUIFYCTX *ctx, struct liquify_part *begin);
@@ -202,5 +224,10 @@ int liquify_inhibit_(LIQUIFYCTX *ctx);
 
 /* Jump to a particular location in the template */
 int liquify_goto_(LIQUIFYCTX *ctx, struct liquify_part *where);
+
+/* Determine whether a filter exists */
+int liquify_is_filter_(const char *name);
+/* Apply a filter to a buffer in a template application context */
+int liquify_filter_apply_(LIQUIFYCTX *ctx, const char *name, char *buf, size_t len);
 
 #endif /*!P_LIBLIQUIFY_H_*/

@@ -122,7 +122,8 @@ readfile(const char *path)
 int
 main(int argc, char **argv)
 {
-	LIQUIFY *template;
+	LIQUIFY *env;
+	LIQUIFYTPL *tpl;
 	char *buf;
 	
 	if(parseargs(argc, argv))
@@ -135,12 +136,18 @@ main(int argc, char **argv)
 	{
 		return 1;
 	}
-	template = liquify_parse(template_file, buf, strlen(buf));
-	free(buf);
-	if(!template)
+	env = liquify_create();
+	if(!env)
 	{
 		return 1;
 	}
-	liquify_dump(template, stdout);
+	tpl = liquify_parse(env, template_file, buf, strlen(buf));
+	free(buf);
+	if(!tpl)
+	{
+		return 1;
+	}
+	liquify_dump(tpl, stdout);
+	liquify_destroy(env);
 	return 0;
 }

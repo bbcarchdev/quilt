@@ -26,7 +26,7 @@ static int dump_token(struct liquify_token *token, FILE *f);
 static int dump_text(const char *str, FILE *f);
 
 int
-liquify_dump(LIQUIFY *tpl, FILE *f)
+liquify_dump(LIQUIFYTPL *tpl, FILE *f)
 {
 	struct liquify_part *part;
 	struct liquify_filter *filter;
@@ -43,7 +43,18 @@ liquify_dump(LIQUIFY *tpl, FILE *f)
 			fputc('\n', f);
 			break;
 		case LPT_TAG:
-			fputs("tag: ", f);
+			switch(part->d.tag.kind)
+			{
+			case TPK_TAG:
+				fputs("tag: ", f);
+				break;
+			case TPK_BEGIN:
+				fputs("block-begin: ", f);
+				break;
+			case TPK_END:
+				fputs("block-end: ", f);
+				break;
+			}
 			dump_expression(&(part->d.tag.expr), f);
 			if(part->d.tag.pfirst)
 			{

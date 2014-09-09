@@ -26,8 +26,38 @@
 
 static int apply_filter(LIQUIFYCTX *ctx, char *buf, size_t len, struct liquify_filter *filter);
 
+/* Locate a loaded template by name */
+LIQUIFYTPL *
+liquify_locate(LIQUIFY *env, const char *name)
+{
+	LIQUIFYTPL *tpl;
+	
+	for(tpl = env->first; tpl; tpl = tpl->next)
+	{
+		if(!strcmp(tpl->name, name))
+		{
+			return tpl;
+		}
+	}
+	return NULL;
+}
+
 char *
-liquify_apply(struct liquify_template *template, jd_var *dict)
+liquify_apply_name(LIQUIFY *env, const char *name, jd_var *dict)
+{
+	LIQUIFYTPL *tpl;
+	
+	tpl = liquify_locate(env, name);
+	if(!tpl)
+	{
+		liquify_logf(env, LOG_ERR, "failed to locate template '%s'\n", name);
+		return NULL;
+	}
+	return liquify_apply(tpl, dict);
+}
+
+char *
+liquify_apply(LIQUIFYTPL *template, jd_var *dict)
 {
 	LIQUIFYCTX context;
 	struct liquify_part *part;
@@ -57,7 +87,7 @@ liquify_apply(struct liquify_template *template, jd_var *dict)
 			}
 			if(liquify_emit(&context, part->d.text.text, part->d.text.len))
 			{
-				free(context.buf);
+				liquify_free(template->env, context.buf);
 				return NULL;
 			}
 			break;
@@ -95,7 +125,7 @@ liquify_apply(struct liquify_template *template, jd_var *dict)
 								r = -1;
 								break;
 							}
-							free(buf);
+							liquify_free(template->env, buf);
 						}
 						len = 0;
 						str = liquify_capture_end(&context, &len);
@@ -114,7 +144,7 @@ liquify_apply(struct liquify_template *template, jd_var *dict)
 				   (context.stack->end && context.stack->end != part) ||
 				   strcmp(context.stack->ident, EXPR_IDENT(&(part->d.tag.expr)) + 3))
 				{
-					fprintf(stderr, "tag mismatch: %s does not match %s\n", EXPR_IDENT(&(part->d.tag.expr)), context.stack->ident);
+					liquify_logf(template->env, LOG_ERR, "%s:%d:%d: tag mismatch: %s does not match %s\n", template->name, part->line, part->col, EXPR_IDENT(&(part->d.tag.expr)), context.stack->ident);
 					r = -1;
 					break;
 				}
@@ -168,6 +198,11 @@ liquify_apply(struct liquify_template *template, jd_var *dict)
 			}
 			else if(part->d.tag.kind == TPK_TAG)
 			{
+				if(liquify_tag_(&context, part, EXPR_IDENT(&(part->d.tag.expr))))
+				{
+					r = -1;
+					break;
+				}
 			}
 			break;
 		}
@@ -178,13 +213,13 @@ liquify_apply(struct liquify_template *template, jd_var *dict)
 	}
 	if(r)
 	{
-		free(context.buf);
-		free(str);
+		liquify_free(template->env, context.buf);
+		liquify_free(template->env, str);
 		return NULL;
 	}
 	if(!context.buf)
 	{
-		return strdup("");
+		return liquify_strdup(template->env, "");
 	}
 	return context.buf;
 }
@@ -216,7 +251,7 @@ int
 liquify_emit(LIQUIFYCTX *ctx, const char *str, size_t slen)
 {
 	size_t newsize, *size, *len;
-	char *p, **buf;
+	char **buf;
 	
 	if(ctx->capture)
 	{
@@ -233,12 +268,7 @@ liquify_emit(LIQUIFYCTX *ctx, const char *str, size_t slen)
 	if(*len + slen + 1 > *size)
 	{
 		newsize = *size + ROUNDUP(slen);
-		p = (char *) realloc(*buf, newsize);
-		if(!p)
-		{
-			return -1;
-		}
-		*buf = p;
+		*buf = (char *) liquify_realloc(ctx->tpl->env, *buf, newsize);
 		*size = newsize;
 	}
 	memcpy(&((*buf)[*len]), str, slen);
@@ -247,13 +277,20 @@ liquify_emit(LIQUIFYCTX *ctx, const char *str, size_t slen)
 	return 0;
 }
 
+/* Write a null-terminated string to the current processing context */
+int
+liquify_emit_str(LIQUIFYCTX *ctx, const char *str)
+{
+	return liquify_emit(ctx, str, strlen(str));
+}
+
 /* Begin capturing output to a buffer */
 int
 liquify_capture(LIQUIFYCTX *ctx)
 {
 	struct liquify_capture *p;
 	
-	p = (struct liquify_capture *) calloc(1, sizeof(struct liquify_capture));
+	p = (struct liquify_capture *) liquify_alloc(ctx->tpl->env, sizeof(struct liquify_capture));
 	if(!p)
 	{
 		return -1;
@@ -296,13 +333,13 @@ liquify_capture_end(LIQUIFYCTX *ctx, size_t *len)
 	}
 	if(p->inhibit)
 	{
-		free(p);
+		liquify_free(ctx->tpl->env, p);
 		return NULL;
 	}
-	free(p);
+	liquify_free(ctx->tpl->env, p);
 	if(!buf)
 	{
-		return strdup("");
+		return liquify_strdup(ctx->tpl->env, "");
 	}
 	return buf;
 }
@@ -310,14 +347,7 @@ liquify_capture_end(LIQUIFYCTX *ctx, size_t *len)
 static int
 apply_filter(LIQUIFYCTX *ctx, char *buf, size_t len, struct liquify_filter *filter)
 {	
-	fprintf(stderr, "%s:%d:%d: no such filter '%s'\n", ctx->tpl->name, filter->expr.root.right->line, filter->expr.root.right->col, filter->expr.root.right->text);
-	
-	liquify_emit(ctx, "{ filter: ", 10);
-	liquify_emit(ctx, filter->expr.root.right->text, filter->expr.root.right->len);
-	liquify_emit(ctx, " [", 2);
-	liquify_emit(ctx, buf, len);
-	liquify_emit(ctx, "] }", 3);
-	return 0;
+	return liquify_filter_apply_(ctx, filter->expr.root.right->text, buf, len);
 }
 
 int
@@ -333,11 +363,7 @@ liquify_push_(LIQUIFYCTX *ctx, struct liquify_part *begin)
 {
 	struct liquify_stack *node;
 
-	node = (struct liquify_stack *) calloc(1, sizeof(struct liquify_stack));
-	if(!node)
-	{
-		return NULL;
-	}
+	node = (struct liquify_stack *) liquify_alloc(ctx->tpl->env, sizeof(struct liquify_stack));
 	node->begin = begin;
 	node->prev = ctx->stack;
 	node->ident = EXPR_IDENT(&(begin->d.tag.expr));
@@ -357,6 +383,6 @@ liquify_pop_(LIQUIFYCTX *ctx)
 	}
 	node = ctx->stack;
 	ctx->stack = node->prev;
-	free(node);
+	liquify_free(ctx->tpl->env, node);
 	return 0;
 }

@@ -21,46 +21,29 @@
 
 #include "p_libliquify.h"
 
-static struct liquify_part *add_part(struct liquify_template *tpl, int type);
-static struct liquify_part *add_text(struct liquify_template *tpl, int line, int col, const char *text, size_t len);
-static struct liquify_filter *add_filter(struct liquify_part *part);
-static struct liquify_param *add_filter_param(struct liquify_filter *filter);
+static struct liquify_part *add_part(LIQUIFYTPL *tpl, int type);
+static struct liquify_part *add_text(LIQUIFYTPL *tpl, int line, int col, const char *text, size_t len);
+static struct liquify_filter *add_filter(LIQUIFYTPL *tpl, struct liquify_part *part);
+static struct liquify_param *add_filter_param(LIQUIFYTPL *tpl, struct liquify_filter *filter);
 
-static const char *parse_filter(struct liquify_template *tpl, struct liquify_part *part, struct liquify_filter *filter, const char *cur, int flags);
-static const char *parse_var(struct liquify_template *tpl, const char *cur);
-static const char *parse_tag(struct liquify_template *tpl, const char *start);
+static const char *parse_filter(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_filter *filter, const char *cur, int flags);
+static const char *parse_var(LIQUIFYTPL *tpl, const char *cur);
+static const char *parse_tag(LIQUIFYTPL *tpl, const char *start);
 
-/* Generate a parse error */
-void
-liquify_parse_error_(struct liquify_template *tpl, struct liquify_part *part, const char *message)
+/* Parse a named template (consisting of len bytes beginning at doc), and
+ * add it to the provided environment. If a template of the same name
+ * exists in the environment already, it will be replaced.
+ */
+LIQUIFYTPL *
+liquify_parse(LIQUIFY *env, const char *name, const char *doc, size_t len)
 {
-	fprintf(stderr, "%s:%d:%d: %s\n", tpl->name, part->line, part->col, message);
-}
-
-int
-liquify_free(struct liquify_template *template)
-{
-	return 0;
-}
-
-struct liquify_template *
-liquify_parse(const char *name, const char *doc, size_t len)
-{
-	struct liquify_template *tpl;
+	LIQUIFYTPL *prev, *p, *tpl;
 	int startline, startcol, t;
 	const char *block;
 
-	tpl = (struct liquify_template *) calloc(1, sizeof(struct liquify_template));
-	if(!tpl)
-	{
-		return NULL;
-	}
-	tpl->name = strdup(name);
-	if(!tpl->name)
-	{
-		free(tpl);
-		return NULL;
-	}
+	tpl = (LIQUIFYTPL *) liquify_alloc(env, sizeof(LIQUIFYTPL));
+	tpl->env = env;
+	tpl->name = liquify_strdup(env, name);
 	tpl->start = doc;
 	tpl->len = len;
 	tpl->pos = 0;
@@ -124,7 +107,7 @@ liquify_parse(const char *name, const char *doc, size_t len)
 			 */
 			if(!add_text(tpl, startline, startcol, block, doc - block))
 			{
-				liquify_free(tpl);
+				liquify_tpl_free_(tpl);
 				return NULL;
 			}
 		}
@@ -136,14 +119,14 @@ liquify_parse(const char *name, const char *doc, size_t len)
 		case LPT_VAR:
 			if(!(doc = parse_var(tpl, doc)))
 			{
-				liquify_free(tpl);
+				liquify_tpl_free_(tpl);
 				return NULL;
 			}
 			break;
 		case LPT_TAG:
 			if(!(doc = parse_tag(tpl, doc)))
 			{
-				liquify_free(tpl);
+				liquify_tpl_free_(tpl);
 				return NULL;
 			}
 			break;
@@ -155,21 +138,63 @@ liquify_parse(const char *name, const char *doc, size_t len)
 	tpl->pos = 0;
 	tpl->line = 0;
 	tpl->col = 0;
+	/* Add the template to the environment */
+	prev = NULL;
+	for(p = env->first; p; p = p->next)
+	{
+		if(!strcmp(p->name, tpl->name))
+		{
+			/* A template with the same name exists, replace it */
+			tpl->next = p->next;
+			if(prev)
+			{
+				prev->next = tpl;
+			}
+			if(env->first == p)
+			{
+				env->first = tpl;
+			}
+			if(env->last == p)
+			{
+				env->last = tpl;
+			}
+			liquify_tpl_free_(p);
+			return tpl;
+		}
+		prev = p;
+	}
+	/* A template with this name doesn't already exist, add it to the
+	 * linked list.
+	 */
+	if(env->last)
+	{
+		env->last->next = tpl;
+	}
+	else
+	{
+		env->first = tpl;
+	}
+	env->last = tpl;
 	return tpl;
 }
 
+/* Free a template; note that this function will not manage the linked list
+ * of templates within an environment, which is the responsibility of the
+ * caller.
+ */
+int
+liquify_tpl_free_(LIQUIFYTPL *template)
+{
+	return 0;
+}
 
 /* Add a new part to a template */
 static struct liquify_part *
-add_part(struct liquify_template *tpl, int type)
+add_part(LIQUIFYTPL *tpl, int type)
 {
 	struct liquify_part *part;
 	
-	part = (struct liquify_part *) calloc(1, sizeof(struct liquify_part));
-	if(!part)
-	{
-		return NULL;
-	}
+	part = (struct liquify_part *) liquify_alloc(tpl->env, sizeof(struct liquify_part));
 	part->line = tpl->line;
 	part->col = tpl->col;
 	part->type = type;
@@ -187,23 +212,14 @@ add_part(struct liquify_template *tpl, int type)
 
 /* Add a literal text part to a template */
 static struct liquify_part *
-add_text(struct liquify_template *tpl, int line, int col, const char *text, size_t len)
+add_text(LIQUIFYTPL *tpl, int line, int col, const char *text, size_t len)
 {
 	struct liquify_part *part;
 	
 	part = add_part(tpl, LPT_TEXT);
-	if(!part)
-	{
-		return NULL;
-	}
 	part->line = line;
 	part->col = col;
-	part->d.text.text = (char *) malloc(len + 1);
-	if(!part->d.text.text)
-	{
-		free(part);
-		return NULL;
-	}
+	part->d.text.text = (char *) liquify_alloc(tpl->env, len + 1);
 	strncpy(part->d.text.text, text, len);
 	part->d.text.text[len] = 0;
 	part->d.text.len = len;
@@ -211,7 +227,7 @@ add_text(struct liquify_template *tpl, int line, int col, const char *text, size
 }
 
 static struct liquify_filter *
-add_filter(struct liquify_part *part)
+add_filter(LIQUIFYTPL *tpl, struct liquify_part *part)
 {
 	struct liquify_filter *p;
 	
@@ -219,11 +235,7 @@ add_filter(struct liquify_part *part)
 	{
 		return NULL;
 	}
-	p = (struct liquify_filter *) calloc(1, sizeof(struct liquify_filter));
-	if(!p)
-	{
-		return NULL;
-	}
+	p = (struct liquify_filter *) liquify_alloc(tpl->env, sizeof(struct liquify_filter));
 	if(part->d.var.ffirst)
 	{
 		part->d.var.flast->next = p;
@@ -237,15 +249,11 @@ add_filter(struct liquify_part *part)
 }
 
 static struct liquify_param *
-add_filter_param(struct liquify_filter *filter)
+add_filter_param(LIQUIFYTPL *tpl, struct liquify_filter *filter)
 {
 	struct liquify_param *p;
 	
-	p = (struct liquify_param *) calloc(1, sizeof(struct liquify_param));
-	if(!p)
-	{
-		return NULL;
-	}
+	p = (struct liquify_param *) liquify_alloc(tpl->env, sizeof(struct liquify_param));
 	if(filter->pfirst)
 	{
 		filter->plast->next = p;
@@ -259,15 +267,11 @@ add_filter_param(struct liquify_filter *filter)
 }
 
 static struct liquify_param *
-add_tag_param(struct liquify_part *tag)
+add_tag_param(LIQUIFYTPL *tpl, struct liquify_part *tag)
 {
 	struct liquify_param *p;
 	
-	p = (struct liquify_param *) calloc(1, sizeof(struct liquify_param));
-	if(!p)
-	{
-		return NULL;
-	}
+	p = (struct liquify_param *) liquify_alloc(tpl->env, sizeof(struct liquify_param));
 	if(tag->d.tag.pfirst)
 	{
 		tag->d.tag.plast->next = p;
@@ -282,7 +286,7 @@ add_tag_param(struct liquify_part *tag)
 
 /* parse a filter, which has the form 'foo' or 'foo:"param1","param2"' */
 static const char *
-parse_filter(struct liquify_template *tpl, struct liquify_part *part, struct liquify_filter *filter, const char *cur, int flags)
+parse_filter(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_filter *filter, const char *cur, int flags)
 {
 	struct liquify_expression *expr;
 	struct liquify_param *param;
@@ -295,7 +299,7 @@ parse_filter(struct liquify_template *tpl, struct liquify_part *part, struct liq
 	}
 	if(!expr->last)
 	{
-		liquify_parse_error_(tpl, part, "expected: end-of-tag, vertical bar, or colon");
+		PARTERRS(tpl, part, "expected: end-of-tag, vertical bar, or colon\n");
 		return NULL;
 	}
 	if(expr->last->type == TOK_END || expr->last->type == TOK_VBAR)
@@ -303,11 +307,11 @@ parse_filter(struct liquify_template *tpl, struct liquify_part *part, struct liq
 		return cur;
 	}
 	/* TOK_COLON - parameters follow */
-	liquify_token_free_(expr->last);
+	liquify_token_free_(tpl, expr->last);
 	expr->last = NULL;
 	while(tpl->pos < tpl->len)
 	{
-		param = add_filter_param(filter);
+		param = add_filter_param(tpl, filter);
 		if(!param)
 		{
 			return NULL;
@@ -320,7 +324,7 @@ parse_filter(struct liquify_template *tpl, struct liquify_part *part, struct liq
 		}
 		if(!expr->last)
 		{
-			liquify_parse_error_(tpl, part, "expected: end-of-tag, vertical bar, or comma");
+			PARTERRS(tpl, part, "expected: end-of-tag, vertical bar, or comma\n");
 			return NULL;
 		}
 		if(expr->last->type == TOK_END || expr->last->type == TOK_VBAR)
@@ -330,7 +334,7 @@ parse_filter(struct liquify_template *tpl, struct liquify_part *part, struct liq
 		}
 		/* TOK_COMMA - loop */
 	}
-	liquify_parse_error_(tpl, part, "unexpected end of template");
+	PARTERRS(tpl, part, "unexpected end of template\n");
 	return NULL;
 }
 
@@ -340,7 +344,7 @@ parse_filter(struct liquify_template *tpl, struct liquify_part *part, struct liq
  *   {{ expr | filter:"param","param","..." | filter2 }}
  */
 static const char *
-parse_var(struct liquify_template *tpl, const char *cur)
+parse_var(LIQUIFYTPL *tpl, const char *cur)
 {
 	struct liquify_part *part;
 	struct liquify_expression *expr;
@@ -369,7 +373,7 @@ parse_var(struct liquify_template *tpl, const char *cur)
 	{
 		t = TOK_NONE;
 	}
-	liquify_token_free_(expr->last);
+	liquify_token_free_(tpl, expr->last);
 	expr->last = NULL;
 	while(tpl->pos < tpl->len)
 	{
@@ -379,10 +383,10 @@ parse_var(struct liquify_template *tpl, const char *cur)
 		}
 		if(t != TOK_VBAR)
 		{
-			liquify_parse_error_(tpl, part, "expected: end-of-variable ('}}') or filter");
+			PARTERRS(tpl, part, "expected: end-of-variable ('}}') or filter\n");
 			return NULL;
 		}
-		filter = add_filter(part);
+		filter = add_filter(tpl, part);
 		if(!filter)
 		{
 			return NULL;
@@ -394,7 +398,7 @@ parse_var(struct liquify_template *tpl, const char *cur)
 		}
 		t = filter->expr.last->type;
 	}
-	liquify_parse_error_(tpl, part, "unexpected end of template");
+	PARTERRS(tpl, part, "unexpected end of template\n");
 	return NULL;
 }
 
@@ -403,7 +407,7 @@ parse_var(struct liquify_template *tpl, const char *cur)
  *  {% name parameters... %}
  */
 static const char *
-parse_tag(struct liquify_template *tpl, const char *cur)
+parse_tag(LIQUIFYTPL *tpl, const char *cur)
 {
 	struct liquify_part *part;
 	struct liquify_expression *expr;
@@ -427,7 +431,7 @@ parse_tag(struct liquify_template *tpl, const char *cur)
 		}
 		else
 		{
-			param = add_tag_param(part);
+			param = add_tag_param(tpl, part);
 			expr = &(param->expr);
 		}
 		cur = liquify_expression_(tpl, part, expr, cur, TKF_TAG);
@@ -444,22 +448,22 @@ parse_tag(struct liquify_template *tpl, const char *cur)
 			}
 			else
 			{
-				liquify_parse_error_(tpl, part, "expected: end-of-tag ('%}') or parameters");
+				PARTERRS(tpl, part, "expected: end-of-tag ('%}') or parameters\n");
 				return NULL;
 			}
-			liquify_token_free_(expr->last);
+			liquify_token_free_(tpl, expr->last);
 			expr->last = NULL;
 		}
 	}	
 	if(!finished)
 	{
-		liquify_parse_error_(tpl, part, "expected end-of-tag ('%}'), but reached end of template");
+		PARTERRS(tpl, part, "expected end-of-tag ('%}'), but reached end of template\n");
 		return NULL;
 	}
 	expr = &(part->d.tag.expr);
 	if(!EXPR_IS(expr, TOK_IDENT))
 	{
-		liquify_parse_error_(tpl, part, "expected: identifier at start of tag");
+		PARTERRS(tpl, part, "expected: identifier at start of tag\n");
 		return NULL;
 	}
 	ident = EXPR_IDENT(expr);
@@ -467,6 +471,7 @@ parse_tag(struct liquify_template *tpl, const char *cur)
 	{
 		if(liquify_is_block_(ident + 3))
 		{
+			/* XXX: check for unbalanced block begin/end */
 			part->d.tag.kind = TPK_END;
 			return cur;
 		}
@@ -479,8 +484,12 @@ parse_tag(struct liquify_template *tpl, const char *cur)
 	if(liquify_is_tag_(ident))
 	{
 		part->d.tag.kind = TPK_TAG;
+		if(liquify_tag_parsed_(tpl, part, ident))
+		{
+			return NULL;
+		}
 		return cur;
 	}
-	liquify_parse_error_(tpl, part, "expected: tag name");
+	PARTERR(tpl, part, "expected: tag name, found '%s'\n", ident);
 	return NULL;
 }
