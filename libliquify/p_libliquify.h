@@ -247,6 +247,8 @@ int liquify_tag_include_parsed_(LIQUIFYTPL *template, struct liquify_part *part)
 int liquify_tag_include_emit_(LIQUIFYCTX *ctx, struct liquify_part *part);
 int liquify_tag_else_parsed_(LIQUIFYTPL *template, struct liquify_part *part);
 int liquify_tag_else_emit_(LIQUIFYCTX *ctx, struct liquify_part *part);
+int liquify_tag_elsif_parsed_(LIQUIFYTPL *template, struct liquify_part *part);
+int liquify_tag_elsif_emit_(LIQUIFYCTX *ctx, struct liquify_part *part);
 
 /* Blocks */
 int liquify_block_for_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack);

@@ -33,6 +33,7 @@ struct liquify_tag_struct
 static struct liquify_tag_struct tags[] = {
 	DECLARE_TAG(include),
 	DECLARE_TAG(else),
+	DECLARE_TAG(elsif),
 	{ NULL, NULL, NULL }
 };
 

@@ -84,6 +84,17 @@ liquify_tag_else_parsed_(LIQUIFYTPL *template, struct liquify_part *part)
 }
 
 int
+liquify_tag_elsif_parsed_(LIQUIFYTPL *template, struct liquify_part *part)
+{
+	if(!part->d.tag.pfirst)
+	{
+		PARTERRS(template, part, "expected: conditional expression\n");
+		return -1;
+	}
+	return 0;
+}
+
+int
 liquify_tag_else_emit_(LIQUIFYCTX *ctx, struct liquify_part *part)
 {
 	struct if_data *data;
@@ -114,5 +125,46 @@ liquify_tag_else_emit_(LIQUIFYCTX *ctx, struct liquify_part *part)
 	}
 	data->matched = 1;
 	liquify_capture_end(ctx, NULL);
+	return 0;
+}
+
+int
+liquify_tag_elsif_emit_(LIQUIFYCTX *ctx, struct liquify_part *part)
+{
+	struct if_data *data;
+	
+	if(!ctx->stack || strcmp(ctx->stack->ident, "if"))
+	{
+		PARTERRS(ctx->tpl, part, "unexpected 'elsif' outside of 'if'...'endif' block\n");
+		return -1;
+	}
+	data = (struct if_data *) ctx->stack->data;
+	if(data->matched)
+	{
+		if(!ctx->capture ||
+		   !ctx->capture->inhibit ||
+		   ctx->capture->owner != ctx->stack)
+		{
+			/* Inhibit output until the end of the block */
+			liquify_inhibit_(ctx);
+		}
+		return 0;
+	}	
+	/* The block didn't previously match a branch; if our expression
+	 * is true, then end output inhibition; otherwise, leave everything
+	 * unchanged.
+	 */
+	if(liquify_eval_truth_(&(part->d.tag.pfirst->expr), ctx->dict))
+	{
+		if(!ctx->capture ||
+		   !ctx->capture->inhibit ||
+		   ctx->capture->owner != ctx->stack)
+		{
+			PARTERRS(ctx->tpl, part, "internal error: 'else' in unmatched branch while not inhibited or capture owner is not current stack head\n");
+			return -1;
+		}
+		data->matched = 1;
+		liquify_capture_end(ctx, NULL);
+	}
 	return 0;
 }
