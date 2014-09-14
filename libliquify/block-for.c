@@ -32,6 +32,37 @@ struct for_data
 static jd_var *for_current(LIQUIFYCTX *ctx, struct for_data *data);
 
 int
+liquify_block_for_parsed_(LIQUIFYTPL *tpl, struct liquify_part *part)
+{
+	struct liquify_param *param;
+
+	param = part->d.tag.pfirst;
+	if(!param)
+	{
+		PARTERRS(tpl, part, "expected: iterator variable name\n");
+		return -1;
+	}
+	param = param->next;
+	if(!param || !EXPR_IS(&(param->expr), TOK_IDENT) || strcmp(EXPR_IDENT(&(param->expr)), "in"))
+	{
+		PARTERRS(tpl, part, "expected: 'in'\n");
+		return -1;
+	}
+	param = param->next;
+	if(!param)
+	{
+		PARTERRS(tpl, part, "expected: object to iterate\n");
+		return -1;
+	}
+	if(param->next)
+	{
+		PARTERRS(tpl, part, "unexpected tokens following iterator object\n");
+		return -1;
+	}
+	return 0;
+}
+
+int
 liquify_block_for_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack)
 {
 	struct for_data *data;
@@ -54,20 +85,20 @@ liquify_block_for_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liqu
 		param = part->d.tag.pfirst;
 		if(liquify_assign_(&(param->expr), ctx->dict, &empty))
 		{
-			PARTERRS(ctx->tpl, part, "expected: lvalue as iterator");
+			PARTERRS(ctx->tpl, part, "expected: lvalue as iterator\n");
 			return -1;
 		}
 		data->self = &(param->expr);
 		param = param->next;
 		if(!param || !EXPR_IS(&(param->expr), TOK_IDENT) || strcmp(EXPR_IDENT(&(param->expr)), "in"))
 		{
-			PARTERRS(ctx->tpl, part, "expected: 'in'");
+			PARTERRS(ctx->tpl, part, "expected: 'in'\n");
 			return -1;
 		}
 		param = param->next;
 		if(liquify_eval_(&(param->expr), ctx->dict, &(data->list), 0))
 		{
-			PARTERRS(ctx->tpl, part, "expected: identifier");
+			PARTERRS(ctx->tpl, part, "expected: identifier\n");
 			return -1;
 		}
 		if(data->list.type == HASH)

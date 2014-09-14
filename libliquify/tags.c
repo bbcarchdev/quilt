@@ -29,7 +29,7 @@ struct liquify_tag_struct
 };
 
 #define TAG(name) \
-	{ # name, liquify_tag_ ## name ## _parsed_, liquify_tag_ ## name ## _emit_ }
+	{ # name, liquify_tag_ ## name ## _parsed_, liquify_tag_ ## name ## _ }
 
 static struct liquify_tag_struct tags[] = {
 	TAG(include),

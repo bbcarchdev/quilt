@@ -370,7 +370,9 @@ liquify_capture_end(LIQUIFYCTX *ctx, size_t *len)
 static int
 apply_filter(LIQUIFYCTX *ctx, char *buf, size_t len, struct liquify_filter *filter)
 {	
-	return liquify_filter_apply_(ctx, filter->expr.root.right->text, buf, len);
+	/* failure to apply a filter is considered a warning, not an error */
+	liquify_filter_apply_(ctx, filter->expr.root.right->text, buf, len);
+	return 0;
 }
 
 int

@@ -46,7 +46,7 @@ liquify_tag_include_parsed_(LIQUIFYTPL *template, struct liquify_part *part)
 }
 
 int
-liquify_tag_include_emit_(LIQUIFYCTX *ctx, struct liquify_part *part)
+liquify_tag_include_(LIQUIFYCTX *ctx, struct liquify_part *part)
 {
 	char *buf;
 

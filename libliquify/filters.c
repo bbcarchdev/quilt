@@ -64,9 +64,10 @@ liquify_filter_apply_(LIQUIFYCTX *ctx, const char *name, char *buf, size_t len)
 			return filters[c].fn(ctx, buf, len, name);
 		}
 	}
-	liquify_emit_str(ctx, "[Warning: no such filter '");
+	liquify_emit(ctx, buf, len);
+	liquify_emit_str(ctx, "<!-- Warning: no such filter '");
 	liquify_emit_str(ctx, name);
-	liquify_emit_str(ctx, "]");
+	liquify_emit_str(ctx, "-->");
 	return -1;
 }
 

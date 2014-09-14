@@ -132,6 +132,12 @@ liquify_parse(LIQUIFY *env, const char *name, const char *doc, size_t len)
 			break;
 		}
 	}
+	if(tpl->stack)
+	{
+		PARTERR(tpl, tpl->stack, "{%% %s %%} has no matching {%% end%s %%} before end of template is reached\n", EXPR_IDENT(&(tpl->stack->d.tag.expr)), EXPR_IDENT(&(tpl->stack->d.tag.expr)));
+		liquify_tpl_free_(tpl);
+		return NULL;
+	}
 	/* Clean up the parsing context */
 	tpl->start = NULL;
 	tpl->len = 0;
@@ -334,7 +340,7 @@ parse_filter(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_filter *
 		}
 		/* TOK_COMMA - loop */
 	}
-	PARTERRS(tpl, part, "unexpected end of template\n");
+	PARTERRS(tpl, part, "unexpected end of template while parsing variable output\n");
 	return NULL;
 }
 
@@ -471,14 +477,30 @@ parse_tag(LIQUIFYTPL *tpl, const char *cur)
 	{
 		if(liquify_is_block_(ident + 3))
 		{
-			/* XXX: check for unbalanced block begin/end */
+			if(!tpl->stack)
+			{
+				PARTERR(tpl, part, "unexpected {%% %s %%} outside of a block\n", ident);
+				return NULL;
+			}
+			if(strcmp(EXPR_IDENT(&(tpl->stack->d.tag.expr)), ident + 3))
+			{
+				PARTERR(tpl, part, "unexpected {%% %s %}, expected {%% end%s %%}\n", ident, EXPR_IDENT(&(tpl->stack->d.tag.expr)));
+				return NULL;
+			}
 			part->d.tag.kind = TPK_END;
+			tpl->stack = tpl->stack->sprev;
 			return cur;
 		}
 	}
 	if(liquify_is_block_(ident))
 	{
 		part->d.tag.kind = TPK_BEGIN;
+		if(liquify_block_parsed_(tpl, part, ident))
+		{
+			return NULL;
+		}
+		part->sprev = tpl->stack;
+		tpl->stack = part;
 		return cur;
 	}
 	if(liquify_is_tag_(ident))

@@ -24,18 +24,25 @@
 struct liquify_block_struct
 {
 	const char *name;
+	int (*parsed)(LIQUIFYTPL *tpl, struct liquify_part *part);
 	int (*begin)(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack);
 	int (*end)(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack);
 	int (*cleanup)(LIQUIFYCTX *ctx, struct liquify_stack *stack);
 };
 
 #define BLOCK(name) \
-	{ # name, liquify_block_ ## name ## _begin_, liquify_block_ ## name ## _end_, liquify_block_ ## name ## _cleanup_ }
+{ \
+    # name, \
+	liquify_block_ ## name ## _parsed_, \
+	liquify_block_ ## name ## _begin_, \
+	liquify_block_ ## name ## _end_, \
+	liquify_block_ ## name ## _cleanup_ \
+}
 
 static struct liquify_block_struct blocks[] = {
 	BLOCK(for),
 	BLOCK(if),
-	{ NULL, NULL, NULL, NULL }
+	{ NULL, NULL, NULL, NULL, NULL }
 };
 
 
@@ -52,6 +59,21 @@ liquify_is_block_(const char *name)
 		}
 	}
 	return 0;
+}
+
+int
+liquify_block_parsed_(LIQUIFYTPL *tpl, struct liquify_part *part, const char *name)
+{
+	size_t c;
+
+	for(c = 0; blocks[c].name; c++)
+	{
+		if(!strcmp(blocks[c].name, name))
+		{
+			return blocks[c].parsed(tpl, part);
+		}
+	}
+	return -1;
 }
 
 int

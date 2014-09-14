@@ -148,6 +148,7 @@ main(int argc, char **argv)
 	free(buf);
 	if(!template)
 	{
+		fprintf(stderr, "*** %s: parse failed\n", template_file);
 		return 1;
 	}
 	buf = readfile(dict_file);
@@ -163,6 +164,7 @@ main(int argc, char **argv)
 	}
 	if(!buf)
 	{
+		fprintf(stderr, "*** %s: processing failed\n", template_file);
 		return 1;
 	}
 	puts(buf);

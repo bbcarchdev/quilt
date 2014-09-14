@@ -30,6 +30,22 @@ struct if_data
 };
 
 int
+liquify_block_if_parsed_(LIQUIFYTPL *tpl, struct liquify_part *part)
+{
+	if(!part->d.tag.pfirst)
+	{
+		PARTERRS(tpl, part, "expected: conditional expression\n");
+		return -1;
+	}
+	if(part->d.tag.pfirst->next)
+	{
+		PARTERRS(tpl, part, "unexpected tokens following conditional expression\n");
+		return -1;
+	}
+	return 0;
+}
+
+int
 liquify_block_if_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack)
 {
 	struct if_data *data;
@@ -38,11 +54,6 @@ liquify_block_if_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liqui
 	data = (struct if_data *) liquify_alloc(ctx->tpl->env, sizeof(struct if_data));
 	stack->data = (void *) data;
 	param = part->d.tag.pfirst;
-	if(!param)
-	{
-		PARTERRS(ctx->tpl, part, "expected: conditional expression");
-		return -1;
-	}
 	if(liquify_eval_truth_(&(param->expr), ctx->dict))
 	{
 		data->matched = 1;
@@ -95,7 +106,7 @@ liquify_tag_elsif_parsed_(LIQUIFYTPL *template, struct liquify_part *part)
 }
 
 int
-liquify_tag_else_emit_(LIQUIFYCTX *ctx, struct liquify_part *part)
+liquify_tag_else_(LIQUIFYCTX *ctx, struct liquify_part *part)
 {
 	struct if_data *data;
 	
@@ -129,7 +140,7 @@ liquify_tag_else_emit_(LIQUIFYCTX *ctx, struct liquify_part *part)
 }
 
 int
-liquify_tag_elsif_emit_(LIQUIFYCTX *ctx, struct liquify_part *part)
+liquify_tag_elsif_(LIQUIFYCTX *ctx, struct liquify_part *part)
 {
 	struct if_data *data;
 	

@@ -128,7 +128,10 @@ struct liquify_tag_part
 
 struct liquify_part
 {
+	/* Pointer to the next part in the template */
 	struct liquify_part *next;
+	/* Pointer to the previous head of the parsing stack */
+	struct liquify_part *sprev;
 	int type;
 	int line;
 	int col;
@@ -162,6 +165,7 @@ struct liquify_template_struct
 	size_t pos;
 	int line;
 	int col;
+	struct liquify_part *stack;
 };
 
 struct liquify_capture
@@ -211,6 +215,8 @@ int liquify_assign_(struct liquify_expression *expr, jd_var *dict, jd_var *newva
 
 /* Determine whether a tag is a block */
 int liquify_is_block_(const char *name);
+/* Invoked once the opening tag for a block has been parsed */
+int liquify_block_parsed_(LIQUIFYTPL *tpl, struct liquify_part *part, const char *name);
 /* Process a block */
 int liquify_block_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, const char *name, struct liquify_stack *sp);
 int liquify_block_end_(LIQUIFYCTX *ctx, struct liquify_part *part, const char *name, struct liquify_stack *sp);
@@ -242,7 +248,8 @@ int liquify_filter_apply_(LIQUIFYCTX *ctx, const char *name, char *buf, size_t l
 /* Filters */
 
 # define DECLARE_FILTER(name) \
-	int liquify_filter_## name ##_(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name)
+	int liquify_filter_## name ##_parsed_(LIQUIFYTPL *template, struct liquify_filter *filter); \
+	int liquify_filter_## name ##_(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name);
 
 DECLARE_FILTER(escape);
 DECLARE_FILTER(downcase);
@@ -252,7 +259,7 @@ DECLARE_FILTER(upcase);
 
 # define DECLARE_TAG(name) \
 	int liquify_tag_## name ##_parsed_(LIQUIFYTPL *template, struct liquify_part *part); \
-	int liquify_tag_## name ##_emit_(LIQUIFYCTX *ctx, struct liquify_part *part);
+	int liquify_tag_## name ##_(LIQUIFYCTX *ctx, struct liquify_part *part);
 
 DECLARE_TAG(include);
 DECLARE_TAG(else);
@@ -260,6 +267,7 @@ DECLARE_TAG(elsif);
 
 /* Blocks */
 # define DECLARE_BLOCK(name) \
+	int liquify_block_## name ##_parsed_(LIQUIFYTPL *template, struct liquify_part *part); \
 	int liquify_block_## name ##_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack); \
 	int liquify_block_## name ##_end_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack); \
 	int liquify_block_## name ##_cleanup_(LIQUIFYCTX *ctx, struct liquify_stack *stack);
