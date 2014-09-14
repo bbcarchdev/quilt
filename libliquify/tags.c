@@ -28,12 +28,13 @@ struct liquify_tag_struct
 	int (*emit)(LIQUIFYCTX *ctx, struct liquify_part *part);
 };
 
-#define DECLARE_TAG(name) { # name, liquify_tag_ ## name ## _parsed_, liquify_tag_ ## name ## _emit_ }
+#define TAG(name) \
+	{ # name, liquify_tag_ ## name ## _parsed_, liquify_tag_ ## name ## _emit_ }
 
 static struct liquify_tag_struct tags[] = {
-	DECLARE_TAG(include),
-	DECLARE_TAG(else),
-	DECLARE_TAG(elsif),
+	TAG(include),
+	TAG(else),
+	TAG(elsif),
 	{ NULL, NULL, NULL }
 };
 

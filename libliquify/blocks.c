@@ -29,11 +29,12 @@ struct liquify_block_struct
 	int (*cleanup)(LIQUIFYCTX *ctx, struct liquify_stack *stack);
 };
 
-#define DECLARE_BLOCK(name) { # name, liquify_block_ ## name ## _begin_, liquify_block_ ## name ## _end_, liquify_block_ ## name ## _cleanup_ }
+#define BLOCK(name) \
+	{ # name, liquify_block_ ## name ## _begin_, liquify_block_ ## name ## _end_, liquify_block_ ## name ## _cleanup_ }
 
 static struct liquify_block_struct blocks[] = {
-	DECLARE_BLOCK(for),
-	DECLARE_BLOCK(if),
+	BLOCK(for),
+	BLOCK(if),
 	{ NULL, NULL, NULL, NULL }
 };
 

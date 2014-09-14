@@ -27,12 +27,13 @@ struct liquify_filter_struct
 	int (*fn)(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name);
 };
 
-#define DECLARE_FILTER(name) { # name, liquify_filter_ ## name ## _ }
+#define FILTER(name) \
+	{ # name, liquify_filter_ ## name ## _ }
 
 static struct liquify_filter_struct filters[] = {
-	DECLARE_FILTER(escape),
-	DECLARE_FILTER(downcase),
-	DECLARE_FILTER(upcase),
+	FILTER(escape),
+	FILTER(downcase),
+	FILTER(upcase),
 	{ NULL, NULL }
 };
 

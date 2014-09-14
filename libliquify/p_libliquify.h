@@ -240,25 +240,31 @@ int liquify_is_filter_(const char *name);
 int liquify_filter_apply_(LIQUIFYCTX *ctx, const char *name, char *buf, size_t len);
 
 /* Filters */
-int liquify_filter_escape_(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name);
-int liquify_filter_downcase_(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name);
-int liquify_filter_upcase_(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name);
+
+# define DECLARE_FILTER(name) \
+	int liquify_filter_## name ##_(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name)
+
+DECLARE_FILTER(escape);
+DECLARE_FILTER(downcase);
+DECLARE_FILTER(upcase);
 
 /* Tags */
-int liquify_tag_include_parsed_(LIQUIFYTPL *template, struct liquify_part *part);
-int liquify_tag_include_emit_(LIQUIFYCTX *ctx, struct liquify_part *part);
-int liquify_tag_else_parsed_(LIQUIFYTPL *template, struct liquify_part *part);
-int liquify_tag_else_emit_(LIQUIFYCTX *ctx, struct liquify_part *part);
-int liquify_tag_elsif_parsed_(LIQUIFYTPL *template, struct liquify_part *part);
-int liquify_tag_elsif_emit_(LIQUIFYCTX *ctx, struct liquify_part *part);
+
+# define DECLARE_TAG(name) \
+	int liquify_tag_## name ##_parsed_(LIQUIFYTPL *template, struct liquify_part *part); \
+	int liquify_tag_## name ##_emit_(LIQUIFYCTX *ctx, struct liquify_part *part);
+
+DECLARE_TAG(include);
+DECLARE_TAG(else);
+DECLARE_TAG(elsif);
 
 /* Blocks */
-int liquify_block_for_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack);
-int liquify_block_for_end_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack);
-int liquify_block_for_cleanup_(LIQUIFYCTX *ctx, struct liquify_stack *stack);
+# define DECLARE_BLOCK(name) \
+	int liquify_block_## name ##_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack); \
+	int liquify_block_## name ##_end_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack); \
+	int liquify_block_## name ##_cleanup_(LIQUIFYCTX *ctx, struct liquify_stack *stack);
 
-int liquify_block_if_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack);
-int liquify_block_if_end_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack);
-int liquify_block_if_cleanup_(LIQUIFYCTX *ctx, struct liquify_stack *stack);
+DECLARE_BLOCK(for);
+DECLARE_BLOCK(if);
 
 #endif /*!P_LIBLIQUIFY_H_*/
