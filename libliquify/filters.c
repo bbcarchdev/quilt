@@ -31,6 +31,8 @@ struct liquify_filter_struct
 
 static struct liquify_filter_struct filters[] = {
 	DECLARE_FILTER(escape),
+	DECLARE_FILTER(downcase),
+	DECLARE_FILTER(upcase),
 	{ NULL, NULL }
 };
 

@@ -241,6 +241,8 @@ int liquify_filter_apply_(LIQUIFYCTX *ctx, const char *name, char *buf, size_t l
 
 /* Filters */
 int liquify_filter_escape_(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name);
+int liquify_filter_downcase_(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name);
+int liquify_filter_upcase_(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name);
 
 /* Tags */
 int liquify_tag_include_parsed_(LIQUIFYTPL *template, struct liquify_part *part);
