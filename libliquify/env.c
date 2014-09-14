@@ -201,6 +201,7 @@ liquify_free(LIQUIFY *restrict liquify, void *restrict ptr)
 static void
 liquify_logger_(int level, const char *fmt, va_list ap)
 {
-	fprintf(stderr, "<%d> ", level);
+	(void) level;
+
 	vfprintf(stderr, fmt, ap);	
 }

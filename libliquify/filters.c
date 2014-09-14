@@ -27,10 +27,10 @@ struct liquify_filter_struct
 	int (*fn)(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name);
 };
 
-static int filter_escape(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name);
+#define DECLARE_FILTER(name) { # name, liquify_filter_ ## name ## _ }
 
 static struct liquify_filter_struct filters[] = {
-	{ "escape", filter_escape },
+	DECLARE_FILTER(escape),
 	{ NULL, NULL }
 };
 
@@ -67,59 +67,3 @@ liquify_filter_apply_(LIQUIFYCTX *ctx, const char *name, char *buf, size_t len)
 	return -1;
 }
 
-static int 
-filter_escape(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name)
-{
-	char fbuf[16];
-	size_t fblen;
-
-	(void) name;
-
-	fblen = 0;
-	while(len)
-	{
-		if(*buf < 32 || *buf == '"' || *buf == '\'')
-		{
-			/* &#nn; output */
-			if(fblen) liquify_emit(ctx, fbuf, fblen);
-			fblen = 0;
-			sprintf(fbuf, "&#%d;", (int) *buf);
-			liquify_emit_str(ctx, fbuf);
-		}
-		else if(*buf == '&')
-		{
-			/* &amp; */
-			if(fblen) liquify_emit(ctx, fbuf, fblen);
-			fblen = 0;
-			liquify_emit(ctx, "&amp;", 5);
-		}
-		else if(*buf == '<')
-		{
-			/* &lt; */
-			if(fblen) liquify_emit(ctx, fbuf, fblen);
-			fblen = 0;
-			liquify_emit(ctx, "&lt;", 4);
-		}
-		else if(*buf == '>')
-		{
-			/* &gt */
-			if(fblen) liquify_emit(ctx, fbuf, fblen);
-			fblen = 0;
-			liquify_emit(ctx, "&gt;", 4);
-		}
-		else
-		{
-			fbuf[fblen] = *buf;
-			fblen++;
-			if(fblen >= 15)
-			{
-				liquify_emit(ctx, fbuf, fblen);
-				fblen = 0;
-			}
-		}
-		len--;
-		buf++;
-	}
-	if(fblen) liquify_emit(ctx, fbuf, fblen);
-	return 0;
-}

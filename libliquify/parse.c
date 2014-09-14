@@ -490,6 +490,6 @@ parse_tag(LIQUIFYTPL *tpl, const char *cur)
 		}
 		return cur;
 	}
-	PARTERR(tpl, part, "expected: tag name, found '%s'\n", ident);
+	PARTERR(tpl, part, "expected: tag or block name, found '%s'\n", ident);
 	return NULL;
 }

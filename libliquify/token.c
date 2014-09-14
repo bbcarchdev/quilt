@@ -36,7 +36,7 @@ static int copy_string(char *dest, const char *src, size_t srclen, int qmode);
 const char *
 liquify_token_(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_expression *expr, const char *cur, int flags)
 {
-	int q, e, line, col;
+	int q, e, line, col, tt;
 	const char *start;
 	
 	while(tpl->pos < tpl->len && isspace(*cur))
@@ -67,10 +67,24 @@ liquify_token_(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_expres
 	}
 	if(tpl->pos + 1 < tpl->len)
 	{
+		/* Two-character tokens */
+		tt = TOK_NONE;
 		if(((flags & TKF_VAR) && cur[0] == '}' && cur[1] == '}') ||
 			((flags & TKF_TAG) && cur[0] == '%' && cur[1] == '}'))
 		{
-			if(!add_token(tpl, expr, tpl->line, tpl->col, TOK_END, NULL, 0))
+			tt = TOK_END;
+		}
+		else if(cur[0] == '=' && cur[1] == '=')
+		{
+			tt = TOK_EQUALS;
+		}
+		else if(cur[0] == '!' && cur[1] == '=')
+		{
+			tt = TOK_NOTEQUALS;
+		}
+		if(tt != TOK_NONE)
+		{
+			if(!add_token(tpl, expr, tpl->line, tpl->col, tt, NULL, 0))
 			{
 				return NULL;
 			}
@@ -78,15 +92,17 @@ liquify_token_(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_expres
 			return cur;
 		}
 	}
-	if(*cur == '.')
+	/* Add tokens whose TOK_xxx constants match their ASCII value */
+	if(*cur == '.' || *cur == '=' || *cur == '!' || *cur == '<' || *cur == '>')
 	{
-		if(!add_token(tpl, expr, tpl->line, tpl->col, TOK_DOT, NULL, 0))
+		if(!add_token(tpl, expr, tpl->line, tpl->col, *cur, NULL, 0))
 		{
 			return NULL;
 		}
 		tpl->pos++, tpl->col++, cur++;
 		return cur;
 	}
+	/* Add optionally-processed tokens */
 	if((flags & TKF_FILTERS) && *cur == '|')
 	{
 		if(!add_token(tpl, expr, tpl->line, tpl->col, TOK_VBAR, NULL, 0))
@@ -117,11 +133,11 @@ liquify_token_(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_expres
 	line = tpl->line;
 	col = tpl->col;
 	start = cur;
+	/* Add literal strings */
 	if(*cur == '"' || *cur == '\'')
 	{
 		q = *cur;
 		e = 0;
-		/* Literal string */
 		tpl->pos++, tpl->col++, cur++;
 		while(tpl->pos < tpl->len)
 		{
@@ -165,9 +181,9 @@ liquify_token_(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_expres
 		PARTERRS(tpl, part, "expected end of quoted literal but reached end-of-template");
 		return NULL;
 	}
+	/* Add identifiers */
 	if(isalpha(*cur) || *cur == '_' || *cur == '$')
 	{
-		/* Identifier */
 		while(tpl->pos < tpl->len && (isalnum(*cur) || *cur == '-' || *cur == '_' || *cur == '$'))
 		{
 			tpl->pos++, tpl->col++, cur++;

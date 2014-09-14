@@ -73,6 +73,12 @@ liquify_expression_(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_e
 			insert_token(expr, expr->last);
 			continue;
 		}
+		/* Conditional tokens */
+		if(expr->last->type == TOK_EQUALS || expr->last->type == TOK_NOTEQUALS)
+		{
+			insert_token(expr, expr->last);
+			continue;
+		}
 		/* Not something we recognise as a valid continuation of an expression,
 		 * so back-track to the beginning of the token
 		 */
@@ -108,6 +114,41 @@ liquify_eval_(struct liquify_expression *expr, jd_var *dict, jd_var *dest, int v
 		return 0;
 	}
 	return -1;
+}
+
+/* Evaluate an expression to a boolean value */
+int
+liquify_eval_truth_(struct liquify_expression *expr, jd_var *dict)
+{
+	jd_var *key;
+
+	switch(expr->root.right->type)
+	{
+	case TOK_DOT:
+	case TOK_IDENT:
+		key = locate_var(expr->root.right, dict, 0);
+		if(!key)
+		{
+			return 0;
+		}
+		switch(key->type)
+		{
+		case VOID:
+			return 0;
+		case BOOL:
+			return key->v.b;
+		case INTEGER:
+			return key->v.i == 0 ? 0 : 1;
+		case REAL:
+			return key->v.r == 0.0 ? 0 : 1;
+		default:
+			break;
+		}
+		return 1;
+	case TOK_STRING:		
+		return 1;
+	}
+	return 0;
 }
 
 /* Assign a value to an expression */

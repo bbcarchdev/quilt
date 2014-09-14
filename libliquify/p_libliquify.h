@@ -42,9 +42,14 @@
 # define TOK_STRING                    's'
 # define TOK_VBAR                      '|'
 # define TOK_END                       'e'
+# define TOK_EQUALS                    'E'
+# define TOK_NOTEQUALS                 'N'
+
 # define TOK_COLON                     ':'
 # define TOK_COMMA                     ','
 # define TOK_DOT                       '.'
+# define TOK_ASSIGN                    '='
+# define TOK_NOT                       '!'
 
 /* Tokeniser flags */
 # define TKF_NONE                      0
@@ -200,10 +205,13 @@ int liquify_token_free_(LIQUIFYTPL *template, struct liquify_token *tok);
 const char *liquify_expression_(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_expression *expr, const char *cur, int flags);
 /* Evaluate an expression */
 int liquify_eval_(struct liquify_expression *expr, jd_var *dict, jd_var *dest, int vivify);
+int liquify_eval_truth_(struct liquify_expression *expr, jd_var *dict);
+/* Assign a value to a template variable */
 int liquify_assign_(struct liquify_expression *expr, jd_var *dict, jd_var *newval);
 
 /* Determine whether a tag is a block */
 int liquify_is_block_(const char *name);
+/* Process a block */
 int liquify_block_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, const char *name, struct liquify_stack *sp);
 int liquify_block_end_(LIQUIFYCTX *ctx, struct liquify_part *part, const char *name, struct liquify_stack *sp);
 int liquify_block_cleanup_(LIQUIFYCTX *ctx, const char *name, struct liquify_stack *stack);
@@ -212,6 +220,7 @@ int liquify_block_cleanup_(LIQUIFYCTX *ctx, const char *name, struct liquify_sta
 int liquify_is_tag_(const char *name);
 /* Invoked once a tag has been parsed */
 int liquify_tag_parsed_(LIQUIFYTPL *template, struct liquify_part *part, const char *name);
+/* Invoked to process a tag */
 int liquify_tag_(LIQUIFYCTX *ctx, struct liquify_part *part, const char *name);
 
 /* Push a new node on the block stack */
@@ -229,5 +238,21 @@ int liquify_goto_(LIQUIFYCTX *ctx, struct liquify_part *where);
 int liquify_is_filter_(const char *name);
 /* Apply a filter to a buffer in a template application context */
 int liquify_filter_apply_(LIQUIFYCTX *ctx, const char *name, char *buf, size_t len);
+
+/* Filters */
+int liquify_filter_escape_(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name);
+
+/* Tags */
+int liquify_tag_include_parsed_(LIQUIFYTPL *template, struct liquify_part *part);
+int liquify_tag_include_emit_(LIQUIFYCTX *ctx, struct liquify_part *part);
+
+/* Blocks */
+int liquify_block_for_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack);
+int liquify_block_for_end_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack);
+int liquify_block_for_cleanup_(LIQUIFYCTX *ctx, struct liquify_stack *stack);
+
+int liquify_block_if_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack);
+int liquify_block_if_end_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack);
+int liquify_block_if_cleanup_(LIQUIFYCTX *ctx, struct liquify_stack *stack);
 
 #endif /*!P_LIBLIQUIFY_H_*/
