@@ -71,6 +71,10 @@ main(int argc, char **argv)
 	{
 		return 1;
 	}
+	if(quilt_html_init())
+	{
+		return 1;
+	}
 	if(fcgi_runloop())
 	{
 		return 1;

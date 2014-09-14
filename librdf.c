@@ -27,7 +27,16 @@
 # error librdf library version is too old; please upgrade to a version which supports contexts
 #endif
 
+struct namespace_struct
+{
+	char *prefix;
+	char *uri;
+	size_t len;
+};
+
 static librdf_world *quilt_world = NULL;
+static struct namespace_struct *namespaces;
+static size_t nscount;
 
 static int quilt_librdf_logger_(void *data, librdf_log_message *message);
 static int quilt_ns_cb_(const char *key, const char *value, void *data);
@@ -77,6 +86,8 @@ quilt_librdf_init(void)
 		neg_add(quilt_types, "text/turtle", 0.9f);
 		neg_add(quilt_types, "text/html", 0.95f);
 		neg_add(quilt_charsets, "utf-8", 1);
+		/* Obtain all of our namespaces from the configuration */
+		config_get_all("namespaces", NULL, quilt_ns_cb_, NULL);
 	}
 	return 0;
 }
@@ -149,8 +160,10 @@ quilt_model_parse(librdf_model *model, const char *mime, const char *buf, size_t
 char *
 quilt_model_serialize(librdf_model *model, const char *mime)
 {
+	size_t c;
 	char *buf;
 	librdf_serializer *serializer;
+	librdf_uri *uri;
 	const char *name;
 
 	if(quilt_librdf_init())
@@ -192,9 +205,17 @@ quilt_model_serialize(librdf_model *model, const char *mime)
 		log_printf(LOG_ERR, "failed to create a new serializer for %s (%s)\n", mime, name);
 		return NULL;
 	}
-
-	config_get_all("namespaces", NULL, quilt_ns_cb_, (void *) serializer);
-
+	for(c = 0; namespaces[c].prefix; c++)
+	{
+		uri = librdf_new_uri(quilt_world, (const unsigned char *) namespaces[c].uri);
+		if(!uri)
+		{
+			log_printf(LOG_ERR, "failed to create new URI from <%s>\n", namespaces[c].uri);
+			return 0;
+		}
+		librdf_serializer_set_namespace(serializer, uri, namespaces[c].prefix);
+		librdf_free_uri(uri);
+	}
 	buf = (char *) librdf_serializer_serialize_model_to_string(serializer, NULL, model);
 	librdf_free_serializer(serializer);
 	return buf;
@@ -203,26 +224,31 @@ quilt_model_serialize(librdf_model *model, const char *mime)
 static int
 quilt_ns_cb_(const char *key, const char *value, void *data)
 {
-	librdf_serializer *serializer;
 	const char *prefix = "namespaces:";
 	size_t l;
-	librdf_uri *uri;
+	struct namespace_struct *p;
 
-	serializer = (librdf_serializer *) data;
+	(void) data;
+
 	l = strlen(prefix);
 	if(strncmp(key, prefix, l))
 	{
 		return 0;
 	}
 	key += l;
-	uri = librdf_new_uri(quilt_world, (const unsigned char *) value);
-	if(!uri)
+	p = (struct namespace_struct *) realloc(namespaces, sizeof(struct namespace_struct) * (nscount + 2));
+	if(!p)
 	{
-		log_printf(LOG_ERR, "failed to create new URI from <%s>\n", value);
-		return 0;
+		return -1;
 	}
-	librdf_serializer_set_namespace(serializer, uri, key);
-	librdf_free_uri(uri);
+	namespaces = p;
+	namespaces[nscount].prefix = strdup(key);
+	namespaces[nscount].uri = strdup(value);
+	namespaces[nscount].len = strlen(value);
+	nscount++;
+	namespaces[nscount].prefix = NULL;
+	namespaces[nscount].uri = NULL;
+	namespaces[nscount].len = 0;
 	return 0;
 }
 
@@ -247,6 +273,41 @@ quilt_model_isempty(librdf_model *model)
 	}
 	librdf_free_stream(stream);
 	return r;
+}
+
+/* Attempt to contract a URI to prefix:suffix form */
+char *
+quilt_uri_contract(const char *uri)
+{
+	char *p;
+	const char *prefix;
+	size_t len, c;
+
+	len = 0;
+	prefix = NULL;
+	
+	for(c = 0; namespaces[c].prefix; c++)
+	{
+		if(namespaces[c].len > len &&
+		   !strncmp(uri, namespaces[c].uri, namespaces[c].len))
+		{
+			prefix = namespaces[c].prefix;
+			len = namespaces[c].len;
+		}
+	}
+	if(prefix)
+	{
+		p = (char *) malloc(strlen(uri) + strlen(prefix) + 2);
+		if(!p)
+		{
+			return NULL;
+		}
+		strcpy(p, prefix);
+		strcat(p, ":");
+		strcat(p, &(uri[len]));
+		return p;
+	}		
+	return strdup(uri);
 }
 
 /* Log events from librdf */

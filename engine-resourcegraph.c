@@ -29,24 +29,15 @@
 int
 quilt_engine_resourcegraph_process(QUILTREQ *request)
 {
-	char *graphuri, *query;
+	char *query;
 	
-	/* XXX: we should only be allocating one buffer here */
-	graphuri = uri_stralloc(request->uri);
-	if(!graphuri)
-	{
-		log_printf(LOG_CRIT, "failed to unparse graph URI\n");
-		return 500;
-	}
-	query = (char *) malloc(strlen(graphuri) + 64);
+	query = (char *) malloc(strlen(request->subject) + 64);
 	if(!query)
 	{
-		log_printf(LOG_CRIT, "failed to allocate %u bytes\n", (unsigned) strlen(graphuri) + 64);
-		free(graphuri);
+		log_printf(LOG_CRIT, "failed to allocate %u bytes\n", (unsigned) strlen(request->subject) + 64);
 		return 500;
 	}
-	sprintf(query, "SELECT * WHERE { GRAPH <%s> { ?s ?p ?o } }", graphuri);
-	free(graphuri);
+	sprintf(query, "SELECT * WHERE { GRAPH <%s> { ?s ?p ?o } }", request->subject);	
 	if(quilt_sparql_query_rdf(query, request->model))
 	{
 		log_printf(LOG_ERR, "failed to create model from query\n");

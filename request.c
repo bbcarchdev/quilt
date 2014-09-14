@@ -23,29 +23,24 @@
 
 #include "p_quilt.h"
 
-struct typemap_struct
-{
-	const char *ext;
-	const char *type;
-};
-
 static URI *quilt_base_uri;
-static struct typemap_struct typemap[] = 
+
+struct typemap_struct quilt_typemap[] = 
 {
-	{ "txt", "text/plain" },
-	{ "ttl", "text/turtle" },
-	{ "n3", "text/rdf+n3" },
-	{ "gv", "text/x-graphviz" },
-	{ "nq", "text/x-nquads" },
-	{ "html", "text/html" },
-	{ "xml", "text/xml" },
-	{ "nt", "application/n-triples" },
-	{ "rdf", "application/rdf+xml" },
-	{ "rss", "application/rss+xml" },
-	{ "atom", "application/atom+xml" },
-	{ "xhtml", "application/xhtml+xml" },
-	{ "json", "application/json" },
-	{ NULL, NULL }
+	{ "txt", "text/plain", "Plain text", 0 },
+	{ "ttl", "text/turtle", "Turtle", 1 },
+	{ "n3", "text/rdf+n3", "N3", 0 },
+	{ "gv", "text/x-graphviz", "Graphviz", 0 },
+	{ "nq", "text/x-nquads", "NQuads", 1 },
+	{ "html", "text/html", "HTML", 1 },
+	{ "xml", "text/xml", "XML", 0 },
+	{ "nt", "application/n-triples", "NTriples", 1 },
+	{ "rdf", "application/rdf+xml", "RDF/XML", 1 },
+	{ "rss", "application/rss+xml", "RSS", 0 },
+	{ "atom", "application/atom+xml", "Atom", 0 },
+	{ "xhtml", "application/xhtml+xml", "XHTML", 0 },
+	{ "json", "application/json", "RDF/JSON", 1 },
+	{ NULL, NULL, NULL, 0 }
 };
 
 static int quilt_request_process_path_(QUILTREQ *req, const char *uri);
@@ -116,7 +111,7 @@ quilt_request_create_fcgi(FCGX_Request *request)
 		p->status = 400;
 		return p;
 	}
-	
+
 	p->uri = uri_create_str(p->path, quilt_base_uri);
 	if(!p->uri)
 	{
@@ -171,6 +166,12 @@ quilt_request_create_fcgi(FCGX_Request *request)
 	return p;
 }
 
+char *
+quilt_request_base(void)
+{
+	return uri_stralloc(quilt_base_uri);
+}
+
 int
 quilt_request_free(QUILTREQ *req)
 {
@@ -199,6 +200,13 @@ quilt_request_process(QUILTREQ *request)
 {
 	int r;
 
+	request->subject = uri_stralloc(request->uri);
+	if(!request->subject)
+	{
+		log_printf(LOG_CRIT, "failed to unparse subject URI\n");
+		return 500;
+	}
+	log_printf(LOG_DEBUG, "query subject URI is <%s>\n", request->subject);
 	r = quilt_engine_resourcegraph_process(request);
 	if(r)
 	{
@@ -214,7 +222,11 @@ int
 quilt_request_serialize(QUILTREQ *request)
 {
 	char *buf;
-	
+
+	if(quilt_html_type(request->type))
+	{
+		return quilt_html_serialize(request);
+	}
 	buf = quilt_model_serialize(request->model, request->type);
 	if(!buf)
 	{
@@ -271,6 +283,11 @@ quilt_request_process_path_(QUILTREQ *req, const char *uri)
 	{
 		req->path[1] = 0;
 	}
+	if(req->path[0] == '/' && req->path[1] == 0)
+	{
+		req->home = 1;
+		req->index = 1;
+	}
 	return 0;
 }
 
@@ -283,11 +300,11 @@ quilt_request_match_ext_(QUILTREQ *req)
 {
 	size_t c;
 	
-	for(c = 0; typemap[c].ext; c++)
+	for(c = 0; quilt_typemap[c].ext; c++)
 	{
-		if(!strcmp(req->ext, typemap[c].ext))
+		if(!strcmp(req->ext, quilt_typemap[c].ext))
 		{
-			return typemap[c].type;
+			return quilt_typemap[c].type;
 		}
 	}
 	return NULL;

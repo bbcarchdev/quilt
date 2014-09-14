@@ -1,6 +1,8 @@
 #ifndef P_QUILT_H_
 # define P_QUILT_H_                     1
 
+# define _BSD_SOURCE
+
 # include <stdio.h>
 # include <stdlib.h>
 # include <stdarg.h>
@@ -16,9 +18,12 @@
 # include <librdf.h>
 # include <libxml/parser.h>
 # include <curl/curl.h>
+
 # include "libsupport.h"
 # include "libnegotiate.h"
 # include "libsparqlclient.h"
+# include "jsondata.h"
+# include "libliquify.h"
 
 # define QUILT_MIME_LEN                 63
 
@@ -48,8 +53,15 @@ struct quilt_request_struct
 	/* The RDF model */
 	librdf_storage *storage;
 	librdf_model *model;
+	/* The URI of the query-subject, without any fragment */
+	char *subject;
+	/* Is the root resource? */
+	int home;
+	/* Is this an index resource? */
+	int index;
 };
 
+/* Not currently used */
 struct quilt_mime_struct
 {
 	/* The actual MIME type */
@@ -73,9 +85,20 @@ struct quilt_mime_struct
 	int (*callback)(QUILTREQ *request, QUILTMIME *type);
 };
 
+/* Information about known MIME types */
+struct typemap_struct
+{
+	const char *ext;
+	const char *type;
+	const char *name;
+	int visible;
+};
+
 /* Content negotiation */
 extern NEGOTIATE *quilt_types;
 extern NEGOTIATE *quilt_charsets;
+
+extern struct typemap_struct quilt_typemap[];
 
 /* Configuration */
 int quilt_config_defaults(void);
@@ -96,6 +119,7 @@ QUILTREQ *quilt_request_create_fcgi(FCGX_Request *req);
 int quilt_request_free(QUILTREQ *req);
 int quilt_request_process(QUILTREQ *request);
 int quilt_request_serialize(QUILTREQ *request);
+char *quilt_request_base(void);
 
 /* Error generation */
 int quilt_error(FCGX_Request *request, int code);
@@ -115,6 +139,7 @@ librdf_world *quilt_librdf_world(void);
 int quilt_model_parse(librdf_model *model, const char *mime, const char *buf, size_t buflen);
 char *quilt_model_serialize(librdf_model *model, const char *mime);
 int quilt_model_isempty(librdf_model *model);
+char *quilt_uri_contract(const char *uri);
 
 /* FastCGI interface */
 int fcgi_init(void);
@@ -122,5 +147,10 @@ int fcgi_runloop(void);
 
 /* Processing engines */
 int quilt_engine_resourcegraph_process(QUILTREQ *request);
+
+/* HTML output */
+int quilt_html_init(void);
+int quilt_html_type(const char *type);
+int quilt_html_serialize(QUILTREQ *req);
 
 #endif /*!P_QUILT_H_ */

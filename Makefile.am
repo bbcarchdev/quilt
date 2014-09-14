@@ -24,18 +24,21 @@ SUBDIRS = libsupport @subdirs@ libnegotiate libliquify .
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
-	-I$(top_builddir)/libnegotiate -I$(top_srcdir)/libnegotiate
+	-I$(top_builddir)/libnegotiate -I$(top_srcdir)/libnegotiate \
+	-I$(top_builddir)/libliquify -I$(top_srcdir)/libliquify
 
 sbin_PROGRAMS = quiltd
 
 quiltd_SOURCES = p_quilt.h \
 	main.c config.c request.c error.c urlencode.c sparql.c librdf.c fcgi.c \
-	engine-resourcegraph.c
+	html.c engine-resourcegraph.c
 
 quiltd_LDADD = \
 	libsupport/libsupport.la \
 	libnegotiate/libnegotiate.la \
+	libliquify/libliquify.la \
 	@fcgi_LIBS@ \
 	@LIBURI_LOCAL_LIBS@ @LIBURI_LIBS@ \
-	@LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@
+	@LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@ \
+	@LIBJSONDATA_LOCAL_LIBS@ @LIBJSONDATA_LIBS@
 
