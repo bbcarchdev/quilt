@@ -67,6 +67,7 @@ liquify_apply(LIQUIFYTPL *template, jd_var *dict)
 	size_t len;
 	int r;
 	char *str, *buf;
+	const char *ident;
 	
 	memset(&context, 0, sizeof(LIQUIFYCTX));
 	context.tpl = template;
@@ -198,6 +199,28 @@ liquify_apply(LIQUIFYTPL *template, jd_var *dict)
 			}
 			else if(part->d.tag.kind == TPK_TAG)
 			{
+				ident = EXPR_IDENT(&(part->d.tag.expr));
+				
+				/* 'else' and 'elsif' get special handling: they are processed
+				 * even when inhibited, provided the inhibition owner is the
+				 * current stack level and the block responsible is an
+				 * 'if'
+				 */
+				if(context.capture && context.capture->inhibit)
+				{
+					if(context.capture->owner == context.stack &&
+					   !strcmp(context.stack->ident, "if") &&
+					   (!strcmp(ident, "else") || !strcmp(ident, "elsif")))
+					{
+						if(liquify_tag_(&context, part, EXPR_IDENT(&(part->d.tag.expr))))
+						{
+							r = -1;
+							break;
+						}
+					}
+					/* Otherwise, ordinary inhibition */
+					break;
+				}
 				if(liquify_tag_(&context, part, EXPR_IDENT(&(part->d.tag.expr))))
 				{
 					r = -1;
