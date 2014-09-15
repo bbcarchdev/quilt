@@ -44,6 +44,9 @@ struct quilt_request_struct
 	const char *ua;
 	char *path;
 	char *ext;
+	/* The base URI */
+	URI *baseuri;
+	char *base;
 	/* The timestamp of request receipt */
 	time_t received;
 	/* The HTTP response status */
@@ -126,6 +129,7 @@ int quilt_error(FCGX_Request *request, int code);
 
 /* SPARQL queries */
 int quilt_sparql_init(void);
+SPARQL *quilt_sparql(void);
 int quilt_sparql_query_rdf(const char *query, librdf_model *model);
 
 /* URL-encoding */
@@ -147,6 +151,7 @@ int fcgi_runloop(void);
 
 /* Processing engines */
 int quilt_engine_resourcegraph_process(QUILTREQ *request);
+int quilt_engine_coref_process(QUILTREQ *request);
 
 /* HTML output */
 int quilt_html_init(void);

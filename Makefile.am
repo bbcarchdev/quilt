@@ -31,7 +31,8 @@ sbin_PROGRAMS = quiltd
 
 quiltd_SOURCES = p_quilt.h \
 	main.c config.c request.c error.c urlencode.c sparql.c librdf.c fcgi.c \
-	html.c engine-resourcegraph.c
+	html.c \
+	engine-resourcegraph.c engine-coref.c
 
 quiltd_LDADD = \
 	libsupport/libsupport.la \

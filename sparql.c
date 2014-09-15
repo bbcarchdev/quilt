@@ -51,6 +51,12 @@ quilt_sparql_init(void)
 	return 0;
 }
 
+SPARQL *
+quilt_sparql(void)
+{
+	return sparql;
+}
+
 /* Perform a SPARQL query: the variables ?s, ?p, and ?o will be mapped to
  * triples, with the optional ?g being mapped to the context.
  */

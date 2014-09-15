@@ -95,7 +95,8 @@ quilt_request_create_fcgi(FCGX_Request *request)
 	p->method = FCGX_GetParam("REQUEST_METHOD", request->envp);
 	p->referer = FCGX_GetParam("HTTP_REFERER", request->envp);
 	p->ua = FCGX_GetParam("HTTP_USER_AGENT", request->envp);
-
+	p->baseuri = quilt_base_uri;
+	p->base = uri_stralloc(quilt_base_uri);
 	/* Log the request */
 	gmtime_r(&(p->received), &now);
 	strftime(date, sizeof(date), "%d/%b/%Y:%H:%M:%S +0000", &now);
@@ -207,7 +208,7 @@ quilt_request_process(QUILTREQ *request)
 		return 500;
 	}
 	log_printf(LOG_DEBUG, "query subject URI is <%s>\n", request->subject);
-	r = quilt_engine_resourcegraph_process(request);
+	r = quilt_engine_coref_process(request);
 	if(r)
 	{
 		return r;
