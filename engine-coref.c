@@ -47,7 +47,12 @@ quilt_engine_coref_process(QUILTREQ *request)
 		{
 			return 500;
 		}
-		res = sparql_queryf(sparql, "SELECT DISTINCT ?s WHERE GRAPH <%s> { ?s ?p ?o . } LIMIT %d", request->base, limit);
+		res = sparql_queryf(sparql, "SELECT DISTINCT ?s WHERE { GRAPH <%s> { ?s ?p ?o . } } LIMIT %d", request->base, limit);
+		if(!res)
+		{
+			log_printf(LOG_ERR, "SPARQL query for index subjects failed\n");
+			return 500;
+		}
 		buflen = 128 + strlen(request->base);
 		query = (char *) calloc(1, buflen);
 		/*
@@ -60,7 +65,7 @@ quilt_engine_coref_process(QUILTREQ *request)
 			}
 		 }
 		*/
-		sprintf(query, "SELECT ?s ?p ?o ?g WHERE { GRAPH <%s> { ?s ?p ?o .", request->base);
+		sprintf(query, "SELECT ?s ?p ?o ?g WHERE { GRAPH <%s> { ?s ?p ?o . FILTER(", request->base);
 		subj = 0;
 		while((row = sparqlres_next(res)))
 		{
@@ -107,9 +112,8 @@ quilt_engine_coref_process(QUILTREQ *request)
 		if(!subj)
 		{
 			return 404;
-		}
-		p -= 2;
-		strcpy(p, ") } }");		
+		}		
+		strcpy(p, "> ) } }");		
 	}
 	else
 	{
