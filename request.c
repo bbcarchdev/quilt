@@ -97,6 +97,7 @@ quilt_request_create_fcgi(FCGX_Request *request)
 	p->ua = FCGX_GetParam("HTTP_USER_AGENT", request->envp);
 	p->baseuri = quilt_base_uri;
 	p->base = uri_stralloc(quilt_base_uri);
+	p->basegraph = quilt_node_create_uri(p->base);
 	/* Log the request */
 	gmtime_r(&(p->received), &now);
 	strftime(date, sizeof(date), "%d/%b/%Y:%H:%M:%S +0000", &now);
@@ -222,6 +223,7 @@ quilt_request_process(QUILTREQ *request)
 int
 quilt_request_serialize(QUILTREQ *request)
 {
+	const char *tsuffix;
 	char *buf;
 
 	if(quilt_html_type(request->type))
@@ -234,11 +236,19 @@ quilt_request_serialize(QUILTREQ *request)
 		log_printf(LOG_ERR, "failed to serialise model as %s\n", request->type);
 		return 406;
 	}	
+	if(!strncmp(request->type, "text/", 5))
+	{
+		tsuffix = "; charset=utf-8";
+	}
+	else
+	{
+		tsuffix = "";
+	}
 	FCGX_FPrintF(request->fcgi->out, "Status: 200 OK\n"
-				 "Content-type: %s\n"
+				 "Content-type: %s%s\n"
 				 "Vary: Accept\n"
 				 "Server: Quilt\n"
-				 "\n", request->type);
+				 "\n", request->type, tsuffix);
 	FCGX_PutStr(buf, strlen(buf), request->fcgi->out);
 	free(buf);
 	return 200;
