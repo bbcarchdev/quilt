@@ -144,6 +144,12 @@ int quilt_model_parse(librdf_model *model, const char *mime, const char *buf, si
 char *quilt_model_serialize(librdf_model *model, const char *mime);
 int quilt_model_isempty(librdf_model *model);
 char *quilt_uri_contract(const char *uri);
+librdf_node *quilt_node_create_uri(const char *uri);
+librdf_node *quilt_node_create_literal(const char *value, const char *lang);
+librdf_statement *quilt_st_create(const char *subject, const char *predicate);
+librdf_statement *quilt_st_create_literal(const char *subject, const char *predicate, const char *value, const char *lang);
+librdf_statement *quilt_st_create_uri(const char *subject, const char *predicate, const char *value);
+int quilt_model_find_double(librdf_model *model, const char *subject, const char *predicate, double *result);
 
 /* FastCGI interface */
 int fcgi_init(void);

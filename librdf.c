@@ -342,3 +342,169 @@ quilt_librdf_logger_(void *data, librdf_log_message *message)
 	log_printf(level, "%s\n", librdf_log_message_message(message));
 	return 0;
 }
+
+librdf_node *
+quilt_node_create_uri(const char *uri)
+{
+	librdf_node *node;
+
+	if(quilt_librdf_init())
+	{
+		return NULL;
+	}
+	/* TODO: expand URIs using known namespaces if needed */
+	node = librdf_new_node_from_uri_string(quilt_world, (const unsigned char *)uri);
+	if(!node)
+	{
+		log_printf(LOG_ERR, "failed to create node for <%s>\n", uri);
+		return NULL;
+	}
+	return node;
+}
+
+librdf_node *
+quilt_node_create_literal(const char *value, const char *lang)
+{
+	librdf_node *node;
+
+	if(quilt_librdf_init())
+	{
+		return NULL;
+	}
+	node = librdf_new_node_from_literal(quilt_world, (const unsigned char *) value, lang, 0);
+	if(!node)
+	{
+		log_printf(LOG_ERR, "failed to create node for literal value\n");
+		return NULL;
+	}
+	return node;
+}
+
+librdf_statement *
+quilt_st_create(const char *subject, const char *predicate)
+{
+	librdf_statement *st;
+	librdf_node *node;
+
+	if(quilt_librdf_init())
+	{
+		return NULL;
+	}	
+	st = librdf_new_statement(quilt_world);
+	if(!st)
+	{
+		log_printf(LOG_ERR, "failed to create a new RDF statement\n");
+		return NULL;
+	}	
+	node = quilt_node_create_uri(subject);
+	if(!node)
+	{
+		librdf_free_statement(st);
+		return NULL;
+	}
+	librdf_statement_set_subject(st, node);
+	
+	node = quilt_node_create_uri(predicate);
+	if(!node)
+	{
+		librdf_free_statement(st);
+		return NULL;
+	}	
+	librdf_statement_set_predicate(st, node);
+	return st;
+}
+
+librdf_statement *
+quilt_st_create_literal(const char *subject, const char *predicate, const char *value, const char *lang)
+{
+	librdf_statement *st;
+	librdf_node *node;
+
+	st = quilt_st_create(subject, predicate);
+	if(!st)
+	{
+		return NULL;
+	}
+	node = quilt_node_create_literal(value, lang);
+	if(!node)
+	{
+		librdf_free_statement(st);
+		return NULL;
+	}
+	librdf_statement_set_object(st, node);
+	return st;
+}
+
+librdf_statement *
+quilt_st_create_uri(const char *subject, const char *predicate, const char *value)
+{
+	librdf_statement *st;
+	librdf_node *node;
+	
+	st = quilt_st_create(subject, predicate);
+	if(!st)
+	{
+		return NULL;
+	}
+	node = quilt_node_create_uri(value);
+	if(!node)
+	{
+		librdf_free_statement(st);
+		return NULL;
+	}
+	librdf_statement_set_object(st, node);
+	return st;
+}
+
+int
+quilt_model_find_double(librdf_model *model, const char *subject, const char *predicate, double *result)
+{
+	librdf_statement *query, *st;
+	librdf_stream *stream;
+	librdf_node *obj;
+	librdf_uri *dturi;
+	char *endp;
+	const char *value, *dtstr;
+	int found;
+
+	found = 0;
+	*result = 0;
+	query = quilt_st_create(subject, predicate);
+	if(!query)
+	{
+		return -1;
+	}
+	stream = librdf_model_find_statements(model, query);
+	if(!stream)
+	{
+		log_printf(LOG_ERR, "failed to create RDF stream for query\n");
+		librdf_free_statement(query);
+	}
+	while(!librdf_stream_end(stream))
+	{
+		st = librdf_stream_get_object(stream);
+		obj = librdf_statement_get_object(st);
+		if(librdf_node_is_literal(obj) &&
+		   (value = (const char *) librdf_node_get_literal_value(obj)) &&
+		   (dturi = librdf_node_get_literal_value_datatype_uri(obj)) &&
+		   (dtstr = (const char *) librdf_uri_as_string(dturi)))
+		{
+			if(!strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#decimal"))
+			{
+				endp = NULL;
+				*result = strtod(value, &endp);
+				if(!endp || !endp[0])
+				{
+					found = 1;
+					break;
+				}
+			}
+				
+		}
+		librdf_stream_next(stream);
+	}
+	librdf_free_stream(stream);
+	librdf_free_statement(query);
+	return found;
+}
+
