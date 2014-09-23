@@ -47,6 +47,7 @@ struct quilt_request_struct
 	/* The base URI */
 	URI *baseuri;
 	char *base;
+	librdf_node *basegraph;
 	/* The timestamp of request receipt */
 	time_t received;
 	/* The HTTP response status */
@@ -62,6 +63,7 @@ struct quilt_request_struct
 	int home;
 	/* Is this an index resource? */
 	int index;
+	const char *indextitle;
 };
 
 /* Not currently used */
