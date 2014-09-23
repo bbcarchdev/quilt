@@ -29,6 +29,7 @@ struct class_struct
 	const char *cssClass;
 	const char *label;
 	const char *suffix;
+	const char *definite;
 };
 
 static const char *htmltypes[] = {
@@ -42,60 +43,84 @@ static struct class_struct classes[] = {
 		"person",
 		"Person",
 		"(Person)",
+		"a person",
 	},
 	{
 		"http://xmlns.com/foaf/0.1/Group",
 		"group",
 		"Group",
 		"(Group)",
+		"a group",
 	},
 	{
 		"http://xmlns.com/foaf/0.1/Agent",
 		"agent",
 		"Agent",
 		"(Agent)",
+		"an agent",
 	},
 	{
 		"http://www.w3.org/2003/01/geo/wgs84_pos#SpatialThing",
 		"place",
 		"Place",
 		"(Place)",
+		"a place",
 	},
 	{
 		"http://www.cidoc-crm.org/cidoc-crm/E18_Physical_Thing",
 		"thing",
 		"Thing",
 		"(Thing)",
+		"a physical thing",
 	},
 	{
 		"http://www.w3.org/2004/02/skos/core#Concept",
 		"concept",
 		"Concept",
 		"(Concept)",
+		"a concept",
 	},
 	{
 		"http://purl.org/dc/dcmitype/Collection",
 		"collection",
 		"Collection",
 		"(Collection)",
+		"a collection",
 	},
 	{
 		"http://purl.org/vocab/frbr/core#Work",
 		"creative-work",
 		"Creative work",
-		"(Cretive work)",
+		"(Creative work)",
+		"a creative work",
 	},
 	{
 		"http://xmlns.com/foaf/0.1/Document",
 		"digital-object",
 		"Digital asset",
 		"(Digital asset)",
+		"a digital asset",
+	},
+	{
+		"http://purl.org/NET/c4dm/event.owl#Event",
+		"event",
+		"Event",
+		"(Event)",
+		"an event",
+	},
+	{
+		"http://rdfs.org/ns/void#Dataset",
+		"dataset",
+		"Dataset",
+		"(Dataset)",
+		"a dataset",
 	},
 	{
 		NULL,
 		NULL,
 		NULL,
-		NULL
+		NULL,
+		NULL,
 	}
 };
 
@@ -120,6 +145,7 @@ static int add_object(QUILTREQ *req, jd_var *value, librdf_node *object);
 static struct class_struct *class_match(librdf_model *model, librdf_node *subject);
 static char *get_title(QUILTREQ *req, librdf_model *model, librdf_node *subject);
 static char *get_shortdesc(QUILTREQ *req, librdf_model *model, librdf_node *subject);
+static char *get_longdesc(QUILTREQ *req, librdf_model *model, librdf_node *subject);
 static char *get_literal(QUILTREQ *req, librdf_model *model, librdf_node *subject, const char *predicate);
 
 
@@ -189,13 +215,13 @@ quilt_html_serialize(QUILTREQ *req)
 			status = 200;
 			buf = liquify_apply(tpl, dict);
 			FCGX_FPrintF(req->fcgi->out, "Status: 200 OK\n"
-						 "Content-type: %s\n"
+						 "Content-type: %s; charset=utf-8\n"
 						 "Vary: Accept\n"
 						 "Server: Quilt\n"
 						 "\n", req->type);
 			FCGX_PutStr(buf, strlen(buf), req->fcgi->out);
+			free(buf);
 		}
-		free(buf);
 	}
 	return status;
 }
@@ -260,6 +286,10 @@ add_req(jd_var *dict, QUILTREQ *req)
 	jd_assign(jd_get_ks(dict, "request", 1), r);
 	jd_set_bool(jd_get_ks(dict, "home", 1), req->home);
 	jd_set_bool(jd_get_ks(dict, "index", 1), req->index);
+	if(req->indextitle)
+	{
+		jd_set_string(jd_get_ks(dict, "title", 1), req->indextitle);
+	}
 	if(pathbuf)
 	{
 		a = jd_nav(8);
@@ -296,7 +326,7 @@ add_req(jd_var *dict, QUILTREQ *req)
 static int
 add_data(jd_var *dict, QUILTREQ *req)
 {
-	jd_var *items, *item, *results, *k, *props, *prop, *value;
+	jd_var *items, *item, *k, *props, *prop, *value;
 	librdf_world *world;
 	librdf_statement *query, *statement;
 	librdf_stream *st;
@@ -319,7 +349,6 @@ add_data(jd_var *dict, QUILTREQ *req)
      }
 	*/
 	items = jd_nhv(25);
-	results = jd_nhv(25);
 	query = librdf_new_statement(world);
 	st = librdf_model_find_statements(req->model, query);
 	while(!librdf_stream_end(st))
@@ -331,11 +360,12 @@ add_data(jd_var *dict, QUILTREQ *req)
 		if(librdf_node_is_resource(subj) && librdf_node_is_resource(pred))
 		{
 			uri = (const char *) librdf_uri_as_string(librdf_node_get_uri(subj));
-			item = jd_get_ks(items, uri, 0);
+			item = jd_get_ks(items, uri, 0);			
 			if(!item)
 			{
 				/* Populate a new item structure */
 				item = jd_nhv(8);
+				jd_set_bool(jd_get_ks(item, "me", 1), 0);
 				add_subject(req, item, req->model, subj, uri);
 				k = jd_get_ks(item, "props", 1);
 				jd_assign(k, jd_nhv(8));
@@ -360,13 +390,13 @@ add_data(jd_var *dict, QUILTREQ *req)
 	}
 	librdf_free_stream(st);
 	librdf_free_statement(query);
-	jd_assign(jd_get_ks(dict, "data", 1), items);
 	sbuf = (char *) calloc(1, strlen(req->subject) + 8);
 	strcpy(sbuf, req->subject);
 	strcat(sbuf, "#id");
 	k = jd_get_ks(items, sbuf, 0);
 	if(k)
 	{
+		jd_set_bool(jd_get_ks(k, "me", 1), 1);
 		jd_assign(jd_get_ks(dict, "object", 1), k);
 	}
 	else
@@ -374,10 +404,21 @@ add_data(jd_var *dict, QUILTREQ *req)
 		k = jd_get_ks(items, req->subject, 0);
 		if(k)
 		{
+			jd_set_bool(jd_get_ks(k, "me", 1), 1);
 			jd_assign(jd_get_ks(dict, "object", 1), k);
 		}
+		else
+		{
+			k = jd_get_ks(items, req->path, 0);
+			if(k)
+			{
+				jd_set_bool(jd_get_ks(k, "me", 1), 1);
+				jd_assign(jd_get_ks(dict, "object", 1), k);
+			}
+		}			
 	}
 	free(sbuf);
+	jd_assign(jd_get_ks(dict, "data", 1), items);
 	return 0;
 }
 
@@ -387,12 +428,19 @@ add_data(jd_var *dict, QUILTREQ *req)
 static int
 add_subject(QUILTREQ *req, jd_var *item, librdf_model *model, librdf_node *subject, const char *uri)
 {
+	double lon, lat;
+	jd_var *sub;
 	struct class_struct *c;
 	char *buf, *str;
 	URI *uriobj;
 	URI_INFO *info;
 
 	uriobj = uri_create_str(uri, NULL);
+	if(!uriobj)
+	{
+		log_printf(LOG_ERR, "failed to parse subject URI <%s>\n", uri);
+		return -1;
+	}
 	info = uri_info(uriobj);
 
 	jd_set_string(jd_get_ks(item, "subject", 1), uri);	
@@ -433,6 +481,16 @@ add_subject(QUILTREQ *req, jd_var *item, librdf_model *model, librdf_node *subje
 	{
 		jd_set_string(jd_get_ks(item, "shortdesc", 1), "");
 	}
+	str = get_longdesc(req, model, subject);
+	if(str)
+	{
+		jd_set_string(jd_get_ks(item, "description", 1), str);
+		free(str);
+	}
+	else
+	{
+		jd_set_string(jd_get_ks(item, "description", 1), "");
+	}
 	if(buf[0] == '/')
 	{
 		jd_set_string(jd_get_ks(item, "from", 1), "");
@@ -450,12 +508,21 @@ add_subject(QUILTREQ *req, jd_var *item, librdf_model *model, librdf_node *subje
 		jd_set_string(jd_get_ks(item, "class", 1), c->cssClass);
 		jd_set_string(jd_get_ks(item, "classLabel", 1), c->label);
 		jd_set_string(jd_get_ks(item, "classSuffix", 1), c->suffix);
+		jd_set_string(jd_get_ks(item, "classDefinite", 1), c->definite);
 	}
 	else
 	{
 		jd_set_string(jd_get_ks(item, "class", 1), "");
-		jd_set_string(jd_get_ks(item, "classLabel", 1), "");
 		jd_set_string(jd_get_ks(item, "classSuffix", 1), "");
+	}
+	
+	if(quilt_model_find_double(model, uri, "http://www.w3.org/2003/01/geo/wgs84_pos#long", &lon) == 1 &&
+	   quilt_model_find_double(model, uri, "http://www.w3.org/2003/01/geo/wgs84_pos#lat", &lat) == 1)
+	{
+		sub = jd_nhv(2);
+		jd_set_real(jd_get_ks(sub, "long", 1), lon);
+		jd_set_real(jd_get_ks(sub, "lat", 1), lat);
+		jd_assign(jd_get_ks(item, "geo", 1), sub);
 	}
 	return 0;
 }
@@ -532,6 +599,9 @@ add_object(QUILTREQ *req, jd_var *value, librdf_node *object)
 			if(dtstr)
 			{
 				jd_set_string(jd_get_ks(value, "datatype", 1), dtstr);
+				buf = quilt_uri_contract(dtstr);
+				jd_set_string(jd_get_ks(value, "datatypeUri", 1), buf);
+				free(buf);
 			}
 		}
 		else
@@ -602,6 +672,16 @@ static char *
 get_shortdesc(QUILTREQ *req, librdf_model *model, librdf_node *subject)
 {
 	return get_literal(req, model, subject, "http://www.w3.org/2000/01/rdf-schema#comment");
+}
+
+/* Obtain the short description of a particular subject, suitable for
+ * substituting into a template. This function should allocate the buffer
+ * it returns, or return NULL if no suitable title could be found.
+ */
+static char *
+get_longdesc(QUILTREQ *req, librdf_model *model, librdf_node *subject)
+{
+	return get_literal(req, model, subject, "http://purl.org/dc/terms/description");
 }
 
 static char *
