@@ -24,6 +24,7 @@
 int 
 liquify_filter_escape_(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name)
 {
+	int c;
 	char fbuf[16];
 	size_t fblen;
 
@@ -31,30 +32,31 @@ liquify_filter_escape_(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name)
 
 	fblen = 0;
 	while(len)
-	{
-		if(*buf < 32 || *buf == '"' || *buf == '\'')
+	{		
+		c = (int) ((unsigned char) *buf);
+		if(c < 32 || c == '"' || c == '\'')
 		{
 			/* &#nn; output */
 			if(fblen) liquify_emit(ctx, fbuf, fblen);
 			fblen = 0;
-			sprintf(fbuf, "&#%d;", (int) *buf);
+			sprintf(fbuf, "&#%d;", c);
 			liquify_emit_str(ctx, fbuf);
 		}
-		else if(*buf == '&')
+		else if(c == '&')
 		{
 			/* &amp; */
 			if(fblen) liquify_emit(ctx, fbuf, fblen);
 			fblen = 0;
 			liquify_emit(ctx, "&amp;", 5);
 		}
-		else if(*buf == '<')
+		else if(c == '<')
 		{
 			/* &lt; */
 			if(fblen) liquify_emit(ctx, fbuf, fblen);
 			fblen = 0;
 			liquify_emit(ctx, "&lt;", 4);
 		}
-		else if(*buf == '>')
+		else if(c == '>')
 		{
 			/* &gt */
 			if(fblen) liquify_emit(ctx, fbuf, fblen);
@@ -63,7 +65,7 @@ liquify_filter_escape_(LIQUIFYCTX *ctx, char *buf, size_t len, const char *name)
 		}
 		else
 		{
-			fbuf[fblen] = *buf;
+			fbuf[fblen] = c;
 			fblen++;
 			if(fblen >= 15)
 			{
