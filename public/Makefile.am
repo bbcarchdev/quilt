@@ -20,3 +20,8 @@ publicdir = @datarootdir@/@PACKAGE_TARNAME@/public
 
 dist_public_DATA = README
 
+install-exec-hook:
+	$(INSTALL) -m 755 -d "$(STAGEDIR)$(publicdir)"
+	rm -f "$(STAGEDIR)$(publicdir)/index.fcgi"
+	ln -sf "$(STAGEDIR)$(sbindir)/quiltd" "$(STAGEDIR)$(publicdir)/index.fcgi"
+
