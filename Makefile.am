@@ -23,7 +23,9 @@ DIST_SUBDIRS = m4 libsupport liburi libsparqlclient libnegotiate jsondata \
 
 SUBDIRS = libsupport @subdirs@ libnegotiate libliquify templates public .
 
-EXTRA_DIST = quilt.conf
+doc_DATA = apache2-example.conf
+
+dist_doc_DATA = quilt.conf
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \

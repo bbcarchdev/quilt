@@ -74,6 +74,7 @@ libnegotiate/Makefile
 libliquify/Makefile
 templates/Makefile
 public/Makefile
+apache2-example.conf
 ])
 
 AC_OUTPUT

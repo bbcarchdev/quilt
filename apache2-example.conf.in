@@ -1,0 +1,25 @@
+## This is an example Apache VirtualHost configuration which uses
+## mod_rewrite and mod_fcgid
+##
+## It assumes that @DATAROOTDIR@/quilt/public/index.fcgi is a symbolic
+## link to @SBINDIR@/quiltd
+
+<VirtualHost *:80>
+	ServerName data.example.com
+	DocumentRoot @DATAROOTDIR@/quilt/public
+
+	CustomLog /var/log/apache2/quilt.access.log combined
+	ErrorLog /var/log/apache2/quilt.error.log
+
+	Options FollowSymlinks ExecCGI
+
+	AddHandler fcgid-script .fcgi
+
+	RewriteEngine on
+
+	# Allow requests for public files to be served as-is
+	RewriteCond %{LA-U:REQUEST_FILENAME} !-f
+	# Pass all other requests through to the Quilt server
+	RewriteRule ^(.*)$ /index.fcgi [NS,L]
+</VirtualHost>
+
