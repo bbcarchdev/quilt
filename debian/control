@@ -2,7 +2,7 @@ Source: quilt
 Section: web
 Priority: optional
 Maintainer: Mo McRoberts <mo.mcroberts@bbc.co.uk>
-Build-Depends: debhelper (>= 8.0.0), libcurl4-openssl-dev, librdf0-dev, liburi-dev, libsparqlclient-dev, libjsondata-dev, libltdl-dev, libfcgi-dev
+Build-Depends: debhelper (>= 8.0.0), libcurl4-gnutls-dev, librdf0-dev, liburi-dev, libsparqlclient-dev, libjsondata-dev, libltdl-dev, libfcgi-dev
 
 Package: quilt
 Architecture: any
