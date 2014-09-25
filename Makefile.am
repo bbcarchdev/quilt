@@ -1,4 +1,4 @@
-## Twine: A Linked Data workflow engine
+## Quilt: A Linked Data API web application
 ##
 ## Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 ##
@@ -18,9 +18,10 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-DIST_SUBDIRS = m4 libsupport liburi libsparqlclient libnegotiate jsondata
+DIST_SUBDIRS = m4 libsupport liburi libsparqlclient libnegotiate jsondata \
+	templates public
 
-SUBDIRS = libsupport @subdirs@ libnegotiate libliquify .
+SUBDIRS = libsupport @subdirs@ libnegotiate libliquify templates public .
 
 EXTRA_DIST = quilt.conf
 

@@ -72,6 +72,8 @@ libsupport/Makefile
 m4/Makefile
 libnegotiate/Makefile
 libliquify/Makefile
+templates/Makefile
+public/Makefile
 ])
 
 AC_OUTPUT

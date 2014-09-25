@@ -1,0 +1,39 @@
+			<section id="data-explorer">
+				<h1>Data explorer</h1>
+				<div class="table">
+					<table class="explorer">
+						<thead>
+							<tr>
+								<th class="predicate" scope="col">Property</th>
+								<th class="object" scope="col">Value</th>
+							</tr>
+						</thead>
+						{% for item in data %}
+						<tbody class="{% if item.me %}expand{% else %}collapse{% endif %}">
+							<tr class="title">
+								<th scope="row" colspan="2">
+									<span class="{{ item.class }}"><span title="{{ item.link | escape }}">{{ item.title | escape }}</span> {{ item.classSuffix }} {{ item.from }}</span>
+								</th>								
+							</tr>
+							<tr>
+								<td class="predicate">Universal identifier</td>
+								<td class="object"><a href="{{ item.link | escape }}">{{ item.uri | escape }}</a></td>
+							</tr>
+							{% for values in item.props %}
+							{% for value in values %}
+							<tr>
+								<td class="predicate"><a href="{{ value.predicateUri | escape }}">{{ value.predicateUriLabel }}</a></td>
+								<td class="object">{% if value.isUri %}
+<a href="{{ value.link | escape }}">{{ value.uri | escape }}</a>
+{% elsif value.isLiteral %}
+“<span class="value"{% if value.lang %} lang="{{ value.lang | escape }}"{% endif %}>{{ value.value | escape }}</span>” {% if value.lang %}<span class="lang">[{{ value.lang | escape }}</span>]{% endif %} {% if value.datatypeUri %}(<a class="datatype" href="{{ value.datatype | escape }}">{{ value.datatypeUri | escape }}</a>){% endif %}
+{% endif %}
+</td>
+							</tr>
+							{% endfor %}
+							{% endfor %}
+						</tbody>
+						{% endfor %}
+					</table>
+				</div>
+			</section>

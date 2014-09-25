@@ -1,0 +1,7 @@
+This directory is intended to be configured as your web server's 'document
+root' when used with Quilt -- files present in this directory should be
+served directly, rather than passing the request to the Quilt FastCGI
+application.
+
+Typically, this is accomplished through a mechanism such as Apache's
+RewriteCond/RewriteRule.

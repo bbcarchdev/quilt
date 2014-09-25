@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+	<head profile="http://a9.com/-/spec/opensearch/1.1/">
+		{% include 'head.liquid' %}
+		<title>{{ object.title | escape }} • Quilt</title>
+	</head>
+	<body class="refentry">
+		<header>{% include 'header.liquid' %}
+			<h1>{{ object.title | escape }}</h1>
+		</header>
+		<article>
+
+			{% include 'object.liquid' %}
+			{% include 'explorer.liquid' %}
+			{% include 'representations.liquid' %}
+		</article>
+		<footer>{% include 'footer.liquid' %}</footer>
+	</body>
+</html>

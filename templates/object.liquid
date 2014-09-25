@@ -1,0 +1,17 @@
+<section class="object-description">
+	<!-- <figure> ... </figure> -->
+	<div class="overview">
+		 <p>
+		 {% if object.hasTitle %}<cite>{{ object.title | escape }}</cite>{% else %}This item{% endif %} is {% if object.classDefinite %}{{ object.classDefinite }}{% else %} an unknown kind of entity{% endif %}.
+	   	 </p>
+	   	 {% if object.description %}
+	   	 <p>{{ object.description | escape }}</p>
+	   	 {% elsif object.shortdesc %}
+	   	 <p>{{ object.shortdesc | escape }}</p>
+	   	 {% endif %}
+		 {% if object.geo %}
+		 <div class="map" data-long="{{ object.geo.long | escape }}" data-lat="{{ object.geo.lat | escape }}"></div>
+		 {% endif %}
+	</div>
+</section>
+

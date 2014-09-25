@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+	<head profile="http://a9.com/-/spec/opensearch/1.1/">
+		{% include 'head.liquid' %}
+		<title>Home • Quilt</title>
+	</head>
+	<body class="refentry index">
+		<header>{% include 'header.liquid' %}
+			<h1>Home</h1>
+		</header>
+
+		{% include 'intro.liquid' %}
+
+		<article>
+
+			{% include 'results.liquid' %}
+			{% include 'explorer.liquid' %}
+			{% include 'representations.liquid' %}
+
+		</article>
+
+		<footer>{% include 'footer.liquid' %}</footer>
+	</body>
+</html>
