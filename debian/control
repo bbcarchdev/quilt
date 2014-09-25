@@ -8,7 +8,7 @@ Homepage: https://bbcarchdev.github.io/res/code
 Vcs-Browser: https://github.com/bbcarchdev/quilt
 Vcs-Git: git://github.com/bbcarchdev/quilt.git
 
-Package: quilt
+Package: quilt-server
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Recommends: libapache2-mod-fcgid | nginx-full | nginx-light | lighttpd
