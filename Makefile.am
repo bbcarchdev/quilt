@@ -22,6 +22,8 @@ DIST_SUBDIRS = m4 libsupport liburi libsparqlclient libnegotiate jsondata
 
 SUBDIRS = libsupport @subdirs@ libnegotiate libliquify .
 
+EXTRA_DIST = quilt.conf
+
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
 	-I$(top_builddir)/libnegotiate -I$(top_srcdir)/libnegotiate \
@@ -43,3 +45,6 @@ quiltd_LDADD = \
 	@LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@ \
 	@LIBJSONDATA_LOCAL_LIBS@ @LIBJSONDATA_LIBS@
 
+install-data-hook:
+	$(INSTALL) -m 755 -d "$(DESTDIR)$(sysconfdir)"
+	test -f "$(DESTDIR)$(sysconfdir)/quilt.conf" || $(INSTALL) -m 644 "$(srcdir)/quilt.conf" "$(DESTDIR)$(sysconfdir)"
