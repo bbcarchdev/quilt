@@ -3,8 +3,18 @@ Section: web
 Priority: optional
 Maintainer: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 Build-Depends: debhelper (>= 8.0.0), autoconf, automake, libtool, libcurl4-gnutls-dev, librdf0-dev, liburi-dev, libsparqlclient-dev, libjsondata-dev, libltdl-dev, libfcgi-dev
+Standards-Version: 3.9.3
+Homepage: https://bbcarchdev.github.io/res/code
+Vcs-Browser: https://github.com/bbcarchdev/quilt
+Vcs-Git: git://github.com/bbcarchdev/quilt.git
 
 Package: quilt
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends}
+Recommends: libapache2-mod-fcgid | nginx-full | nginx-light | lighttpd
 Description: Linked Data server FastCGI web application
+ Quilt is a FastCGI application which implements a Linked Data server. It
+ accepts requests from clients, and processes them by performing simple
+ SPARQL queries before serialising the results in the format requested
+ (e.g., Turtle, N-Triples, RDF/XML). HTML output is template-driven, using
+ a limited subset of the Liquid templating language.
