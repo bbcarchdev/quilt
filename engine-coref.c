@@ -50,6 +50,8 @@ static int coref_index(QUILTREQ *req, const char *qclass);
 static int coref_home(QUILTREQ *req);
 static int coref_item(QUILTREQ *req);
 static int coref_lookup(QUILTREQ *req, const char *uri);
+static int coref_index_metadata_sparqlres(QUILTREQ *request, SPARQLRES *res);
+static int coref_index_metadata_stream(QUILTREQ *request, librdf_stream *stream, int subjobj);
 
 /* This engine retrieves coreference information as stored by Spindle */
 int
@@ -107,45 +109,17 @@ coref_index(QUILTREQ *request, const char *qclass)
 {
 	SPARQL *sparql;
 	SPARQLRES *res;
-	SPARQLROW *row;
-	char *query, *p;
-	size_t buflen;
 	char limofs[128];
-	librdf_node *node;
-	librdf_uri *uri;
 	librdf_statement *st;
-	const char *uristr, *t;
-	int limit, offset, subj;
+	int r;
 
-	limit = 25;	
-	offset = 0;
-	if((t = FCGX_GetParam("offset", request->query)))
+	if(request->offset)
 	{
-		offset = strtol(t, NULL, 10);
-	}
-	if((t = FCGX_GetParam("limit", request->query)))
-	{
-		limit = strtol(t, NULL, 10);
-	}
-	if(offset < 0)
-	{
-		offset = 0;
-	}
-	if(limit < 1)
-	{
-		limit = 1;
-	}
-	if(limit > 100)
-	{
-		limit = 100;
-	}
-	if(offset)
-	{
-		snprintf(limofs, sizeof(limofs) - 1, "OFFSET %d LIMIT %d", offset, limit);
+		snprintf(limofs, sizeof(limofs) - 1, "OFFSET %d LIMIT %d", request->offset, request->limit);
 	}
 	else
 	{
-		snprintf(limofs, sizeof(limofs) - 1, "LIMIT %d", limit);
+		snprintf(limofs, sizeof(limofs) - 1, "LIMIT %d", request->limit);
 	}	
 	sparql = quilt_sparql();
 	if(!sparql)
@@ -170,6 +144,37 @@ coref_index(QUILTREQ *request, const char *qclass)
 		log_printf(LOG_ERR, "SPARQL query for index subjects failed\n");
 		return 500;
 	}
+	if((r = coref_index_metadata_sparqlres(request, res)))
+	{
+		sparqlres_destroy(res);
+		return r;
+	}
+	sparqlres_destroy(res);	
+	st = quilt_st_create_literal(request->path, "http://www.w3.org/2000/01/rdf-schema#label", request->indextitle, "en");
+	if(!st) return -1;
+	librdf_model_context_add_statement(request->model, request->basegraph, st);
+	st = quilt_st_create_uri(request->path, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://rdfs.org/ns/void#Dataset");
+	if(!st) return -1;
+	librdf_model_context_add_statement(request->model, request->basegraph, st);
+	/* Return 0, rather than 200, to auto-serialise the model */
+	return 0;
+}
+
+/* For all of the things matching a particular query, add the metadata from
+ * the related graphs to the model.
+ */
+static int
+coref_index_metadata_sparqlres(QUILTREQ *request, SPARQLRES *res)
+{
+	char *query, *p;
+	size_t buflen;
+	SPARQLROW *row;
+	librdf_node *node;
+	librdf_uri *uri;
+	int subj;
+	const char *uristr;
+	librdf_statement *st;
+
 	buflen = 128 + strlen(request->base);
 	query = (char *) calloc(1, buflen);
 	/*
@@ -228,7 +233,6 @@ coref_index(QUILTREQ *request, const char *qclass)
 			subj = 1;
 		}
 	}
-	sparqlres_destroy(res);
 	if(subj)
 	{
 		strcpy(p, "> ) } }");
@@ -240,13 +244,99 @@ coref_index(QUILTREQ *request, const char *qclass)
 		}
 	}
 	free(query);
-	/* Return 0, rather than 200, to auto-serialise the model */
-	st = quilt_st_create_literal(request->path, "http://www.w3.org/2000/01/rdf-schema#label", request->indextitle, "en");
-	if(!st) return -1;
-	librdf_model_context_add_statement(request->model, request->basegraph, st);
-	st = quilt_st_create_uri(request->path, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://rdfs.org/ns/void#Dataset");
-	if(!st) return -1;
-	librdf_model_context_add_statement(request->model, request->basegraph, st);
+	return 0;
+}
+
+static int
+coref_index_metadata_stream(QUILTREQ *request, librdf_stream *stream, int subjobj)
+{
+	char *query, *p;
+	size_t buflen;
+	librdf_node *node;
+	librdf_uri *uri;
+	int subj;
+	const char *uristr;
+	librdf_statement *st;
+
+	buflen = 256 + strlen(request->base);
+	query = (char *) calloc(1, buflen);
+	/*
+	  PREFIX ...
+	  SELECT ?s ?p ?o ?g WHERE {
+	  GRAPH ?g {
+	  ?s ?p ?o .
+	  FILTER( ...subjects... )
+	  FILTER( ...predicates... )
+	  }
+	  }
+	*/
+	sprintf(query, "SELECT ?s ?p ?o ?g WHERE { GRAPH ?g { ?s ?p ?o . FILTER(?g != <%s> && ?g != <%s>) FILTER(", request->subject, request->base);
+	subj = 0;
+	while(!librdf_stream_end(stream))
+	{
+		st = librdf_stream_get_object(stream);
+		if(subjobj)
+		{
+			node = librdf_statement_get_subject(st);
+		}
+		else
+		{
+			node = librdf_statement_get_object(st);
+		}
+		if(!librdf_node_is_resource(node))
+		{
+			librdf_stream_next(stream);
+			continue;
+		}
+		if((uri = librdf_node_get_uri(node)) &&
+		   (uristr = (const char *) librdf_uri_as_string(uri)))
+		{
+/*			st = quilt_st_create_uri(request->path, "http://www.w3.org/2000/01/rdf-schema#seeAlso", uristr);
+			if(!st) return -1;
+			librdf_model_context_add_statement(request->model, request->basegraph, st); */
+			buflen += 8 + (strlen(uristr) * 3);
+			p = (char *) realloc(query, buflen);
+			if(!p)
+			{
+				log_printf(LOG_CRIT, "failed to reallocate buffer to %lu bytes\n", (unsigned long) buflen);
+				return 500;
+			}
+			query = p;
+			p = strchr(query, 0);
+			strcpy(p, "?s = <");
+			for(p = strchr(query, 0); *uristr; uristr++)
+			{
+				if(*uristr == '>')
+				{
+					*p = '%';
+					p++;
+					*p = '3';
+					p++;
+					*p = 'e';
+				}
+				else
+				{
+					*p = *uristr;
+				}
+				p++;
+			}
+			*p = 0;
+			strcpy(p, "> ||");
+			subj = 1;
+		}
+		librdf_stream_next(stream);
+	}
+	if(subj)
+	{
+		strcpy(p, "> ) } }");
+		if(quilt_sparql_query_rdf(query, request->model))
+		{
+			log_printf(LOG_ERR, "failed to create model from query\n");
+			free(query);
+			return 500;
+		}
+	}
+	free(query);
 	return 0;
 }
 
@@ -360,7 +450,10 @@ static int
 coref_item(QUILTREQ *request)
 {
 	char *query;
-	
+	librdf_node *g;
+	librdf_stream *stream;
+	librdf_world *world;
+
 	query = (char *) malloc(strlen(request->subject) + 1024);
 	if(!query)
 	{
@@ -386,6 +479,13 @@ coref_item(QUILTREQ *request)
 		return 404;
 	}
 	free(query);
+	/* Find all of the objects of statements in our graph */
+	world = quilt_librdf_world();
+	g = librdf_new_node_from_uri_string(world, (const unsigned char *) request->subject);
+	stream = librdf_model_context_as_stream(request->model, g);
+	coref_index_metadata_stream(request, stream, 0);
+	librdf_free_stream(stream);
+	librdf_free_node(g);
 	/* Return 0, rather than 200, to auto-serialise the model */
 	return 0;
 }

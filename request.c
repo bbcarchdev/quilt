@@ -77,7 +77,7 @@ QUILTREQ *
 quilt_request_create_fcgi(FCGX_Request *request)
 {	
 	QUILTREQ *p;
-	const char *accept, *uri;
+	const char *accept, *uri, *t;
 	char date[32];
 	struct tm now;
 	librdf_world *world;
@@ -167,6 +167,28 @@ quilt_request_create_fcgi(FCGX_Request *request)
 	}
 	log_printf(LOG_DEBUG, "negotiated type '%s' from '%s'\n", p->type, accept);
 	quilt_request_parse_params_(p);
+	p->limit = DEFAULT_LIMIT;
+	p->offset = 0;
+	if((t = FCGX_GetParam("offset", p->query)))
+	{
+		p->offset = strtol(t, NULL, 10);
+	}
+	if((t = FCGX_GetParam("limit", p->query)))
+	{
+		p->limit = strtol(t, NULL, 10);
+	}
+	if(p->offset < 0)
+	{
+		p->offset = 0;
+	}
+	if(p->limit < 1)
+	{
+		p->limit = 1;
+	}
+	if(p->limit > MAX_LIMIT)
+	{
+		p->limit = MAX_LIMIT;
+	}
 	return p;
 }
 

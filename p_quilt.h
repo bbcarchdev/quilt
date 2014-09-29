@@ -27,6 +27,8 @@
 # include "libliquify.h"
 
 # define QUILT_MIME_LEN                 63
+# define DEFAULT_LIMIT                  25
+# define MAX_LIMIT                      100
 
 typedef struct quilt_request_struct QUILTREQ;
 typedef struct quilt_mime_struct QUILTMIME;
@@ -68,6 +70,8 @@ struct quilt_request_struct
 	/* Query parameters */
 	char *qbuf;
 	char **query;
+	int limit;
+	int offset;
 };
 
 /* Not currently used */
