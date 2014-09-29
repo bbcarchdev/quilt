@@ -394,7 +394,24 @@ coref_item(QUILTREQ *request)
 		log_printf(LOG_ERR, "failed to create model from query\n");
 		free(query);
 		return 500;
-	}	
+	}
+	sprintf(query, "SELECT DISTINCT ?s ?p ?o ?g WHERE {\n"
+			"GRAPH <%s> {\n"
+			"  ?self ?ref ?s\n"
+			"}\n"
+			"GRAPH ?g {\n"
+			" ?s ?p ?o\n"
+			" FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label> ||"
+			"  ?p = <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> )\n"
+			" FILTER(?g != <%s>)\n"
+			"}\n"
+			"}", request->subject, request->subject);
+	if(quilt_sparql_query_rdf(query, request->model))
+	{
+		log_printf(LOG_ERR, "failed to create model from query\n");
+		free(query);
+		return 500;
+	}
 	free(query);
 	/* If the model is completely empty, consider the graph to be Not Found */
 	if(quilt_model_isempty(request->model))
