@@ -10,6 +10,7 @@
 # include <unistd.h>
 # include <time.h>
 # include <inttypes.h>
+# include <ctype.h>
 # include <sys/types.h>
 # include <sys/stat.h>
 
@@ -64,6 +65,9 @@ struct quilt_request_struct
 	/* Is this an index resource? */
 	int index;
 	const char *indextitle;
+	/* Query parameters */
+	char *qbuf;
+	char **query;
 };
 
 /* Not currently used */

@@ -34,7 +34,7 @@ struct index_struct
 static struct index_struct indices[] = {
 	{ "/everything", "Everything", NULL },
 	{ "/people", "People", "http://xmlns.com/foaf/0.1/Person" },
-	{ "/groups", "Groups", "http://xmlns.com/foaf/0.1/Groups" },
+	{ "/groups", "Groups", "http://xmlns.com/foaf/0.1/Group" },
 	{ "/agents", "Agents", "http://xmlns.com/foaf/0.1/Agent" },
 	{ "/places", "Places", "http://www.w3.org/2003/01/geo/wgs84_pos#SpatialThing" },
 	{ "/events", "Events", "http://purl.org/NET/c4dm/event.owl#Event" },
@@ -49,27 +49,41 @@ static struct index_struct indices[] = {
 static int coref_index(QUILTREQ *req, const char *qclass);
 static int coref_home(QUILTREQ *req);
 static int coref_item(QUILTREQ *req);
+static int coref_lookup(QUILTREQ *req, const char *uri);
 
 /* This engine retrieves coreference information as stored by Spindle */
 int
 quilt_engine_coref_process(QUILTREQ *request)
 {
 	char *qclass;
+	const char *t;
 	size_t c;
 	int r;
-
+		
 	qclass = NULL;
-	for(c = 0; indices[c].uri; c++)
+	t = FCGX_GetParam("class", request->query);
+	if(t)
 	{
-		if(!strcmp(request->path, indices[c].uri))
+		qclass = (char *) calloc(1, 32 + strlen(t));
+		sprintf(qclass, "FILTER ( ?class = <%s> )", t);
+		request->indextitle = t;
+		request->index = 1;
+		request->home = 0;
+	}
+	else
+	{
+		for(c = 0; indices[c].uri; c++)
 		{
-			if(indices[c].qclass)
+			if(!strcmp(request->path, indices[c].uri))
 			{
-				qclass = (char *) calloc(1, 32 + strlen(indices[c].qclass));
-				sprintf(qclass, "FILTER ( ?class = <%s> )", indices[c].qclass);
+				if(indices[c].qclass)
+				{
+					qclass = (char *) calloc(1, 32 + strlen(indices[c].qclass));
+					sprintf(qclass, "FILTER ( ?class = <%s> )", indices[c].qclass);
+				}
+				request->indextitle = indices[c].title;
+				request->index = 1;
 			}
-			request->indextitle = indices[c].title;
-			request->index = 1;
 		}
 	}
 	if(request->home)
@@ -100,12 +114,31 @@ coref_index(QUILTREQ *request, const char *qclass)
 	librdf_node *node;
 	librdf_uri *uri;
 	librdf_statement *st;
-	const char *uristr;
+	const char *uristr, *t;
 	int limit, offset, subj;
 
-
-	limit = 25;
+	limit = 25;	
 	offset = 0;
+	if((t = FCGX_GetParam("offset", request->query)))
+	{
+		offset = strtol(t, NULL, 10);
+	}
+	if((t = FCGX_GetParam("limit", request->query)))
+	{
+		limit = strtol(t, NULL, 10);
+	}
+	if(offset < 0)
+	{
+		offset = 0;
+	}
+	if(limit < 1)
+	{
+		limit = 1;
+	}
+	if(limit > 100)
+	{
+		limit = 100;
+	}
 	if(offset)
 	{
 		snprintf(limofs, sizeof(limofs) - 1, "OFFSET %d LIMIT %d", offset, limit);
@@ -218,10 +251,86 @@ coref_index(QUILTREQ *request, const char *qclass)
 }
 
 static int
+coref_lookup(QUILTREQ *request, const char *target)
+{
+	SPARQL *sparql;
+	SPARQLRES *res;
+	SPARQLROW *row;
+	librdf_node *node;
+	librdf_uri *uri;
+	const char *uristr;
+	size_t l;
+	char *buf;
+
+	sparql = quilt_sparql();
+	if(!sparql)
+	{
+		return 500;
+	}	
+	res = sparql_queryf(sparql, "SELECT ?s\n"
+						"WHERE {\n"
+						" GRAPH %V {\n"
+						"  <%s> <http://www.w3.org/2002/07/owl#sameAs> ?s .\n"
+						" }\n"
+						"}\n",
+						request->basegraph, target);
+	if(!res)
+	{
+		log_printf(LOG_ERR, "SPARQL query for coreference failed\n");
+		return 500;
+	}
+	row = sparqlres_next(res);
+	if(!row)
+	{
+		sparqlres_destroy(res);
+		return 404;
+	}
+	node = sparqlrow_binding(row, 0);
+	if(!node)
+	{
+		sparqlres_destroy(res);
+		return 404;
+	}
+	if(!librdf_node_is_resource(node) ||
+	   !(uri = librdf_node_get_uri(node)) ||
+	   !(uristr = (const char *) librdf_uri_as_string(uri)))
+	{
+		sparqlres_destroy(res);
+		return 404;
+	}
+	l = strlen(request->base);
+	if(!strncmp(uristr, request->base, l))
+	{
+		buf = (char *) malloc(strlen(uristr) + 32);
+		buf[0] = '/';
+		strcpy(&(buf[1]), &(uristr[l]));
+	}
+	else
+	{
+		buf = strdup(uristr);
+	}
+	sparqlres_destroy(res);
+	FCGX_FPrintF(request->fcgi->out, "Status: 302 Moved\n"
+				 "Server: Quilt\n"
+				 "Location: %s\n"
+				 "\n", buf);
+	free(buf);
+	return 200;
+}
+
+static int
 coref_home(QUILTREQ *request)
 {
 	librdf_statement *st;
 	size_t c;
+
+	const char *uri;
+
+	uri = FCGX_GetParam("uri", request->query);
+	if(uri)
+	{
+		return coref_lookup(request, uri);
+	}
 
 	/* Add all of the indices as void:Datasets */
 	for(c = 0; indices[c].uri; c++)
