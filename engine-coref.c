@@ -270,7 +270,7 @@ coref_index_metadata_stream(QUILTREQ *request, librdf_stream *stream, int subjob
 	  }
 	  }
 	*/
-	sprintf(query, "SELECT ?s ?p ?o ?g WHERE { GRAPH ?g { ?s ?p ?o . FILTER(?g != <%s> && ?g != <%s>) FILTER(", request->subject, request->base);
+	sprintf(query, "SELECT ?s ?p ?o ?g WHERE { GRAPH ?g { ?s ?p ?o . FILTER(?g != <%s> && ?g != <%s>) FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label> || ?p = <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>) FILTER(", request->subject, request->base);
 	subj = 0;
 	while(!librdf_stream_end(stream))
 	{
