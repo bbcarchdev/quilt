@@ -361,19 +361,40 @@ coref_item(QUILTREQ *request)
 {
 	char *query;
 	
-	query = (char *) malloc(strlen(request->subject) + 64);
+	query = (char *) malloc(strlen(request->subject) + 1024);
 	if(!query)
 	{
-		log_printf(LOG_CRIT, "failed to allocate %u bytes\n", (unsigned) strlen(request->subject) + 64);
+		log_printf(LOG_CRIT, "failed to allocate %u bytes\n", (unsigned) strlen(request->subject) + 128);
 		return 500;
 	}
-	sprintf(query, "SELECT * WHERE { GRAPH <%s> { ?s ?p ?o } }", request->subject);
+	sprintf(query, "SELECT DISTINCT * WHERE {\n"
+			"GRAPH ?g {\n"
+			"  ?s ?p ?o . \n"
+			"  FILTER( ?g = <%s> )\n"
+			"}\n"
+			"}", request->subject);
 	if(quilt_sparql_query_rdf(query, request->model))
 	{
 		log_printf(LOG_ERR, "failed to create model from query\n");
 		free(query);
 		return 500;
 	}
+	sprintf(query, "SELECT DISTINCT ?s ?p ?o ?g WHERE {\n"
+			"GRAPH <%s> {\n"
+			"  ?s <http://www.w3.org/2002/07/owl#sameAs> ?self\n"
+			"}\n"
+			"GRAPH ?g {\n"
+			" ?s ?p ?o\n"
+			" FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label> ||"
+			"  ?p = <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> )\n"
+			"}\n"
+			"}", request->subject);
+	if(quilt_sparql_query_rdf(query, request->model))
+	{
+		log_printf(LOG_ERR, "failed to create model from query\n");
+		free(query);
+		return 500;
+	}	
 	free(query);
 	/* If the model is completely empty, consider the graph to be Not Found */
 	if(quilt_model_isempty(request->model))
