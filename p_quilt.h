@@ -10,6 +10,7 @@
 # include <unistd.h>
 # include <time.h>
 # include <inttypes.h>
+# include <ctype.h>
 # include <sys/types.h>
 # include <sys/stat.h>
 
@@ -26,6 +27,8 @@
 # include "libliquify.h"
 
 # define QUILT_MIME_LEN                 63
+# define DEFAULT_LIMIT                  25
+# define MAX_LIMIT                      100
 
 typedef struct quilt_request_struct QUILTREQ;
 typedef struct quilt_mime_struct QUILTMIME;
@@ -64,6 +67,11 @@ struct quilt_request_struct
 	/* Is this an index resource? */
 	int index;
 	const char *indextitle;
+	/* Query parameters */
+	char *qbuf;
+	char **query;
+	int limit;
+	int offset;
 };
 
 /* Not currently used */

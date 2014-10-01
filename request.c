@@ -45,6 +45,7 @@ struct typemap_struct quilt_typemap[] =
 
 static int quilt_request_process_path_(QUILTREQ *req, const char *uri);
 static const char *quilt_request_match_ext_(QUILTREQ *req);
+static int quilt_request_parse_params_(QUILTREQ *request);
 
 NEGOTIATE *quilt_types;
 NEGOTIATE *quilt_charsets;
@@ -76,7 +77,7 @@ QUILTREQ *
 quilt_request_create_fcgi(FCGX_Request *request)
 {	
 	QUILTREQ *p;
-	const char *accept, *uri;
+	const char *accept, *uri, *t;
 	char date[32];
 	struct tm now;
 	librdf_world *world;
@@ -165,7 +166,96 @@ quilt_request_create_fcgi(FCGX_Request *request)
 		return p;
 	}
 	log_printf(LOG_DEBUG, "negotiated type '%s' from '%s'\n", p->type, accept);
+	quilt_request_parse_params_(p);
+	p->limit = DEFAULT_LIMIT;
+	p->offset = 0;
+	if((t = FCGX_GetParam("offset", p->query)))
+	{
+		p->offset = strtol(t, NULL, 10);
+	}
+	if((t = FCGX_GetParam("limit", p->query)))
+	{
+		p->limit = strtol(t, NULL, 10);
+	}
+	if(p->offset < 0)
+	{
+		p->offset = 0;
+	}
+	if(p->limit < 1)
+	{
+		p->limit = 1;
+	}
+	if(p->limit > MAX_LIMIT)
+	{
+		p->limit = MAX_LIMIT;
+	}
 	return p;
+}
+
+static int
+quilt_request_parse_params_(QUILTREQ *request)
+{
+	const char *qs, *s, *t;
+	char *p;
+	char cbuf[3];
+	size_t n;
+
+	qs = FCGX_GetParam("QUERY_STRING", request->fcgi->envp);
+	if(!qs)
+	{
+		request->qbuf = strdup("");
+		request->query = (char **) calloc(1, sizeof(char *));
+		return 0;
+	}
+	request->qbuf = (char *) calloc(1, strlen(qs) + 1);
+	n = 0;
+	s = qs;
+	while(s)
+	{
+		t = strchr(s, '&');
+		if(t)
+		{
+			t++;
+			n++;
+		}
+		s = t;
+	}
+	request->query = (char **) calloc(n + 1, sizeof(char *));
+	p = request->qbuf;
+	s = qs;
+	n = 0;
+	while(s)
+	{
+		request->query[n] = p;
+		n++;
+		t = strchr(s, '&');
+		while(*s &&(!t || s < t))
+		{
+			if(*s == '%')
+			{
+				if(isxdigit(s[1])  && isxdigit(s[2]))
+				{
+					cbuf[0] = s[1];
+					cbuf[1] = s[2];
+					cbuf[2] = 0;
+					*p = (char) ((unsigned char) strtol(cbuf, NULL, 16));
+					p++;
+					s += 3;
+					continue;
+				}
+			}
+			*p = *s;
+			p++;
+			s++;
+		}
+		*p = 0;
+		if(t)
+		{
+			t++;
+		}
+		s = t;
+	}		
+	return 0;
 }
 
 char *
@@ -190,6 +280,8 @@ quilt_request_free(QUILTREQ *req)
 		librdf_free_storage(req->storage);
 	}
 	free(req->path);
+	free(req->qbuf);
+	free(req->query);
 	free(req);
 	return 0;
 }

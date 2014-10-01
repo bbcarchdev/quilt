@@ -491,7 +491,7 @@ add_subject(QUILTREQ *req, jd_var *item, librdf_model *model, librdf_node *subje
 	{
 		jd_set_string(jd_get_ks(item, "description", 1), "");
 	}
-	if(buf[0] == '/')
+	if(buf[0] == '/' || !info->host)
 	{
 		jd_set_string(jd_get_ks(item, "from", 1), "");
 	}
@@ -501,6 +501,7 @@ add_subject(QUILTREQ *req, jd_var *item, librdf_model *model, librdf_node *subje
 		strcpy(&(buf[5]), info->host);
 			   jd_set_string(jd_get_ks(item, "from", 1), buf);
 	}
+		
 	uri_info_destroy(info);
 	free(buf);
 	if(c)
