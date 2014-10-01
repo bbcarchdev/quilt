@@ -10,7 +10,7 @@ Vcs-Git: git://github.com/bbcarchdev/quilt.git
 
 Package: quilt-server
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends}, libsparqlclient, libjsondata, liburi
 Recommends: libapache2-mod-fcgid | nginx-full | nginx-light | lighttpd
 Description: Linked Data server FastCGI web application
  Quilt is a FastCGI application which implements a Linked Data server. It
