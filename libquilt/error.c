@@ -61,13 +61,13 @@ static struct http_error_struct errors[] =
 };
 
 int
-quilt_error(FCGX_Request *request, int code)
+quilt_error(QUILTREQ *request, int code)
 {
 	size_t c;
 	const char *sig, *title;
 	char buf[64];
 
-	sig = FCGX_GetParam("SERVER_SIGNATURE", request->envp);
+	sig = request->impl->getenv(request, "SERVER_SIGNATURE");
 	for(c = 0; errors[c].code; c++)
 	{
 		if(errors[c].code == code)
@@ -84,11 +84,11 @@ quilt_error(FCGX_Request *request, int code)
 		sprintf(buf, "Error %d", code);
 		title = buf;
 	}
-	FCGX_FPrintF(request->out, "Status: %d %s\n"
+	request->impl->printf(request, "Status: %d %s\n"
 				 "Content-type: text/html; charset=utf-8\n"
 				 "Server: Quilt\n"
 				 "\n", code, title);
-	FCGX_FPrintF(request->out, "<!DOCTYPE html>\n"
+	request->impl->printf(request, "<!DOCTYPE html>\n"
 				 "<html>\n"
 				 "\t<head>\n"
 				 "\t\t<meta charset=\"utf-8\">\n"
@@ -99,18 +99,18 @@ quilt_error(FCGX_Request *request, int code)
 				 title, title);
 	if(errors[c].description)
 	{
-		FCGX_FPrintF(request->out, "\t\t<p>%s</p>\n", errors[c].description);
+		request->impl->printf(request, "\t\t<p>%s</p>\n", errors[c].description);
 	}
 	else
 	{
-		FCGX_FPrintF(request->out, "\t\t<p>No description of this error is available.</p>\n");
+		request->impl->printf(request, "\t\t<p>No description of this error is available.</p>\n");
 	}
 	if(sig)
 	{
-		FCGX_FPrintF(request->out, "\t\t<hr>\n"
+		request->impl->printf(request, "\t\t<hr>\n"
 					 "\t\t<p>%s</p>\n", sig);
 	}
-	FCGX_FPrintF(request->out, "\t</body>\n",
+	request->impl->printf(request, "\t</body>\n",
 				 "</html>\n");
 	return 0;
 }

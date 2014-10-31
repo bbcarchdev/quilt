@@ -25,7 +25,7 @@
 
 /* Internal: initialise libquilt */
 int
-quilt_init_(quilt_log_fn logger, struct quilt_configfn_struct *fns)
+quilt_init(quilt_log_fn logger, struct quilt_configfn_struct *fns)
 {
 	if(quilt_log_init_(logger))
 	{

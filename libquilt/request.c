@@ -107,7 +107,7 @@ quilt_request_sanity_(void)
 }
 
 QUILTREQ *
-quilt_request_create_fcgi(FCGX_Request *request)
+quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data)
 {	
 	QUILTREQ *p;
 	const char *accept, *uri, *t;
@@ -121,14 +121,15 @@ quilt_request_create_fcgi(FCGX_Request *request)
 		quilt_logf(LOG_CRIT, "failed to allocate %u bytes for request structure\n", (unsigned) sizeof(QUILTREQ));
 		return NULL;
 	}
-	p->fcgi = request;
+	p->impl = impl;
+	p->data = data;
 	p->received = time(NULL);
-	p->host = FCGX_GetParam("REMOTE_ADDR", request->envp);
-	p->ident = FCGX_GetParam("REMOTE_IDENT", request->envp);
-	p->user = FCGX_GetParam("REMOTE_USER", request->envp);
-	p->method = FCGX_GetParam("REQUEST_METHOD", request->envp);
-	p->referer = FCGX_GetParam("HTTP_REFERER", request->envp);
-	p->ua = FCGX_GetParam("HTTP_USER_AGENT", request->envp);
+	p->host = impl->getenv(p, "REMOTE_ADDR");
+	p->ident = impl->getenv(p, "REMOTE_IDENT");
+	p->user = impl->getenv(p, "REMOTE_USER");
+	p->method = impl->getenv(p, "REQUEST_METHOD");
+	p->referer = impl->getenv(p, "HTTP_REFERER");
+	p->ua = impl->getenv(p, "HTTP_USER_AGENT");
 	p->baseuri = quilt_base_uri;
 	p->base = uri_stralloc(quilt_base_uri);
 	p->basegraph = quilt_node_create_uri(p->base);
@@ -136,7 +137,7 @@ quilt_request_create_fcgi(FCGX_Request *request)
 	gmtime_r(&(p->received), &now);
 	strftime(date, sizeof(date), "%d/%b/%Y:%H:%M:%S +0000", &now);
 
-	uri = FCGX_GetParam("REQUEST_URI", request->envp);
+	uri = impl->getenv(p, "REQUEST_URI");
 
 	quilt_logf(LOG_DEBUG, "%s %s %s [%s] \"%s %s\" - - \"%s\" \"%s\"\n",
 			   p->host, (p->ident ? p->ident : "-"), (p->user ? p->user : "-"),
@@ -166,7 +167,7 @@ quilt_request_create_fcgi(FCGX_Request *request)
 	}
 	else
 	{
-		accept = FCGX_GetParam("HTTP_ACCEPT", request->envp);
+		accept = impl->getenv(p, "HTTP_ACCEPT");
 		if(!accept)
 		{
 			accept = "*/*";
@@ -202,11 +203,11 @@ quilt_request_create_fcgi(FCGX_Request *request)
 	quilt_request_parse_params_(p);
 	p->limit = DEFAULT_LIMIT;
 	p->offset = 0;
-	if((t = FCGX_GetParam("offset", p->query)))
+	if((t = quilt_request_param(p, "offset")))
 	{
 		p->offset = strtol(t, NULL, 10);
 	}
-	if((t = FCGX_GetParam("limit", p->query)))
+	if((t = quilt_request_param(p, "limit")))
 	{
 		p->limit = strtol(t, NULL, 10);
 	}
@@ -233,7 +234,7 @@ quilt_request_parse_params_(QUILTREQ *request)
 	char cbuf[3];
 	size_t n;
 
-	qs = FCGX_GetParam("QUERY_STRING", request->fcgi->envp);
+	qs = request->impl->getenv(request, "QUERY_STRING");
 	if(!qs)
 	{
 		request->qbuf = strdup("");
@@ -289,6 +290,22 @@ quilt_request_parse_params_(QUILTREQ *request)
 		s = t;
 	}		
 	return 0;
+}
+
+const char *
+quilt_request_param(QUILTREQ *request, const char *name)
+{
+	size_t c, l;
+	
+	l = strlen(name);
+	for(c = 0; request->query[c]; c++)
+	{
+		if(!strncmp(request->query[c], name, l) && request->query[c][l] == '=')
+		{
+			return &(request->query[c][l + 1]);
+		}
+	}
+	return NULL;
 }
 
 char *

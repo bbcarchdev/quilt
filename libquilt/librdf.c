@@ -125,12 +125,12 @@ int quilt_librdf_serialize_(QUILTREQ *request)
 	{
 		tsuffix = "";
 	}
-	FCGX_FPrintF(request->fcgi->out, "Status: 200 OK\n"
+	request->impl->printf(request, "Status: 200 OK\n"
 				 "Content-type: %s%s\n"
 				 "Vary: Accept\n"
 				 "Server: Quilt\n"
 				 "\n", request->type, tsuffix);
-	FCGX_PutStr(buf, strlen(buf), request->fcgi->out);
+	request->impl->put(request, buf, strlen(buf));
 	free(buf);
 	return 0;	
 }

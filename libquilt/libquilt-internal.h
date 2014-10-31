@@ -35,6 +35,16 @@ struct quilt_configfn_struct
 	int (*config_get_all)(const char *section, const char *key, int (*fn)(const char *key, const char *value, void *data), void *data);
 };
 
-int quilt_init_(quilt_log_fn logger, struct quilt_configfn_struct *fns);
+int quilt_init(quilt_log_fn logger, struct quilt_configfn_struct *fns);
+
+/* Request processing */
+
+QUILTREQ *quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data);
+int quilt_request_free(QUILTREQ *req);
+int quilt_request_process(QUILTREQ *request);
+int quilt_request_serialize(QUILTREQ *request);
+
+/* Error generation */
+int quilt_error(QUILTREQ *request, int code);
 
 #endif /*!LIBQUILT_INTERNAL_H_*/

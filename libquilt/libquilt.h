@@ -23,19 +23,36 @@
 # define LIBQUILT_H_                    1
 
 # include <stdarg.h>
-# include <fcgiapp.h>
 # include <liburi.h>
 # include <librdf.h>
 # include <libsparqlclient.h>
 # include <syslog.h>
 
 typedef struct quilt_request_struct QUILTREQ;
+typedef struct quilt_impl_struct QUILTIMPL;
 typedef struct quilt_type_struct QUILTTYPE;
+
+# ifndef QUILTIMPL_DATA_DEFINED
+typedef struct quilt_impldata_struct QUILTIMPLDATA;
+# endif
+
+struct quilt_impl_struct
+{
+	void *reserved1;
+	void *reserved2;
+	void *reserved3;
+	const char *(*getenv)(QUILTREQ *request, const char *name);
+	int (*put)(QUILTREQ *request, const char *str, size_t len);
+	int (*printf)(QUILTREQ *request, const char *format, ...);
+	int (*vprintf)(QUILTREQ *request, const char *format, va_list ap);
+};
 
 struct quilt_request_struct
 {
-	/* The underlying FastCGI request object */
-	FCGX_Request *fcgi;
+	/* Pointer to the implementation */
+	QUILTIMPL *impl;
+	/* Implementation-specific data */
+	QUILTIMPLDATA *data;
 	/* Request parameters */
 	URI *uri;
 	const char *host;
@@ -118,26 +135,9 @@ int quilt_config_get_int(const char *key, int defval);
 int quilt_config_get_bool(const char *key, int defval);
 int quilt_config_get_all(const char *section, const char *key, int (*fn)(const char *key, const char *value, void *data), void *data);
 
-/* MIME types */
-/* QUILTMIME *quilt_mime_create(const char *type);
-QUILTMIME *quilt_mime_find(const char *type);
-int quilt_mime_set_description(QUILTMIME *mime, const char *description);
-int quilt_mime_set_score(QUILTMIME *mime, int score);
-int quilt_mime_set_extensions(QUILTMIME *mime, const char *description);
-int quilt_mime_set_callback(QUILTMIME *mime, int (*callback)(QUILTREQ *request, QUILTMIME *type));
-int quilt_mime_set_hidden(QUILTMIME *mime, int hidden);
-QUILTMIME *quilt_mime_negotiate(const char *accept);
-*/
-
 /* Request processing */
-QUILTREQ *quilt_request_create_fcgi(FCGX_Request *req);
-int quilt_request_free(QUILTREQ *req);
-int quilt_request_process(QUILTREQ *request);
-int quilt_request_serialize(QUILTREQ *request);
+const char *quilt_request_param(QUILTREQ *request, const char *name);
 char *quilt_request_base(void);
-
-/* Error generation */
-int quilt_error(FCGX_Request *request, int code);
 
 /* SPARQL queries */
 SPARQL *quilt_sparql(void);

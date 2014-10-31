@@ -34,7 +34,6 @@
 # include <sys/stat.h>
 # include <dlfcn.h>
 
-# include <fcgiapp.h>
 # include <liburi.h>
 # include <librdf.h>
 # include <libxml/parser.h>
