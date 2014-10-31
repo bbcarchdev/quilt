@@ -47,5 +47,13 @@ quilt_init_(quilt_log_fn logger, struct quilt_configfn_struct *fns)
 	{
 		return -1;
 	}
+	if(quilt_plugin_init_())
+	{
+		return -1;
+	}
+	if(quilt_request_sanity_())
+	{
+		return -1;
+	}
 	return 0;
 }

@@ -30,7 +30,7 @@
 # include <syslog.h>
 
 typedef struct quilt_request_struct QUILTREQ;
-typedef struct quilt_mime_struct QUILTMIME;
+typedef struct quilt_type_struct QUILTTYPE;
 
 struct quilt_request_struct
 {
@@ -73,6 +73,41 @@ struct quilt_request_struct
 	int offset;
 };
 
+struct quilt_type_struct
+{
+	/* The actual MIME type */
+	const char *mimetype;
+	/* A list of file extensions recognised by this type. Each extension
+	 * is space-separated and without a leading period. The first listed
+	 * extension is considered preferred for the type.
+	 */
+	const char *extensions;
+	/* A short human-readable description of the type */
+	const char *desc;
+	/* The server-side score for this type, from 0 to 1.0. 0=never serve,
+	 * 1.0=always serve if supported.
+	 */
+	float qs;
+	/* If this type is supported, but not directly exposed to consumers,
+	 * this flag is unset.
+	 */
+	int visible;
+};
+
+/* Plug-in initialisation function */
+typedef int (*quilt_plugin_init_fn)(void);
+/* Serializer call-back function */
+typedef int (*quilt_serialize_fn)(QUILTREQ *request);
+/* Engine call-back function */
+typedef int (*quilt_engine_fn)(QUILTREQ *request);
+
+/* Plug-in entry-point (implemented by each plug-in) */
+int quilt_plugin_init(void);
+
+/* Plug-in handling */
+int quilt_plugin_register_serializer(const QUILTTYPE *type, quilt_serialize_fn fn);
+int quilt_plugin_register_engine(const char *name, quilt_engine_fn fn);
+
 /* Logging */
 void quilt_logf(int priority, const char *message, ...);
 void quilt_vlogf(int priority, const char *message, va_list ap);
@@ -84,7 +119,7 @@ int quilt_config_get_bool(const char *key, int defval);
 int quilt_config_get_all(const char *section, const char *key, int (*fn)(const char *key, const char *value, void *data), void *data);
 
 /* MIME types */
-QUILTMIME *quilt_mime_create(const char *type);
+/* QUILTMIME *quilt_mime_create(const char *type);
 QUILTMIME *quilt_mime_find(const char *type);
 int quilt_mime_set_description(QUILTMIME *mime, const char *description);
 int quilt_mime_set_score(QUILTMIME *mime, int score);
@@ -92,6 +127,7 @@ int quilt_mime_set_extensions(QUILTMIME *mime, const char *description);
 int quilt_mime_set_callback(QUILTMIME *mime, int (*callback)(QUILTREQ *request, QUILTMIME *type));
 int quilt_mime_set_hidden(QUILTMIME *mime, int hidden);
 QUILTMIME *quilt_mime_negotiate(const char *accept);
+*/
 
 /* Request processing */
 QUILTREQ *quilt_request_create_fcgi(FCGX_Request *req);

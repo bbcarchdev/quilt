@@ -24,6 +24,7 @@
 #include "p_libquilt.h"
 
 static URI *quilt_base_uri;
+static QUILTCB *quilt_engine_cb;
 
 struct typemap_struct quilt_typemap[] = 
 {
@@ -47,36 +48,61 @@ static int quilt_request_process_path_(QUILTREQ *req, const char *uri);
 static const char *quilt_request_match_ext_(QUILTREQ *req);
 static int quilt_request_parse_params_(QUILTREQ *request);
 
-NEGOTIATE *quilt_types;
-NEGOTIATE *quilt_charsets;
+NEGOTIATE *quilt_types_;
+NEGOTIATE *quilt_charsets_;
 
+/* Initialise request handling */
 int
 quilt_request_init_(void)
 {
 	char *p;
 
-	quilt_types = neg_create();
-	quilt_charsets = neg_create();
-	if(!quilt_types || !quilt_charsets)
+	quilt_types_ = neg_create();
+	quilt_charsets_ = neg_create();
+	if(!quilt_types_ || !quilt_charsets_)
 	{
-		log_printf(LOG_CRIT, "failed to create new negotiation objects\n");
+		quilt_logf(LOG_CRIT, "failed to create new negotiation objects\n");
 		return -1;
-	}	
+	}
+	neg_add(quilt_charsets_, "utf-8", 1);
 	p = config_geta("quilt:base", NULL);
 	if(!p)
 	{
-		log_printf(LOG_CRIT, "failed to determine base URI from configuration\n");
+		quilt_logf(LOG_CRIT, "failed to determine base URI from configuration\n");
 		return -1;
 	}
 	quilt_base_uri = uri_create_str(p, NULL);
 	if(!quilt_base_uri)
 	{
-		log_printf(LOG_CRIT, "failed to parse <%s> as a URI\n", p);
+		quilt_logf(LOG_CRIT, "failed to parse <%s> as a URI\n", p);
 		free(p);
 		return -1;
 	}
-	log_printf(LOG_DEBUG, "base URI is <%s>\n", p);
+	quilt_logf(LOG_DEBUG, "base URI is <%s>\n", p);
 	free(p);
+	return 0;
+}
+
+/* Once everything has been initialised and plug-ins loaded, perform a
+ * sanity check
+ */
+int
+quilt_request_sanity_(void)
+{
+	const char *engine;
+	
+	engine = config_getptr_unlocked("quilt:engine", NULL);
+	if(!engine)
+	{
+		quilt_logf(LOG_CRIT, "no engine was specified in the [quilt] section of the configuration file\n");
+		return -1;
+	}
+	quilt_engine_cb = quilt_plugin_cb_find_name_(QCB_ENGINE, engine);
+	if(!quilt_engine_cb)
+	{
+		quilt_logf(LOG_CRIT, "engine '%s' is unknown (has the relevant module been loaded?)\n", engine);
+		return -1;
+	}
 	return 0;
 }
 
@@ -92,7 +118,7 @@ quilt_request_create_fcgi(FCGX_Request *request)
 	p = (QUILTREQ *) calloc(1, sizeof(QUILTREQ));
 	if(!p)
 	{
-		log_printf(LOG_CRIT, "failed to allocate %u bytes for request structure\n", (unsigned) sizeof(QUILTREQ));
+		quilt_logf(LOG_CRIT, "failed to allocate %u bytes for request structure\n", (unsigned) sizeof(QUILTREQ));
 		return NULL;
 	}
 	p->fcgi = request;
@@ -112,7 +138,7 @@ quilt_request_create_fcgi(FCGX_Request *request)
 
 	uri = FCGX_GetParam("REQUEST_URI", request->envp);
 
-	log_printf(LOG_DEBUG, "%s %s %s [%s] \"%s %s\" - - \"%s\" \"%s\"\n",
+	quilt_logf(LOG_DEBUG, "%s %s %s [%s] \"%s %s\" - - \"%s\" \"%s\"\n",
 			   p->host, (p->ident ? p->ident : "-"), (p->user ? p->user : "-"),
 			   date, p->method, uri, p->referer, p->ua);
    
@@ -125,7 +151,7 @@ quilt_request_create_fcgi(FCGX_Request *request)
 	p->uri = uri_create_str(p->path, quilt_base_uri);
 	if(!p->uri)
 	{
-		log_printf(LOG_ERR, "failed to parse <%s> into a URI\n", p->path);
+		quilt_logf(LOG_ERR, "failed to parse <%s> into a URI\n", p->path);
 		p->status = 400;
 		return p;
 	}
@@ -146,7 +172,7 @@ quilt_request_create_fcgi(FCGX_Request *request)
 			accept = "*/*";
 		}
 	}
-	p->type = neg_negotiate_type(quilt_types, accept);	
+	p->type = neg_negotiate_type(quilt_types_, accept);	
 	if(!p->type)
 	{
 		p->status = 406;
@@ -161,18 +187,18 @@ quilt_request_create_fcgi(FCGX_Request *request)
 	p->storage = librdf_new_storage(world, "hashes", NULL, "hash-type='memory',contexts='yes'");
 	if(!p->storage)
 	{
-		log_printf(LOG_CRIT, "failed to create new RDF storage\n");
+		quilt_logf(LOG_CRIT, "failed to create new RDF storage\n");
 		p->status = 500;
 		return p;
 	}
 	p->model = librdf_new_model(world, p->storage, NULL);
 	if(!p->model)
 	{
-		log_printf(LOG_CRIT, "failed to create new RDF model\n");
+		quilt_logf(LOG_CRIT, "failed to create new RDF model\n");
 		p->status = 500;
 		return p;
 	}
-	log_printf(LOG_DEBUG, "negotiated type '%s' from '%s'\n", p->type, accept);
+	quilt_logf(LOG_DEBUG, "negotiated type '%s' from '%s'\n", p->type, accept);
 	quilt_request_parse_params_(p);
 	p->limit = DEFAULT_LIMIT;
 	p->offset = 0;
@@ -299,17 +325,21 @@ quilt_request_free(QUILTREQ *req)
 int
 quilt_request_process(QUILTREQ *request)
 {
+	int r;
+
 	request->subject = uri_stralloc(request->uri);
 	if(!request->subject)
 	{
-		log_printf(LOG_CRIT, "failed to unparse subject URI\n");
+		quilt_logf(LOG_CRIT, "failed to unparse subject URI\n");
 		return 500;
 	}
-	log_printf(LOG_DEBUG, "query subject URI is <%s>\n", request->subject);
-	/* XXX determine engine to use */
-    /* return quilt_request_serialize(request); */
-	log_printf(LOG_CRIT, "no engine available to process request\n");
-	return 500;
+	quilt_logf(LOG_DEBUG, "query subject URI is <%s>\n", request->subject);
+	r = quilt_plugin_invoke_engine_(quilt_engine_cb, request);
+	if(r)
+	{
+		return r;
+	}
+	return quilt_request_serialize(request);
 }
 
 /* Serialize the model attached to a request according to the negotiated
@@ -318,36 +348,15 @@ quilt_request_process(QUILTREQ *request)
 int
 quilt_request_serialize(QUILTREQ *request)
 {
-	const char *tsuffix;
-	char *buf;
+	QUILTCB *cb;
 
-	/* XXX determine serialisation engine to use */
-/*	if(quilt_html_type(request->type))
+	cb = quilt_plugin_cb_find_mime_(QCB_SERIALIZE, request->type);
+	if(!cb)
 	{
-		return quilt_html_serialize(request);
-		} */
-	buf = quilt_model_serialize(request->model, request->type);
-	if(!buf)
-	{
-		log_printf(LOG_ERR, "failed to serialise model as %s\n", request->type);
+		quilt_logf(LOG_ERR, "failed to serialise model as %s\n", request->type);
 		return 406;
-	}	
-	if(!strncmp(request->type, "text/", 5))
-	{
-		tsuffix = "; charset=utf-8";
-	}
-	else
-	{
-		tsuffix = "";
-	}
-	FCGX_FPrintF(request->fcgi->out, "Status: 200 OK\n"
-				 "Content-type: %s%s\n"
-				 "Vary: Accept\n"
-				 "Server: Quilt\n"
-				 "\n", request->type, tsuffix);
-	FCGX_PutStr(buf, strlen(buf), request->fcgi->out);
-	free(buf);
-	return 200;
+	}		
+	return quilt_plugin_invoke_serialize_(cb, request);
 }
 
 /* Process a REQUEST_URI from the environment and populate the
@@ -366,7 +375,7 @@ quilt_request_process_path_(QUILTREQ *req, const char *uri)
 	buf = strdup(uri);
 	if(!buf)
 	{
-		log_printf(LOG_CRIT, "failed to duplicate request-URI: %s\n", strerror(errno));
+		quilt_logf(LOG_CRIT, "failed to duplicate request-URI: %s\n", strerror(errno));
 		return -1;
 	}
 	req->path = buf;
@@ -402,6 +411,7 @@ quilt_request_process_path_(QUILTREQ *req, const char *uri)
  * list.
  */
 
+/* XXX examine the extensions in registered serializer callbacks */
 static const char *
 quilt_request_match_ext_(QUILTREQ *req)
 {

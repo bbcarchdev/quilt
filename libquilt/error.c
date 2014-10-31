@@ -32,6 +32,7 @@ struct http_error_struct
 
 static struct http_error_struct errors[] =
 {
+	{ 200, "OK", "The request was completed successfully." },
 	{ 400, "Bad request", "The request could not be understood by the server due to malformed syntax." },
 	{ 401, "Unauthorized", "The request requires user authentication." },
 	{ 402, "Payment required", "The request cannot be satisfied without inclusion of a payment token." },
@@ -51,6 +52,11 @@ static struct http_error_struct errors[] =
 	{ 416, "Requested range not satisfiable", "The requested range of the request was not appropriate for the resource requested." },
 	{ 417, "Expectation failed", "An expectation included in the request could not be satisfied." },
 	{ 500, "Internal server error", "The server encountered an unexpected condition while processing the request." },
+	{ 501, "Not implemented", "The server did not understand or does not support the HTTP method in the request." },
+	{ 502, "Bad gateway", "An invalid response was received from an upstream server while processing the request." },
+	{ 503, "Service unavailable", "The server is currently unable to service the request." },
+	{ 504, "Gateway timeout", "The server did not receive a response from an upstream server in a timely fashion." },
+	{ 505, "HTTP version not supported", "The server does not support the requested protocol version." },
 	{ 0, NULL, NULL }
 };
 

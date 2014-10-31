@@ -64,16 +64,17 @@ neg_add(NEGOTIATE *neg, const char *name, float qs)
 
 	if(qs > 1)
 	{
-		qs = 1;
+		qs = 1.0f;
 	}
 	if(qs < 0)
 	{
-		qs = 0;
+		qs = 0.0f;
 	}
 	for(c = 0; c < neg->nentries; c++)
 	{
 		if(!strcasecmp(neg->entries[c].name, name))
 		{
+/*			fprintf(stderr, "negotiate: replacing %s (%f) -> (%f)\n", name, neg->entries[c].qs, qs); */
 			neg->entries[c].qs = qs;
 			return 0;
 		}
@@ -229,10 +230,12 @@ neg_negotiate_type(NEGOTIATE *neg, const char *accept)
 	/* Now find the best match */
 	for(c = 0; c < neg->nentries; c++)
 	{
+		/* fprintf(stderr, "negotiate: checking [%s] (qs=%f, qw=%f, qp=%f, q=%f)\n", neg->entries[c].name, neg->entries[c].qs, neg->entries[c].qw, neg->entries[c].qp, neg->entries[c].q); */
 		neg_check_match_(neg, &(neg->entries[c]));
 	}
 	if(neg->matched)
 	{
+		/* fprintf(stderr, "negotiate: negotiated [%s] at (%f)\n", neg->matched->name, neg->q); */
 		return neg->matched->name;
 	}
 	return NULL;

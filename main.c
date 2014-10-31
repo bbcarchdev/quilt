@@ -27,14 +27,17 @@ const char *quilt_progname = "quiltd";
 
 static int process_args(int argc, char **argv);
 static void usage(void);
+static int config_defaults(void);
 
 int
 main(int argc, char **argv)
 {
+	struct quilt_configfn_struct configfn;
+    
 	log_set_ident(argv[0]);
 	log_set_stderr(1);
 	log_set_level(LOG_NOTICE);
-	if(config_init(quilt_config_defaults))
+	if(config_init(config_defaults))
 	{
 		return 1;
 	}
@@ -47,34 +50,24 @@ main(int argc, char **argv)
 		return 1;
 	}
 	log_set_use_config(1);
+	configfn.config_get = config_get;
+	configfn.config_geta = config_geta;
+	configfn.config_get_int = config_get_int;
+	configfn.config_get_bool = config_get_bool;
+	configfn.config_get_all = config_get_all;
+	if(quilt_init_(log_vprintf, &configfn))
+	{
+		return 1;
+	}
 	/* XXX Daemonize */
-	quilt_types = neg_create();
-	quilt_charsets = neg_create();
-	if(!quilt_types || !quilt_charsets)
-	{
-		log_printf(LOG_CRIT, "failed to create new negotiation objects\n");
-		return -1;
-	}
-	if(quilt_librdf_init())
-	{
-		return 1;
-	}
-	if(quilt_sparql_init())
-	{
-		return 1;
-	}
 	if(fcgi_init())
 	{
 		return 1;
 	}
-	if(quilt_request_init())
+/*	if(quilt_html_init())
 	{
 		return 1;
-	}
-	if(quilt_html_init())
-	{
-		return 1;
-	}
+	} */
 	if(fcgi_runloop())
 	{
 		return 1;
@@ -135,4 +128,16 @@ usage(void)
 			quilt_progname);
 }
 
-			
+static int
+config_defaults(void)
+{
+	config_set_default("global:configFile", SYSCONFDIR "/quilt.conf");
+	config_set_default("log:level", "notice");
+	config_set_default("log:facility", "daemon");
+	config_set_default("log:syslog", "1");
+	config_set_default("log:stderr", "0");
+	config_set_default("sparql:query", "http://localhost/sparql/");
+	config_set_default("fastcgi:socket", "/tmp/quilt.sock");	
+	config_set_default("quilt:base", "http://www.example.com/");
+	return 0;
+}

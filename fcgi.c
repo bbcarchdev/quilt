@@ -134,18 +134,14 @@ fcgi_runloop(void)
 		else
 		{
 			r = quilt_request_process(req);
-			if(!r)
-			{
-				r = req->status;
-			}
 		}
-		if(r > 0 && r != 200)
+		if(r < 0)
+		{
+			r = 500;
+		}
+		if(r)
 		{
 			quilt_error(request, r);
-		}
-		else if(r < 0)
-		{
-			quilt_error(request, 500);
 		}
 		quilt_request_free(req);
 		FCGX_Finish_r(request);

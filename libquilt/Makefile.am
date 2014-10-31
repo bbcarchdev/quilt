@@ -21,7 +21,8 @@ AM_CPPFLAGS = @AM_CPPFLAGS@ \
 lib_LTLIBRARIES = libquilt.la
 
 libquilt_la_SOURCES = libquilt.h libquilt-internal.h p_libquilt.h \
-	init.c log.c config.c error.c librdf.c request.c sparql.c urlencode.c
+	init.c log.c config.c error.c librdf.c request.c sparql.c urlencode.c \
+	plugin.c
 
 libquilt_la_LDFLAGS = -avoid-version -no-undefined
 

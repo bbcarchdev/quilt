@@ -34,10 +34,11 @@ struct namespace_struct
 	size_t len;
 };
 
-static librdf_world *quilt_world = NULL;
+static librdf_world *quilt_world;
 static struct namespace_struct *namespaces;
 static size_t nscount;
 
+static int quilt_librdf_serialize_(QUILTREQ *request);
 static int quilt_librdf_logger_(void *data, librdf_log_message *message);
 static int quilt_ns_cb_(const char *key, const char *value, void *data);
 
@@ -45,51 +46,93 @@ static int quilt_ns_cb_(const char *key, const char *value, void *data);
 int
 quilt_librdf_init_(void)
 {
+	QUILTTYPE type;
 	const raptor_syntax_description *desc;
 	unsigned int c, i;
-	float q;
 
 	if(!quilt_world)
 	{
+		quilt_logf(LOG_DEBUG, "initialising librdf wrapper\n");
 		quilt_world = librdf_new_world();
 		if(!quilt_world)
 		{
-			log_printf(LOG_CRIT, "failed to create new RDF world\n");
+			quilt_logf(LOG_CRIT, "failed to create new RDF world\n");
 			return -1;
 		}
 		librdf_world_open(quilt_world);
 		librdf_world_set_logger(quilt_world, NULL, quilt_librdf_logger_);
+		/* Obtain all of our namespaces from the configuration */
+		config_get_all("namespaces", NULL, quilt_ns_cb_, NULL);
+		/* Register our MIME types for the built-in serializer */
 		for(c = 0; (desc = librdf_serializer_get_description(quilt_world, c)); c++)
 		{
 
 			for(i = 0; i < desc->mime_types_count; i++)
 			{
-				q = (float) desc->mime_types[i].q / 10.0f;
+				memset(&type, 0, sizeof(type));
+				type.mimetype = desc->mime_types[i].mime_type;
+				type.qs = (float) desc->mime_types[i].q / 10.0f;
 				/* Cap certain specific types */
-				if(!strcmp(desc->mime_types[i].mime_type, "application/rdf+xml") && q > 0.75)
+				if(!strcmp(desc->mime_types[i].mime_type, "application/rdf+xml") && type.qs > 0.75)
 				{
-					q = 0.75;
+					type.qs = 0.75;
 				}
-				else if(!strcmp(desc->mime_types[i].mime_type, "application/n-triples") && q > 0.75)
+				else if(!strcmp(desc->mime_types[i].mime_type, "application/n-triples") && type.qs > 0.75)
 				{
-					q = 0.75;
+					type.qs = 0.75;
 				}
-				else if(q > 0.85)
+				else if(type.qs > 0.85)
 				{
-					q = 0.85;
+					type.qs = 0.85;
 				}
-				neg_add(quilt_types, desc->mime_types[i].mime_type, q);
-				log_printf(LOG_DEBUG, "adding '%s' with q=%f\n", desc->mime_types[i].mime_type, q);
+				/* Force the qs-value of text/turtle to be high */
+				if(!strcmp(type.mimetype, "text/turtle"))
+				{
+					type.qs = 0.9f;
+				}
+				if(quilt_plugin_register_serializer(&type, quilt_librdf_serialize_))
+				{
+					quilt_logf(LOG_ERR, "failed to register MIME type '%s'\n", type.mimetype);
+				}
 			}
-		}		
+		}
+		quilt_logf(LOG_DEBUG, "librdf wrapper initialised\n");
 		/* Artifically inflate the q-values of some types */
-		neg_add(quilt_types, "text/turtle", 0.9f);
-		neg_add(quilt_types, "text/html", 0.95f);
-		neg_add(quilt_charsets, "utf-8", 1);
-		/* Obtain all of our namespaces from the configuration */
-		config_get_all("namespaces", NULL, quilt_ns_cb_, NULL);
+/*		neg_add(quilt_types, "text/turtle", 0.9f);
+  neg_add(quilt_types, "text/html", 0.95f); */
 	}
 	return 0;
+}
+
+/* The built-in RDF serializer */
+static
+int quilt_librdf_serialize_(QUILTREQ *request)
+{
+	const char *tsuffix;
+	char *buf;
+	
+	buf = quilt_model_serialize(request->model, request->type);
+	if(!buf)
+	{
+		quilt_logf(LOG_ERR, "failed to serialise model as %s\n", request->type);
+		return 406;
+	}	
+	if(!strncmp(request->type, "text/", 5))
+	{
+		tsuffix = "; charset=utf-8";
+	}
+	else
+	{
+		tsuffix = "";
+	}
+	FCGX_FPrintF(request->fcgi->out, "Status: 200 OK\n"
+				 "Content-type: %s%s\n"
+				 "Vary: Accept\n"
+				 "Server: Quilt\n"
+				 "\n", request->type, tsuffix);
+	FCGX_PutStr(buf, strlen(buf), request->fcgi->out);
+	free(buf);
+	return 0;	
 }
 
 /* Obtain the librdf world */
@@ -121,7 +164,7 @@ quilt_model_parse(librdf_model *model, const char *mime, const char *buf, size_t
 		base = librdf_new_uri(quilt_world, (const unsigned char *) "/");
 		if(!base)
 		{
-			log_printf(LOG_CRIT, "failed to parse URI </>\n");
+			quilt_logf(LOG_CRIT, "failed to parse URI </>\n");
 			return -1;
 		}
 	}
@@ -149,7 +192,7 @@ quilt_model_parse(librdf_model *model, const char *mime, const char *buf, size_t
 		{
 			name = "auto";
 		}
-		log_printf(LOG_ERR, "failed to create a new parser for %s (%s)\n", mime, name);
+		quilt_logf(LOG_ERR, "failed to create a new parser for %s (%s)\n", mime, name);
 		return -1;
 	}
 	r = librdf_parser_parse_counted_string_into_model(parser, (const unsigned char *) buf, buflen, base, model);
@@ -202,7 +245,7 @@ quilt_model_serialize(librdf_model *model, const char *mime)
 		{
 			name = "auto";
 		}
-		log_printf(LOG_ERR, "failed to create a new serializer for %s (%s)\n", mime, name);
+		quilt_logf(LOG_ERR, "failed to create a new serializer for %s (%s)\n", mime, name);
 		return NULL;
 	}
 	for(c = 0; namespaces[c].prefix; c++)
@@ -210,7 +253,7 @@ quilt_model_serialize(librdf_model *model, const char *mime)
 		uri = librdf_new_uri(quilt_world, (const unsigned char *) namespaces[c].uri);
 		if(!uri)
 		{
-			log_printf(LOG_ERR, "failed to create new URI from <%s>\n", namespaces[c].uri);
+			quilt_logf(LOG_ERR, "failed to create new URI from <%s>\n", namespaces[c].uri);
 			return 0;
 		}
 		librdf_serializer_set_namespace(serializer, uri, namespaces[c].prefix);
@@ -339,7 +382,7 @@ quilt_librdf_logger_(void *data, librdf_log_message *message)
 		level = LOG_NOTICE;
 		break;
 	}
-	log_printf(level, "%s\n", librdf_log_message_message(message));
+	quilt_logf(level, "%s\n", librdf_log_message_message(message));
 	return 0;
 }
 
@@ -356,7 +399,7 @@ quilt_node_create_uri(const char *uri)
 	node = librdf_new_node_from_uri_string(quilt_world, (const unsigned char *)uri);
 	if(!node)
 	{
-		log_printf(LOG_ERR, "failed to create node for <%s>\n", uri);
+		quilt_logf(LOG_ERR, "failed to create node for <%s>\n", uri);
 		return NULL;
 	}
 	return node;
@@ -374,7 +417,7 @@ quilt_node_create_literal(const char *value, const char *lang)
 	node = librdf_new_node_from_literal(quilt_world, (const unsigned char *) value, lang, 0);
 	if(!node)
 	{
-		log_printf(LOG_ERR, "failed to create node for literal value\n");
+		quilt_logf(LOG_ERR, "failed to create node for literal value\n");
 		return NULL;
 	}
 	return node;
@@ -393,7 +436,7 @@ quilt_st_create(const char *subject, const char *predicate)
 	st = librdf_new_statement(quilt_world);
 	if(!st)
 	{
-		log_printf(LOG_ERR, "failed to create a new RDF statement\n");
+		quilt_logf(LOG_ERR, "failed to create a new RDF statement\n");
 		return NULL;
 	}	
 	node = quilt_node_create_uri(subject);
@@ -477,7 +520,7 @@ quilt_model_find_double(librdf_model *model, const char *subject, const char *pr
 	stream = librdf_model_find_statements(model, query);
 	if(!stream)
 	{
-		log_printf(LOG_ERR, "failed to create RDF stream for query\n");
+		quilt_logf(LOG_ERR, "failed to create RDF stream for query\n");
 		librdf_free_statement(query);
 	}
 	while(!librdf_stream_end(stream))

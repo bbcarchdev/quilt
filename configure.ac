@@ -33,6 +33,7 @@ LT_INIT
 BT_ENABLE_XSI
 BT_ENABLE_POSIX
 
+BT_REQUIRE_LIBDL
 BT_REQUIRE_LIBCURL
 BT_REQUIRE_LIBRDF
 BT_REQUIRE_LIBXML2
@@ -74,6 +75,9 @@ libnegotiate/Makefile
 libliquify/Makefile
 templates/Makefile
 public/Makefile
+libquilt/Makefile
+engines/Makefile
+serialisers/Makefile
 apache2-example.conf
 ])
 

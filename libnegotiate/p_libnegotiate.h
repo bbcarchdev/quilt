@@ -26,6 +26,8 @@
 #  include <strings.h>
 # endif
 
+# include <syslog.h>
+
 # include "libnegotiate.h"
 
 struct negotiate_struct

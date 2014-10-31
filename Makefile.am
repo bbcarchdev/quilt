@@ -19,34 +19,39 @@
 ACLOCAL_AMFLAGS = -I m4
 
 DIST_SUBDIRS = m4 libsupport liburi libsparqlclient libnegotiate jsondata \
-	templates public
+	templates public libquilt engines serialisers
 
-SUBDIRS = libsupport @subdirs@ libnegotiate libliquify templates public .
+SUBDIRS = libsupport @subdirs@ libnegotiate libliquify templates public \
+	libquilt engines serialisers .
 
 doc_DATA = apache2-example.conf
 
 dist_doc_DATA = quilt.conf
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
+	-I$(top_builddir)/libquilt -I$(top_srcdir)/libquilt \
 	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
-	-I$(top_builddir)/libnegotiate -I$(top_srcdir)/libnegotiate \
-	-I$(top_builddir)/libliquify -I$(top_srcdir)/libliquify
+	-I$(top_builddir)/libnegotiate -I$(top_srcdir)/libnegotiate
 
 sbin_PROGRAMS = quiltd
 
-quiltd_SOURCES = p_quilt.h \
-	main.c config.c request.c error.c urlencode.c sparql.c librdf.c fcgi.c \
-	html.c \
-	engine-resourcegraph.c engine-coref.c
+quiltd_SOURCES = p_quilt.h main.c fcgi.c
+
+# On some systems, while $(libdir) appears in the system library search list,
+# the loader is unable to find libraries installed there without an
+# intermediate step being performed. Using -R$(libdir) prevents the issue
+# from occurring (by including a DT_RPATH hint, or equivalent in the quiltd
+# executable), but packaging scripts may wish to use chrpath(1) or similar
+# to strip it out of packaged binaries.
+quiltd_LDFLAGS = -R$(libdir)
 
 quiltd_LDADD = \
+	libquilt/libquilt.la \
 	libsupport/libsupport.la \
 	libnegotiate/libnegotiate.la \
-	libliquify/libliquify.la \
 	@fcgi_LIBS@ \
 	@LIBURI_LOCAL_LIBS@ @LIBURI_LIBS@ \
-	@LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@ \
-	@LIBJSONDATA_LOCAL_LIBS@ @LIBJSONDATA_LIBS@
+	@LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@
 
 install-data-hook:
 	$(INSTALL) -m 755 -d "$(DESTDIR)$(sysconfdir)"
