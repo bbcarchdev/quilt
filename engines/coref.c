@@ -76,7 +76,7 @@ coref_process(QUILTREQ *request)
 	int r;
 		
 	qclass = NULL;
-	t = FCGX_GetParam("class", request->query);
+	t = request->impl->getparam(request, "class");
 	if(t)
 	{
 		qclass = (char *) calloc(1, 32 + strlen(t));
@@ -169,8 +169,8 @@ coref_index(QUILTREQ *request, const char *qclass)
 	st = quilt_st_create_uri(request->path, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://rdfs.org/ns/void#Dataset");
 	if(!st) return -1;
 	librdf_model_context_add_statement(request->model, request->basegraph, st);
-	/* Return 0, rather than 200, to auto-serialise the model */
-	return 0;
+	/* Return 200, rather than 0, to auto-serialise the model */
+	return 200;
 }
 
 /* For all of the things matching a particular query, add the metadata from
@@ -413,12 +413,13 @@ coref_lookup(QUILTREQ *request, const char *target)
 		buf = strdup(uristr);
 	}
 	sparqlres_destroy(res);
-	FCGX_FPrintF(request->fcgi->out, "Status: 302 Moved\n"
-				 "Server: Quilt\n"
+	request->impl->printf(request, "Status: 302 Moved\n"
+				 "Server: Quilt/" PACKAGE_VERSION "\n"
 				 "Location: %s\n"
 				 "\n", buf);
 	free(buf);
-	return 200;
+	/* Return 0 to supress output */
+	return 0;
 }
 
 static int
@@ -429,7 +430,7 @@ coref_home(QUILTREQ *request)
 
 	const char *uri;
 
-	uri = FCGX_GetParam("uri", request->query);
+	uri = request->impl->getparam(request, "uri");
 	if(uri)
 	{
 		return coref_lookup(request, uri);
@@ -455,8 +456,8 @@ coref_home(QUILTREQ *request)
 			librdf_model_context_add_statement(request->model, request->basegraph, st);
 		}
 	}
-	/* Return 0, rather than 200, to auto-serialise the model */
-	return 0;
+	/* Return 200, rather than 0, to auto-serialise the model */
+	return 200;
 }
 
 static int
@@ -499,6 +500,6 @@ coref_item(QUILTREQ *request)
 	coref_index_metadata_stream(request, stream, 0);
 	librdf_free_stream(stream);
 	librdf_free_node(g);
-	/* Return 0, rather than 200, to auto-serialise the model */
-	return 0;
+	/* Return 200, rather than 0, to auto-serialise the model */
+	return 200;
 }

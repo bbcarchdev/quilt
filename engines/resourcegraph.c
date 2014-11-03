@@ -61,8 +61,8 @@ resourcegraph_process(QUILTREQ *request)
 	{
 		return 404;
 	}
-	/* Returning 0 (rather than 200) causes the model to be serialized
+	/* Returning 200 (rather than 0) causes the model to be serialized
 	 * automatically.
 	 */
-	return 0;
+	return 200;
 }
