@@ -57,21 +57,21 @@ quilt_plugin_init(void)
 	baseuri = quilt_config_geta("quilt:base", NULL);
 	if(!baseuri)
 	{
-		quilt_logf(LOG_CRIT, "failed to determine base URI from configuration\n");
+		quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to determine base URI from configuration\n");
 		return -1;
 	}
 	baseurilen = strlen(baseuri);
 	templatedir = quilt_config_geta("html:templatedir", DATAROOTDIR "/" PACKAGE_TARNAME "/templates/");
 	if(!templatedir)
 	{
-		quilt_logf(LOG_CRIT, "failed to determine base path for templates\n");
+		quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to determine base path for templates\n");
 		return -1;
 	}
 	templatedirlen = strlen(templatedir);
 	liquify = liquify_create();
 	if(!liquify)
 	{
-		quilt_logf(LOG_CRIT, "failed to initialise templating context\n");
+		quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to initialise templating context\n");
 		return -1;
 	}
 	liquify_set_logger(liquify, quilt_vlogf);
@@ -154,12 +154,15 @@ add_req(jd_var *dict, QUILTREQ *req)
 {
 	jd_var *r, *a;
 	char *pathbuf, *t;
+	QUILTTYPE typebuf, *type;
+	size_t l;
+	const char *s;
 
 	r = jd_nhv(8);
 	pathbuf = NULL;
 	if(req->path)
 	{
-		pathbuf = (char *) malloc(strlen(req->path) + 16);
+		pathbuf = (char *) malloc(strlen(req->path) + 32);
 		jd_set_string(jd_get_ks(r, "path", 1), req->path);
 		if(req->path[0] == '/' && req->path[1] == 0)
 		{
@@ -201,24 +204,42 @@ add_req(jd_var *dict, QUILTREQ *req)
 		t = strchr(pathbuf, 0);
 		*t = '.';
 		t++;
-/*		for(c = 0; quilt_typemap[c].ext; c++)
+		for(type = quilt_plugin_serializer_first(&typebuf); type; type = quilt_plugin_next(type))
 		{
-			if(!quilt_typemap[c].visible)
+			if(!type->visible || !type->extensions)
 			{
 				continue;
 			}
-			if(req->type && !strcmp(req->type, quilt_typemap[c].type))
+			if(req->type && !strcasecmp(req->type, type->mimetype))
 			{
 				continue;
 			}
-			strcpy(t, quilt_typemap[c].ext);
-			r = jd_nhv(3);
-			jd_set_string(jd_get_ks(r, "type", 1), quilt_typemap[c].type);
-			jd_set_string(jd_get_ks(r, "title", 1), quilt_typemap[c].name);
+			s = strchr(type->extensions, ' ');
+			if(s)
+			{
+				l = s - type->extensions;			   
+			}
+			else
+			{
+				l = strlen(type->extensions);
+			}
+			if(l > 6)
+			{
+				continue;
+			}			
+			strncpy(t, type->extensions, l);
+			t[l] = 0;
+			r = jd_nhv(3);			
+			jd_set_string(jd_get_ks(r, "type", 1), type->mimetype);
+			if(type->desc)
+			{
+				jd_set_string(jd_get_ks(r, "title", 1), type->desc);
+			}
 			jd_set_string(jd_get_ks(r, "uri", 1), pathbuf);
-			jd_set_string(jd_get_ks(r, "ext", 1), quilt_typemap[c].ext);
+			jd_set_string(jd_get_ks(r, "ext", 1), t);
 			jd_assign(jd_push(a, 1), r);
-			} */
+			quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": linking to %s as %s (%s)\n", pathbuf, type->mimetype, type->desc);
+		}
 		jd_assign(jd_get_ks(dict, "links", 1), a);
 		free(pathbuf);
 	}
@@ -343,7 +364,7 @@ add_subject(QUILTREQ *req, jd_var *item, librdf_model *model, librdf_node *subje
 	uriobj = uri_create_str(uri, NULL);
 	if(!uriobj)
 	{
-		quilt_logf(LOG_ERR, "failed to parse subject URI <%s>\n", uri);
+		quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": failed to parse subject URI <%s>\n", uri);
 		return -1;
 	}
 	info = uri_info(uriobj);
@@ -569,20 +590,20 @@ get_literal(QUILTREQ *req, librdf_model *model, librdf_node *subject, const char
 	obj = librdf_new_node_from_uri_string(world, (const unsigned char *) predicate);
 	if(!obj)
 	{
-		quilt_logf(LOG_ERR, "failed to create new URI for <%s>\n", predicate);
+		quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": failed to create new URI for <%s>\n", predicate);
 		return NULL;
 	}
 	query = librdf_new_statement(world);
 	if(!query)
 	{
-		quilt_logf(LOG_ERR, "failed to create new statement for query\n");
+		quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": failed to create new statement for query\n");
 		librdf_free_node(obj);
 		return NULL;
 	}
 	subject = librdf_new_node_from_node(subject);
 	if(!subject)
 	{
-		quilt_logf(LOG_ERR, "failed to duplicate subject node\n");
+		quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": failed to duplicate subject node\n");
 		librdf_free_node(obj);
 		librdf_free_statement(query);
 		return NULL;
@@ -592,7 +613,7 @@ get_literal(QUILTREQ *req, librdf_model *model, librdf_node *subject, const char
 	stream = librdf_model_find_statements(model, query);
 	if(!stream)
 	{
-		quilt_logf(LOG_ERR, "failed to create stream for model query\n");
+		quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": failed to create stream for model query\n");
 		librdf_free_statement(query);
 		return NULL;
 	}
@@ -602,7 +623,7 @@ get_literal(QUILTREQ *req, librdf_model *model, librdf_node *subject, const char
 		obj = librdf_statement_get_object(st);
 		if(!obj)
 		{
-			quilt_logf(LOG_ERR, "failed to obtain object of statement\n");
+			quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": failed to obtain object of statement\n");
 		}
 		else if(librdf_node_is_literal(obj) &&
 		   !librdf_node_get_literal_value_datatype_uri(obj))
@@ -655,11 +676,11 @@ readfile(const char *path)
 	
 	len = alloc = 0;
 	buf = NULL;
-	quilt_logf(LOG_DEBUG, "loading template: '%s'\n", path);
+	quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": loading template: '%s'\n", path);
 	f = fopen(path, "rb");
 	if(!f)
 	{
-		quilt_logf(LOG_ERR, "%s: (failed to open) %s\n", path, strerror(errno));
+		quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": %s: (failed to open) %s\n", path, strerror(errno));
 		return NULL;
 	}
 	while(1)
@@ -667,7 +688,7 @@ readfile(const char *path)
 		p = (char *) realloc(buf, alloc + 512);
 		if(!p)
 		{
-			quilt_logf(LOG_ERR, "%s: %s\n", path, strerror(errno));
+			quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": %s: %s\n", path, strerror(errno));
 			free(buf);
 			return NULL;
 		}
@@ -698,7 +719,7 @@ quilt_html_parse_(LIQUIFY *liquify, const char *name, void *data)
 	pathname = (char *) malloc(strlen(name) + templatedirlen + 4);	
 	if(!pathname)
 	{
-		quilt_logf(LOG_CRIT, "failed to allocate pathname buffer\n");
+		quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to allocate pathname buffer\n");
 		return NULL;
 	}
 	if(name[0] == '/')

@@ -11,6 +11,8 @@
 # include "libquilt.h"
 # include "libliquify.h"
 
+# define QUILT_PLUGIN_NAME              "html"
+
 struct class_struct
 {
 	const char *uri;

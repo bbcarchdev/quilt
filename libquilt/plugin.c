@@ -309,6 +309,55 @@ quilt_plugin_invoke_serialize_(QUILTCB *cb, QUILTREQ *req)
 	return r;
 }
 
+QUILTTYPE *
+quilt_plugin_serializer_first(QUILTTYPE *buf)
+{
+	QUILTCB *cur;
+
+	memset(buf, 0, sizeof(QUILTTYPE));
+	for(cur = cb_first; cur; cur = cur->next)
+	{
+		if(cur->type != QCB_SERIALIZE)
+		{
+			continue;
+		}
+		buf->data = (void *) cur;
+		buf->mimetype = cur->mime->mimetype;
+		buf->extensions = cur->mime->extensions;
+		buf->desc = cur->mime->desc;
+		buf->visible = cur->mime->visible;
+		buf->qs = cur->mime->qs;
+		return buf;
+	}
+	return NULL;
+}
+
+QUILTTYPE *quilt_plugin_next(QUILTTYPE *current)
+{
+	QUILTCB *cur;
+	QUILTCBTYPE type;
+
+	cur = (QUILTCB *) current->data;
+	memset(current, 0, sizeof(QUILTTYPE));
+	type = cur->type;
+	for(cur = cur->next; cur; cur = cur->next)
+	{
+		if(cur->type != type)
+		{
+			continue;
+		}
+		current->data = (void *) cur;
+		current->mimetype = cur->mime->mimetype;
+		current->extensions = cur->mime->extensions;
+		current->desc = cur->mime->desc;
+		current->visible = cur->mime->visible;
+		current->qs = cur->mime->qs;
+		return current;
+	}
+	return NULL;
+}
+	
+
 /* Convert a (constant) QUILTTYPE structure to an (allocated) QUILTMIME */
 static QUILTMIME *
 mime_create(const QUILTTYPE *type)

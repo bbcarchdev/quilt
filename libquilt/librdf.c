@@ -70,6 +70,7 @@ quilt_librdf_init_(void)
 			for(i = 0; i < desc->mime_types_count; i++)
 			{
 				memset(&type, 0, sizeof(type));
+				type.visible = 1;
 				type.mimetype = desc->mime_types[i].mime_type;
 				type.qs = (float) desc->mime_types[i].q / 10.0f;
 				/* Cap certain specific types */
@@ -89,6 +90,34 @@ quilt_librdf_init_(void)
 				if(!strcmp(type.mimetype, "text/turtle"))
 				{
 					type.qs = 0.9f;
+					type.extensions = "ttl";
+					type.desc = "Turtle";
+					type.visible = 1;
+				}
+				else if(!strcmp(type.mimetype, "application/rdf+xml"))
+				{
+					type.extensions = "rdf";
+					type.desc = "RDF/XML";
+					type.visible = 1;
+				}
+				else if(!strcmp(type.mimetype, "text/x-nquads"))
+				{
+					type.mimetype = "application/x-nquads";
+					type.extensions = "nq";
+					type.desc = "N-Quads";
+					type.visible = 1;
+				}
+				else if(!strcmp(type.mimetype, "application/n-triples"))
+				{
+					type.extensions = "nt";
+					type.desc = "N-Triples";
+					type.visible = 1;
+				}
+				else if(!strcmp(type.mimetype, "application/json"))
+				{
+					type.extensions = "json";
+					type.desc = "RDF/JSON";
+					type.visible = 1;
 				}
 				if(quilt_plugin_register_serializer(&type, quilt_librdf_serialize_))
 				{

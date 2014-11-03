@@ -93,6 +93,7 @@ struct quilt_request_struct
 	int offset;
 };
 
+/* A typemap structure, filled in by a serialising plug-in for registration */
 struct quilt_type_struct
 {
 	/* The actual MIME type */
@@ -112,6 +113,8 @@ struct quilt_type_struct
 	 * this flag is unset.
 	 */
 	int visible;
+	/* Used internally by libquilt */
+	void *data;
 };
 
 /* Plug-in initialisation function */
@@ -127,6 +130,8 @@ int quilt_plugin_init(void);
 /* Plug-in handling */
 int quilt_plugin_register_serializer(const QUILTTYPE *type, quilt_serialize_fn fn);
 int quilt_plugin_register_engine(const char *name, quilt_engine_fn fn);
+QUILTTYPE *quilt_plugin_serializer_first(QUILTTYPE *buf);
+QUILTTYPE *quilt_plugin_next(QUILTTYPE *current);
 
 /* Logging */
 void quilt_logf(int priority, const char *message, ...);
