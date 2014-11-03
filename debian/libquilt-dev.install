@@ -1,2 +1,2 @@
 usr/include/libquilt.h
-usr/include/libquilt-dev.h
+usr/include/libquilt-internal.h
