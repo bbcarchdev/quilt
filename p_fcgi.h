@@ -39,6 +39,6 @@ typedef struct
 	char **query;
 } QUILTIMPLDATA;
 
-# include "libquilt-internal.h"
+# include "libquilt-sapi.h"
 
 #endif /*!P_FCGI_H_ */

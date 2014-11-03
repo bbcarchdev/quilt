@@ -18,7 +18,7 @@ AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
 	-I$(top_builddir)/libnegotiate -I$(top_srcdir)/libnegotiate
 
-include_HEADERS = libquilt.h libquilt-internal.h
+include_HEADERS = libquilt.h libquilt-sapi.h
 
 lib_LTLIBRARIES = libquilt.la
 

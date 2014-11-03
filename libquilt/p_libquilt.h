@@ -43,7 +43,7 @@
 # include "libnegotiate.h"
 # include "libsparqlclient.h"
 
-# include "libquilt-internal.h"
+# include "libquilt-sapi.h"
 
 # define PLUGINDIR                      LIBDIR "/quilt/"
 # define QUILT_MIME_LEN                 63
