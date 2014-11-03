@@ -163,6 +163,10 @@ quilt_plugin_cb_find_mime_(QUILTCBTYPE type, const char *mimetype)
 {
 	QUILTCB *cur;
 
+	if(!mimetype)
+	{
+		return NULL;
+	}
 	for(cur = cb_first; cur; cur = cur->next)
 	{
 		if(cur->type != type || !cur->mime)

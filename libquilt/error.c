@@ -63,11 +63,24 @@ static struct http_error_struct errors[] =
 int
 quilt_error(QUILTREQ *request, int code)
 {
+	librdf_world *world;
+	librdf_statement *st;
+	librdf_node *bnode, *node;
 	size_t c;
-	const char *sig, *title;
 	char buf[64];
 
-	sig = request->impl->getenv(request, "SERVER_SIGNATURE");
+	quilt_logf(LOG_DEBUG, "quilt_error(%d)\n", code);
+	world = quilt_librdf_world();
+	if(request->model)
+	{
+		librdf_free_model(request->model);
+		request->model = librdf_new_model(world, request->storage, NULL);
+		if(!request->model)
+		{
+			quilt_logf(LOG_CRIT, "failed to create new RDF model\n");
+			code = 500;
+		}
+	}
 	for(c = 0; errors[c].code; c++)
 	{
 		if(errors[c].code == code)
@@ -77,39 +90,87 @@ quilt_error(QUILTREQ *request, int code)
 	}
 	if(errors[c].title)
 	{
-		title = errors[c].title;
+		request->statustitle = errors[c].title;
 	}
 	else
 	{
 		sprintf(buf, "Error %d", code);
-		title = buf;
+		request->statustitle = buf;
 	}
-	request->impl->printf(request, "Status: %d %s\n"
-				 "Content-type: text/html; charset=utf-8\n"
-				 "Server: Quilt/" PACKAGE_VERSION "\n"
-				 "\n", code, title);
-	request->impl->printf(request, "<!DOCTYPE html>\n"
-				 "<html>\n"
-				 "\t<head>\n"
-				 "\t\t<meta charset=\"utf-8\">\n"
-				 "\t\t<title>%s</title>\n"
-				 "\t</head>\n"
-				 "\t<body>\n"
-				 "\t\t<h1>%s</h1>\n",
-				 title, title);
+	request->status = code;
+	request->index = 0;
+	request->home = 0;
 	if(errors[c].description)
 	{
-		request->impl->printf(request, "\t\t<p>%s</p>\n", errors[c].description);
+		request->errordesc = errors[c].description;
 	}
 	else
 	{
-		request->impl->printf(request, "\t\t<p>No description of this error is available.</p>\n");
+		request->errordesc = "No description of this error is available";
 	}
-	if(sig)
+	if(!request->serialized)
 	{
-		request->impl->printf(request, "\t\t<hr>\n"
-							  "\t\t<p>%s</p>\n", sig);
+		/* Express the error condition as RDF */
+		/*	bnode = librdf_new_node_from_blank_identifier(world, NULL); */
+		bnode = quilt_node_create_uri("#error");
+		
+		st = librdf_new_statement(world);
+		node = librdf_new_node_from_node(bnode);
+		librdf_statement_set_subject(st, node);
+		node = quilt_node_create_uri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+		librdf_statement_set_predicate(st, node);
+		node = quilt_node_create_uri("http://www.w3.org/2011/http#Response");
+		librdf_statement_set_object(st, node);
+		librdf_model_add_statement(request->model, st);
+
+		st = librdf_new_statement(world);
+		node = librdf_new_node_from_node(bnode);
+		librdf_statement_set_subject(st, node);
+		node = quilt_node_create_uri("http://purl.org/dc/terms/title");
+		librdf_statement_set_predicate(st, node);
+		node = quilt_node_create_literal(request->statustitle, "en");
+		librdf_statement_set_object(st, node);
+		librdf_model_add_statement(request->model, st);
+
+		st = librdf_new_statement(world);
+		node = librdf_new_node_from_node(bnode);
+		librdf_statement_set_subject(st, node);
+		node = quilt_node_create_uri("http://purl.org/dc/terms/description");
+		librdf_statement_set_predicate(st, node);
+		node = quilt_node_create_literal(request->errordesc, "en");
+		librdf_statement_set_object(st, node);
+		librdf_model_add_statement(request->model, st);
+
+		st = librdf_new_statement(world);
+		node = librdf_new_node_from_node(bnode);
+		librdf_statement_set_subject(st, node);
+		node = quilt_node_create_uri("http://www.w3.org/2011/http#statusCodeValue");
+		librdf_statement_set_predicate(st, node);
+		node = quilt_node_create_int(request->status);
+		librdf_statement_set_object(st, node);
+		librdf_model_add_statement(request->model, st);
+
+		librdf_free_node(bnode);
+
+		if(!quilt_request_serialize(request))
+		{
+			return 0;
+		}
 	}
+	request->impl->printf(request, "Status: %d %s\n"
+				 "Content-type: text/html; charset=utf-8\n"
+						  "Server: Quilt/" PACKAGE_VERSION "\n"
+						  "\n", code, request->statustitle);
+	request->impl->printf(request, "<!DOCTYPE html>\n"
+						  "<html>\n"
+						  "\t<head>\n"
+						  "\t\t<meta charset=\"utf-8\">\n"
+						  "\t\t<title>%s</title>\n"
+						  "\t</head>\n"
+						  "\t<body>\n"
+						  "\t\t<h1>%s</h1>\n",
+						  request->statustitle, request->statustitle);
+    request->impl->printf(request, "\t\t<p>%s</p>\n", request->errordesc);
 	request->impl->printf(request, "\t</body>\n"
 						  "</html>\n");
 	return 0;

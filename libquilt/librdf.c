@@ -125,11 +125,11 @@ int quilt_librdf_serialize_(QUILTREQ *request)
 	{
 		tsuffix = "";
 	}
-	request->impl->printf(request, "Status: 200 OK\n"
+	request->impl->printf(request, "Status: %d %s\n"
 				 "Content-type: %s%s\n"
 				 "Vary: Accept\n"
 				 "Server: Quilt/" PACKAGE_VERSION "\n"
-				 "\n", request->type, tsuffix);
+				 "\n", request->status, request->statustitle, request->type, tsuffix);
 	request->impl->put(request, buf, strlen(buf));
 	free(buf);
 	return 0;	
@@ -421,6 +421,34 @@ quilt_node_create_literal(const char *value, const char *lang)
 		return NULL;
 	}
 	return node;
+}
+
+librdf_node *
+quilt_node_create_int(int value)
+{
+	librdf_node *node;
+	librdf_uri *uri;
+	char buf[64];
+	
+	snprintf(buf, sizeof(buf) - 1, "%d", value);
+	if(quilt_librdf_init_())
+	{
+		return NULL;
+	}
+	uri = librdf_new_uri(quilt_world, (const unsigned char *) "http://www.w3.org/2001/XMLSchema#integer");
+	if(!uri)
+	{
+		quilt_logf(LOG_CRIT, "failed top create URI for xsd:integer\n");
+		return NULL;
+	}
+	node = librdf_new_node_from_typed_literal(quilt_world, (const unsigned char *) buf, NULL, uri);
+	librdf_free_uri(uri);
+	if(!node)
+	{
+		quilt_logf(LOG_CRIT, "failed to create node for literal value\n");
+		return NULL;
+	}
+	return node;	
 }
 
 librdf_statement *

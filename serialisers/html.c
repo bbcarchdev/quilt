@@ -33,6 +33,7 @@ static LIQUIFY *liquify;
 static LIQUIFYTPL *tpl_home;
 static LIQUIFYTPL *tpl_index;
 static LIQUIFYTPL *tpl_item;
+static LIQUIFYTPL *tpl_error;
 
 static int html_serialize(QUILTREQ *req);
 static LIQUIFYTPL *quilt_html_parse_(LIQUIFY *liquify, const char *pathname, void *data);
@@ -78,6 +79,7 @@ quilt_plugin_init(void)
 	tpl_home = liquify_load(liquify, "home.liquid");
 	tpl_item = liquify_load(liquify, "item.liquid");
 	tpl_index = liquify_load(liquify, "index.liquid");
+	tpl_error = liquify_load(liquify, "error.liquid");
 	for(c = 0; html_types[c].mimetype; c++)
 	{
 		quilt_plugin_register_serializer(&(html_types[c]), html_serialize);
@@ -105,11 +107,11 @@ html_serialize(QUILTREQ *req)
 			/* Set status to zero to suppress output */
 			status = 0;
 			buf = liquify_apply(tpl, dict);
-			req->impl->printf(req, "Status: 200 OK\n"
-						 "Content-type: %s; charset=utf-8\n"
-						 "Vary: Accept\n"
-						 "Server: Quilt/" PACKAGE_VERSION "\n"
-						 "\n", req->type);
+			req->impl->printf(req, "Status: %d %s\n"
+							  "Content-type: %s; charset=utf-8\n"
+							  "Vary: Accept\n"
+							  "Server: Quilt/" PACKAGE_VERSION "\n"
+							  "\n", req->status, req->statustitle, req->type);
 			req->impl->put(req, buf, strlen(buf));
 			free(buf);
 		}
@@ -120,6 +122,10 @@ html_serialize(QUILTREQ *req)
 static LIQUIFYTPL *
 quilt_html_template_(QUILTREQ *req)
 {
+	if(req->status != 200)
+	{
+		return tpl_error;
+	}
 	if(req->home && tpl_home)
 	{
 		return tpl_home;
@@ -173,6 +179,15 @@ add_req(jd_var *dict, QUILTREQ *req)
 	if(req->method) jd_set_string(jd_get_ks(r, "method", 1), req->method);
 	if(req->referer) jd_set_string(jd_get_ks(r, "referer", 1), req->referer);
 	if(req->ua) jd_set_string(jd_get_ks(r, "ua", 1), req->ua);
+	jd_set_int(jd_get_ks(r, "status", 1), req->status);
+	if(req->statustitle)
+	{
+		jd_set_string(jd_get_ks(r, "statustitle", 1), req->statustitle);
+	}
+	if(req->errordesc)
+	{
+		jd_set_string(jd_get_ks(r, "statusdesc", 1), req->errordesc);
+	}
 	jd_assign(jd_get_ks(dict, "request", 1), r);
 	jd_set_bool(jd_get_ks(dict, "home", 1), req->home);
 	jd_set_bool(jd_get_ks(dict, "index", 1), req->index);

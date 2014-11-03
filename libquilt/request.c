@@ -284,13 +284,22 @@ int
 quilt_request_serialize(QUILTREQ *request)
 {
 	QUILTCB *cb;
-
+	
 	cb = quilt_plugin_cb_find_mime_(QCB_SERIALIZE, request->type);
 	if(!cb)
 	{
 		quilt_logf(LOG_ERR, "failed to serialise model as %s\n", request->type);
 		return 406;
-	}		
+	}
+	if(!request->status)
+	{
+		request->status = 200;
+	}
+	if(!request->statustitle)
+	{
+		request->statustitle = (request->status == 200 ? "OK" : "Error");
+	}
+	request->serialized = 1;
 	return quilt_plugin_invoke_serialize_(cb, request);
 }
 

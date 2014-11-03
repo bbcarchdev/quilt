@@ -18,4 +18,4 @@
 
 tpldir = @datarootdir@/@PACKAGE_TARNAME@/templates
 
-dist_tpl_DATA = explorer.liquid footer.liquid header.liquid head.liquid home.liquid index.liquid intro.liquid item.liquid object.liquid representations.liquid results.liquid
+dist_tpl_DATA = explorer.liquid footer.liquid header.liquid head.liquid home.liquid index.liquid intro.liquid item.liquid object.liquid representations.liquid results.liquid error.liquid

@@ -100,6 +100,7 @@ file_process(QUILTREQ *request)
 		librdf_free_parser(parser);
 		return 500;
 	}
+	quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": parsing %s\n", pathname);
 	if(librdf_parser_parse_file_handle_into_model(parser, f, 0, base, request->model))
 	{
 		quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": failed to parse %s as Turtle\n", pathname);

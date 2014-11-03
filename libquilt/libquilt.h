@@ -54,6 +54,7 @@ struct quilt_request_struct
 	QUILTIMPL *impl;
 	/* Implementation-specific data */
 	QUILTIMPLDATA *data;
+	int serialized;
 	/* Request parameters */
 	URI *uri;
 	const char *host;
@@ -72,6 +73,7 @@ struct quilt_request_struct
 	time_t received;
 	/* The HTTP response status */
 	int status;
+	const char *statustitle;
 	/* The negotiated media type */
 	const char *type;
 	/* The RDF model */
@@ -84,6 +86,8 @@ struct quilt_request_struct
 	/* Is this an index resource? */
 	int index;
 	const char *indextitle;
+	/* If an error, a description of the error condition */
+	const char *errordesc;
 	/* Query parameters */
 	int limit;
 	int offset;
@@ -154,6 +158,7 @@ int quilt_model_isempty(librdf_model *model);
 char *quilt_uri_contract(const char *uri);
 librdf_node *quilt_node_create_uri(const char *uri);
 librdf_node *quilt_node_create_literal(const char *value, const char *lang);
+librdf_node *quilt_node_create_int(int value);
 librdf_statement *quilt_st_create(const char *subject, const char *predicate);
 librdf_statement *quilt_st_create_literal(const char *subject, const char *predicate, const char *value, const char *lang);
 librdf_statement *quilt_st_create_uri(const char *subject, const char *predicate, const char *value);
