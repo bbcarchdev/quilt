@@ -28,6 +28,7 @@ static QUILTCB *cb_first, *cb_last;
 /* The current module handle */
 static void *current;
 
+static int quilt_plugin_load_cb_(const char *key, const char *value, void *data);
 static QUILTMIME *mime_create(const QUILTTYPE *type);
 static void mime_destroy(QUILTMIME *mime);
 
@@ -39,9 +40,18 @@ static void mime_destroy(QUILTMIME *mime);
 int
 quilt_plugin_init_(void)
 {
-	quilt_plugin_load_("html.so");
-	quilt_plugin_load_("coref.so");
-	quilt_plugin_load_("resourcegraph.so");
+	quilt_config_get_all("quilt", "module", quilt_plugin_load_cb_, NULL);
+	return 0;
+}
+
+/* Internal: configuration enumerator for loading plug-ins */
+static int
+quilt_plugin_load_cb_(const char *key, const char *value, void *data)
+{
+	(void) key;
+	(void) data;
+
+	quilt_plugin_load_(value);
 	return 0;
 }
 
