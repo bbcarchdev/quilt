@@ -16,7 +16,7 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-AC_INIT([quilt],[master])
+AC_INIT([quilt],m4_esyscmd([/bin/sh m4/get-version.sh]),[RESFeedback@bbc.co.uk],,[https://github.com/bbcarchdev/quilt])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign])
 AM_MAINTAINER_MODE

@@ -13,7 +13,9 @@
 Makefile.in
 Makefile
 autom4te.cache
-/quiltd
+/quilt-fcgid
+/quilt-cgid
+/quilt
 /aclocal.m4
 /config.guess
 /config.h

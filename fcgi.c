@@ -1,4 +1,4 @@
-/* Quilt: A Linked Open Data server
+/* Quilt: FastCGI server interface
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
@@ -17,20 +17,159 @@
  *  limitations under the License.
  */
 
+/* This is the FastCGI interface for Quilt; it can be used with any
+ * FastCGI-compatible server, either in standalone or on-demand modes
+ * (i.e., it can be launched as a daemon which opens a FastCGI socket,
+ * or it can be invoked by a web server as needed).
+ */
+
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
 
-#include "p_quilt.h"
+#include "p_fcgi.h"
 
-static int fcgi_sockpath_(URI *uri, char **ptr);
-static int fcgi_hostport_(URI *uri, char **ptr);
-
+const char *quilt_progname = "quilt-fcgid";
 static URI *quilt_fcgi_uri;
 static int quilt_fcgi_socket = -1;
 
+/* Utilities */
+static int process_args(int argc, char **argv);
+static void usage(void);
+static int config_defaults(void);
+static int fcgi_init_(void);
+static int fcgi_runloop_(void);
+static int fcgi_sockpath_(URI *uri, char **ptr);
+static int fcgi_hostport_(URI *uri, char **ptr);
+static int fcgi_preprocess_(QUILTIMPLDATA *data);
+static int fcgi_fallback_error_(QUILTIMPLDATA *data, int code);
+
+/* QUILTIMPL methods */
+static const char *fcgi_getenv(QUILTREQ *request, const char *name);
+static const char *fcgi_getparam(QUILTREQ *request, const char *name);
+static int fcgi_put(QUILTREQ *request, const char *str, size_t len);
+static int fcgi_printf(QUILTREQ *request, const char *format, ...);
+static int fcgi_vprintf(QUILTREQ *request, const char *format, va_list ap);
+
+static QUILTIMPL fcgi_impl = {
+	NULL, NULL, NULL,
+	fcgi_getenv,
+	fcgi_getparam,
+	fcgi_put,
+	fcgi_printf,
+	fcgi_vprintf,
+};
+
 int
-fcgi_init(void)
+main(int argc, char **argv)
+{
+	struct quilt_configfn_struct configfn;
+    
+	log_set_ident(argv[0]);
+	log_set_stderr(1);
+	log_set_level(LOG_NOTICE);
+	if(config_init(config_defaults))
+	{
+		return 1;
+	}
+	if(process_args(argc, argv))
+	{
+		return 1;
+	}
+	if(config_load(NULL))
+	{
+		return 1;
+	}
+	log_set_use_config(1);
+	configfn.config_get = config_get;
+	configfn.config_geta = config_geta;
+	configfn.config_get_int = config_get_int;
+	configfn.config_get_bool = config_get_bool;
+	configfn.config_get_all = config_get_all;
+	if(quilt_init(log_vprintf, &configfn))
+	{
+		return 1;
+	}
+	if(fcgi_init_())
+	{
+		return 1;
+	}
+	if(fcgi_runloop_())
+	{
+		return 1;
+	}
+	return 0;
+}
+
+static int
+process_args(int argc, char **argv)
+{
+	const char *t;
+	int c;
+
+	if(argc > 0 && argv[0])
+	{
+		t = strrchr(argv[0], '/');
+		if(t)
+		{
+			quilt_progname = t + 1;
+		}
+		else
+		{
+			quilt_progname = argv[0];
+		}
+	}
+	config_set_default("log:ident", quilt_progname);
+	while((c = getopt(argc, argv, "hDc:")) != -1)
+	{
+		switch(c)
+		{
+		case 'h':
+			usage();
+			exit(0);
+		case 'D':
+			config_set("log:level", "debug");
+			config_set("log:stderr", "1");
+			break;
+		case 'c':
+			config_set("global:configFile", optarg);
+			break;
+		default:
+			usage();
+			return -1;
+		}
+	}
+	return 0;
+}
+
+static void
+usage(void)
+{
+	fprintf(stderr, "Usage: %s [OPTIONS]\n"
+			"\n"
+			"OPTIONS is one or more of:\n"
+			"  -h                   Print this notice and exit\n"
+			"  -D                   Enable debug output to standard error\n"
+			"  -c FILE              Specify path to configuration file\n",
+			quilt_progname);
+}
+
+static int
+config_defaults(void)
+{
+	config_set_default("global:configFile", SYSCONFDIR "/quilt.conf");
+	config_set_default("log:level", "notice");
+	config_set_default("log:facility", "daemon");
+	config_set_default("log:syslog", "1");
+	config_set_default("log:stderr", "0");
+	config_set_default("sparql:query", "http://localhost/sparql/");
+	config_set_default("fastcgi:socket", "/tmp/quilt.sock");	
+	config_set_default("quilt:base", "http://www.example.com/");
+	return 0;
+}
+
+static int
+fcgi_init_(void)
 {
 	char *p;
 	int ispath;
@@ -39,7 +178,7 @@ fcgi_init(void)
 	if(FCGX_Init())
 	{
 		return -1;
-	}
+	}	
 	if(0 == fstat(0, &statbuf) && S_ISSOCK(statbuf.st_mode))
 	{
 		log_printf(LOG_DEBUG, "invoked by FastCGI web server; will not open new listening socket\n");
@@ -100,40 +239,49 @@ fcgi_init(void)
 	return 0;
 }
 
-int
-fcgi_runloop(void)
+static int
+fcgi_runloop_(void)
 {
 	int r;
-	FCGX_Request *request;
+	QUILTIMPLDATA *data;
 	QUILTREQ *req;
 		
 	log_printf(LOG_DEBUG, "server is ready and waiting for FastCGI requests\n");
-	request = (FCGX_Request *) calloc(1, sizeof(FCGX_Request));
-	if(!request)
+	data = (QUILTIMPLDATA *) calloc(1, sizeof(QUILTIMPLDATA));
+	if(!data)
 	{
 		log_printf(LOG_CRIT, "failed to allocate memory for FastCGI requests\n");
 		return -1;
 	}
 	while(1)
 	{
-		FCGX_InitRequest(request, quilt_fcgi_socket, 0);
-		if(FCGX_Accept_r(request) < 0)
+		req = NULL;
+		FCGX_InitRequest(&(data->req), quilt_fcgi_socket, 0);
+		if(FCGX_Accept_r(&(data->req)) < 0)
 		{
 			log_printf(LOG_CRIT, "failed to accept FastCGI request\n");
+			free(data);
 			return -1;
 		}
-		req = quilt_request_create_fcgi(request);
-		if(!req)
+		if(fcgi_preprocess_(data))
 		{
 			r = -1;
 		}
-		else if(req->status)
-		{
-			r = req->status;
-		}
 		else
 		{
-			r = quilt_request_process(req);
+			req = quilt_request_create(&fcgi_impl, data);
+			if(!req)
+			{
+				r = -1;
+			}
+			else if(req->status)
+			{
+				r = req->status;
+			}
+			else
+			{
+				r = quilt_request_process(req);
+			}
 		}
 		if(r < 0)
 		{
@@ -141,10 +289,20 @@ fcgi_runloop(void)
 		}
 		if(r)
 		{
-			quilt_error(request, r);
+			if(req)
+			{
+				quilt_error(req, r);
+			}
+			else
+			{
+				fcgi_fallback_error_(data, r);
+			}
 		}
 		quilt_request_free(req);
-		FCGX_Finish_r(request);
+		FCGX_Finish_r(&(data->req));
+		free(data->qbuf);
+		data->qbuf = NULL;
+		data->query = NULL;
 	}
 	return 0;
 }
@@ -236,4 +394,126 @@ fcgi_hostport_(URI *uri, char **ptr)
 	}
 	*ptr = p;
 	return 0;
+}
+
+static int
+fcgi_preprocess_(QUILTIMPLDATA *data)
+{
+	const char *qs, *s, *t;
+	char *p;
+	char cbuf[3];
+	size_t n;
+
+	qs = FCGX_GetParam("QUERY_STRING", data->req.envp);
+	if(!qs)
+	{
+		data->qbuf = strdup("");
+		data->query = (char **) calloc(1, sizeof(char *));
+		return 0;
+	}
+	data->qbuf = (char *) calloc(1, strlen(qs) + 1);
+	n = 0;
+	s = qs;
+	while(s)
+	{
+		t = strchr(s, '&');
+		if(t)
+		{
+			t++;
+			n++;
+		}
+		s = t;
+	}
+	data->query = (char **) calloc(n + 1, sizeof(char *));
+	p = data->qbuf;
+	s = qs;
+	n = 0;
+	while(s)
+	{
+		data->query[n] = p;
+		n++;
+		t = strchr(s, '&');
+		while(*s &&(!t || s < t))
+		{
+			if(*s == '%')
+			{
+				if(isxdigit(s[1])  && isxdigit(s[2]))
+				{
+					cbuf[0] = s[1];
+					cbuf[1] = s[2];
+					cbuf[2] = 0;
+					*p = (char) ((unsigned char) strtol(cbuf, NULL, 16));
+					p++;
+					s += 3;
+					continue;
+				}
+			}
+			*p = *s;
+			p++;
+			s++;
+		}
+		*p = 0;
+		if(t)
+		{
+			t++;
+		}
+		s = t;
+	}		
+	return 0;
+}
+
+static
+int fcgi_fallback_error_(QUILTIMPLDATA *data, int status)
+{
+	FCGX_FPrintF(data->req.out, "Status: %d Error\n"
+				 "Content-type: text/html; charset=utf-8\n"
+				 "Server: Quilt/" PACKAGE_VERSION "\n"
+				 "\n", status);
+	FCGX_FPrintF(data->req.out, "<!DOCTYPE html>\n"
+				 "<html>\n"
+				 "\t<head>\n"
+				 "\t\t<meta charset=\"utf-8\">\n"
+				 "\t\t<title>Error %d</title>\n"
+				 "\t</head>\n"
+				 "\t<body>\n"
+				 "\t\t<h1>Error %d</h1>\n"
+				 "\t\t<p>An error occurred while processing the request.</p>\n"
+				 "\t</body>\n"
+				 "</html>\n",				 
+				 status, status);
+	return 0;
+}
+
+/* QUILTIMPL methods */
+static const char *
+fcgi_getenv(QUILTREQ *request, const char *name)
+{
+	return FCGX_GetParam(name, request->data->req.envp);
+}
+
+static const char *
+fcgi_getparam(QUILTREQ *request, const char *name)
+{
+	return FCGX_GetParam(name, request->data->query);
+}
+
+static int
+fcgi_put(QUILTREQ *request, const char *str, size_t len)
+{
+	return FCGX_PutStr(str, len, request->data->req.out);
+}
+
+static int
+fcgi_printf(QUILTREQ *request, const char *format, ...)
+{
+	va_list ap;
+
+	va_start(ap, format);
+	return FCGX_VFPrintF(request->data->req.out, format, ap);
+}
+
+static int
+fcgi_vprintf(QUILTREQ *request, const char *format, va_list ap)
+{
+	return FCGX_VFPrintF(request->data->req.out, format, ap);
 }

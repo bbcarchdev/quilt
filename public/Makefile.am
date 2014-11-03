@@ -23,5 +23,5 @@ dist_public_DATA = README
 install-exec-hook:
 	$(INSTALL) -m 755 -d "$(DESTDIR)$(publicdir)"
 	rm -f "$(DESTDIR)$(publicdir)/index.fcgi"
-	ln -sf "$(sbindir)/quiltd" "$(DESTDIR)$(publicdir)/index.fcgi"
+	ln -sf "$(sbindir)/quilt-fcgid" "$(DESTDIR)$(publicdir)/index.fcgi"
 

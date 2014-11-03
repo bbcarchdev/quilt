@@ -28,14 +28,29 @@ doc_DATA = apache2-example.conf
 
 dist_doc_DATA = quilt.conf
 
-AM_CPPFLAGS = @AM_CPPFLAGS@ \
+AM_CPPFLAGS = @AM_CPPFLAGS@ @fcgi_CFLAGS@ \
 	-I$(top_builddir)/libquilt -I$(top_srcdir)/libquilt \
 	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
 	-I$(top_builddir)/libnegotiate -I$(top_srcdir)/libnegotiate
 
-sbin_PROGRAMS = quiltd
+bin_PROGRAMS = quilt
 
-quiltd_SOURCES = p_quilt.h main.c fcgi.c
+quilt_SOURCES = p_cli.h cli.c
+
+quilt_LDFLAGS = -R$(libdir)
+
+quilt_LDADD = \
+	libquilt/libquilt.la \
+	libsupport/libsupport.la \
+	libnegotiate/libnegotiate.la \
+	@LIBURI_LOCAL_LIBS@ @LIBURI_LIBS@ \
+	@LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@
+
+if WITH_FASTCGI
+
+sbin_PROGRAMS = quilt-fcgid
+
+quilt_fcgid_SOURCES = p_fcgi.h fcgi.c
 
 # On some systems, while $(libdir) appears in the system library search list,
 # the loader is unable to find libraries installed there without an
@@ -43,15 +58,17 @@ quiltd_SOURCES = p_quilt.h main.c fcgi.c
 # from occurring (by including a DT_RPATH hint, or equivalent in the quiltd
 # executable), but packaging scripts may wish to use chrpath(1) or similar
 # to strip it out of packaged binaries.
-quiltd_LDFLAGS = -R$(libdir)
+quilt_fcgid_LDFLAGS = -R$(libdir) @fcgi_LDFLAGS@
 
-quiltd_LDADD = \
+quilt_fcgid_LDADD = \
 	libquilt/libquilt.la \
 	libsupport/libsupport.la \
 	libnegotiate/libnegotiate.la \
 	@fcgi_LIBS@ \
 	@LIBURI_LOCAL_LIBS@ @LIBURI_LIBS@ \
 	@LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@
+
+endif
 
 install-data-hook:
 	$(INSTALL) -m 755 -d "$(DESTDIR)$(sysconfdir)"
