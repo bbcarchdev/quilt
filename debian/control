@@ -8,11 +8,31 @@ Homepage: https://bbcarchdev.github.io/res/code
 Vcs-Browser: https://github.com/bbcarchdev/quilt
 Vcs-Git: git://github.com/bbcarchdev/quilt.git
 
-Package: quilt-server
+Package: quilt-common
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, libsparqlclient, libjsondata, liburi
+Description: Quilt Linked Data server (common files)
+
+Package: libquilt
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}, libsparqlclient, libjsondata, liburi, quilt-common (= ${binary:Version})
+Description: Quilt Linked Data server shared libraries
+
+Package: libquilt-dev
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}, libsparqlclient-dev, libjsondata-dev, liburi-dev, libquilt (= ${binary:Version})
+Description: Quilt Linked Data server shared libraries (development files)
+
+Package: quilt-cli
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}, libquilt (= ${binary:Version})
+Description: Quilt Linked Data server command-line interface
+
+Package: quilt-fcgi
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}, libfcgi0ldbl, libquilt (= ${binary:Version})
 Recommends: libapache2-mod-fcgid | nginx-full | nginx-light | lighttpd
-Description: Linked Data server FastCGI web application
+Replaces: quilt-server
+Description: Quilt Linked Data server FastCGI web application
  Quilt is a FastCGI application which implements a Linked Data server. It
  accepts requests from clients, and processes them by performing simple
  SPARQL queries before serialising the results in the format requested
