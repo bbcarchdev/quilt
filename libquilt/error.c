@@ -86,7 +86,7 @@ quilt_error(QUILTREQ *request, int code)
 	}
 	request->impl->printf(request, "Status: %d %s\n"
 				 "Content-type: text/html; charset=utf-8\n"
-				 "Server: Quilt\n"
+				 "Server: Quilt/" PACKAGE_VERSION "\n"
 				 "\n", code, title);
 	request->impl->printf(request, "<!DOCTYPE html>\n"
 				 "<html>\n"
@@ -108,10 +108,10 @@ quilt_error(QUILTREQ *request, int code)
 	if(sig)
 	{
 		request->impl->printf(request, "\t\t<hr>\n"
-					 "\t\t<p>%s</p>\n", sig);
+							  "\t\t<p>%s</p>\n", sig);
 	}
-	request->impl->printf(request, "\t</body>\n",
-				 "</html>\n");
+	request->impl->printf(request, "\t</body>\n"
+						  "</html>\n");
 	return 0;
 }
 

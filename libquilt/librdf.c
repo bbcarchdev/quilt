@@ -128,7 +128,7 @@ int quilt_librdf_serialize_(QUILTREQ *request)
 	request->impl->printf(request, "Status: 200 OK\n"
 				 "Content-type: %s%s\n"
 				 "Vary: Accept\n"
-				 "Server: Quilt\n"
+				 "Server: Quilt/" PACKAGE_VERSION "\n"
 				 "\n", request->type, tsuffix);
 	request->impl->put(request, buf, strlen(buf));
 	free(buf);

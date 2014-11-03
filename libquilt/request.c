@@ -46,7 +46,6 @@ struct typemap_struct quilt_typemap[] =
 
 static int quilt_request_process_path_(QUILTREQ *req, const char *uri);
 static const char *quilt_request_match_ext_(QUILTREQ *req);
-static int quilt_request_parse_params_(QUILTREQ *request);
 
 NEGOTIATE *quilt_types_;
 NEGOTIATE *quilt_charsets_;
@@ -200,14 +199,13 @@ quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data)
 		return p;
 	}
 	quilt_logf(LOG_DEBUG, "negotiated type '%s' from '%s'\n", p->type, accept);
-	quilt_request_parse_params_(p);
 	p->limit = DEFAULT_LIMIT;
 	p->offset = 0;
-	if((t = quilt_request_param(p, "offset")))
+	if((t = impl->getparam(p, "offset")))
 	{
 		p->offset = strtol(t, NULL, 10);
 	}
-	if((t = quilt_request_param(p, "limit")))
+	if((t = impl->getparam(p, "limit")))
 	{
 		p->limit = strtol(t, NULL, 10);
 	}
@@ -224,88 +222,6 @@ quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data)
 		p->limit = MAX_LIMIT;
 	}
 	return p;
-}
-
-static int
-quilt_request_parse_params_(QUILTREQ *request)
-{
-	const char *qs, *s, *t;
-	char *p;
-	char cbuf[3];
-	size_t n;
-
-	qs = request->impl->getenv(request, "QUERY_STRING");
-	if(!qs)
-	{
-		request->qbuf = strdup("");
-		request->query = (char **) calloc(1, sizeof(char *));
-		return 0;
-	}
-	request->qbuf = (char *) calloc(1, strlen(qs) + 1);
-	n = 0;
-	s = qs;
-	while(s)
-	{
-		t = strchr(s, '&');
-		if(t)
-		{
-			t++;
-			n++;
-		}
-		s = t;
-	}
-	request->query = (char **) calloc(n + 1, sizeof(char *));
-	p = request->qbuf;
-	s = qs;
-	n = 0;
-	while(s)
-	{
-		request->query[n] = p;
-		n++;
-		t = strchr(s, '&');
-		while(*s &&(!t || s < t))
-		{
-			if(*s == '%')
-			{
-				if(isxdigit(s[1])  && isxdigit(s[2]))
-				{
-					cbuf[0] = s[1];
-					cbuf[1] = s[2];
-					cbuf[2] = 0;
-					*p = (char) ((unsigned char) strtol(cbuf, NULL, 16));
-					p++;
-					s += 3;
-					continue;
-				}
-			}
-			*p = *s;
-			p++;
-			s++;
-		}
-		*p = 0;
-		if(t)
-		{
-			t++;
-		}
-		s = t;
-	}		
-	return 0;
-}
-
-const char *
-quilt_request_param(QUILTREQ *request, const char *name)
-{
-	size_t c, l;
-	
-	l = strlen(name);
-	for(c = 0; request->query[c]; c++)
-	{
-		if(!strncmp(request->query[c], name, l) && request->query[c][l] == '=')
-		{
-			return &(request->query[c][l + 1]);
-		}
-	}
-	return NULL;
 }
 
 char *
@@ -330,8 +246,6 @@ quilt_request_free(QUILTREQ *req)
 		librdf_free_storage(req->storage);
 	}
 	free(req->path);
-	free(req->qbuf);
-	free(req->query);
 	free(req);
 	return 0;
 }
@@ -350,13 +264,17 @@ quilt_request_process(QUILTREQ *request)
 		quilt_logf(LOG_CRIT, "failed to unparse subject URI\n");
 		return 500;
 	}
-	quilt_logf(LOG_DEBUG, "query subject URI is <%s>\n", request->subject);
+	quilt_logf(LOG_DEBUG, "query subject URI is <%s>\n", request->subject);	
 	r = quilt_plugin_invoke_engine_(quilt_engine_cb, request);
-	if(r)
+	/* A zero return means the engine performed output itself; any other
+	 * status indicates that output should be generated. If the status is 200,
+	 * pass the request to the serializer.
+	 */
+	if(r == 200)
 	{
-		return r;
-	}
-	return quilt_request_serialize(request);
+		return quilt_request_serialize(request);
+	}	
+	return r;
 }
 
 /* Serialize the model attached to a request according to the negotiated
@@ -387,6 +305,7 @@ quilt_request_process_path_(QUILTREQ *req, const char *uri)
 	if(!uri || uri[0] != '/')
 	{
 		/* Bad request */
+		log_printf(LOG_ERR, "malformed request-URI <%s>\n", uri);
 		return -1;
 	}
 	buf = strdup(uri);
