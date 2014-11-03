@@ -102,14 +102,15 @@ html_serialize(QUILTREQ *req)
 		tpl = quilt_html_template_(req);
 		if(tpl)
 		{
+			/* Set status to zero to suppress output */
 			status = 0;
 			buf = liquify_apply(tpl, dict);
-			FCGX_FPrintF(req->fcgi->out, "Status: 200 OK\n"
+			req->impl->printf(req, "Status: 200 OK\n"
 						 "Content-type: %s; charset=utf-8\n"
 						 "Vary: Accept\n"
-						 "Server: Quilt\n"
+						 "Server: Quilt/" PACKAGE_VERSION "\n"
 						 "\n", req->type);
-			FCGX_PutStr(buf, strlen(buf), req->fcgi->out);
+			req->impl->put(req, buf, strlen(buf));
 			free(buf);
 		}
 	}
