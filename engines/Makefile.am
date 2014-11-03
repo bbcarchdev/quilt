@@ -21,7 +21,7 @@ LIBS = $(top_builddir)/libquilt/libquilt.la
 
 moduledir = $(libdir)/quilt
 
-module_LTLIBRARIES = coref.la resourcegraph.la
+module_LTLIBRARIES = coref.la resourcegraph.la file.la
 
 coref_la_SOURCES = p_coref.h coref.c
 coref_la_LDFLAGS = -module -no-undefined -avoid-version
@@ -30,3 +30,6 @@ coref_la_LIBADD = @LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@
 resourcegraph_la_SOURCES = p_resourcegraph.h resourcegraph.c
 resourcegraph_la_LDFLAGS = -module -no-undefined -avoid-version
 resourcegraph_la_LIBADD = @LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@
+
+file_la_SOURCES = p_file.h file.c
+file_la_LDFLAGS = -module -no-undefined -avoid-version
