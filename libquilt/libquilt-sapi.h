@@ -26,6 +26,18 @@
 
 typedef void (*quilt_log_fn)(int prio, const char *fmt, va_list ap);
 
+/* This structure defines methods implemented by Quilt servers */
+struct quilt_impl_struct
+{
+	void *reserved1;
+	void *reserved2;
+	void *reserved3;
+	const char *(*getenv)(QUILTREQ *request, const char *name);
+	const char *(*getparam)(QUILTREQ *request, const char *name);
+	int (*put)(QUILTREQ *request, const unsigned char *str, size_t len);
+	int (*vprintf)(QUILTREQ *request, const char *format, va_list ap);
+};
+
 struct quilt_configfn_struct
 {
 	size_t (*config_get)(const char *key, const char *defval, char *buf, size_t bufsize);

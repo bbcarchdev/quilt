@@ -50,7 +50,7 @@ static const char *quilt_request_match_ext_(QUILTREQ *req);
 NEGOTIATE *quilt_types_;
 NEGOTIATE *quilt_charsets_;
 
-/* Initialise request handling */
+/* Internal: Initialise request handling */
 int
 quilt_request_init_(void)
 {
@@ -82,8 +82,8 @@ quilt_request_init_(void)
 	return 0;
 }
 
-/* Once everything has been initialised and plug-ins loaded, perform a
- * sanity check
+/* Internal: Once everything has been initialised and plug-ins loaded,
+ * perform a sanity check
  */
 int
 quilt_request_sanity_(void)
@@ -105,6 +105,7 @@ quilt_request_sanity_(void)
 	return 0;
 }
 
+/* SAPI: Invoked by the server to create a new request object */
 QUILTREQ *
 quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data)
 {	
@@ -224,12 +225,58 @@ quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data)
 	return p;
 }
 
+/* Public: Obtain a request environment variable */
+const char *
+quilt_request_getenv(QUILTREQ *req, const char *name)
+{
+	return req->impl->getenv(req, name);
+}
+
+/* Public: Obtain a request query parameter */
+const char *
+quilt_request_getparam(QUILTREQ *req, const char *name)
+{
+	return req->impl->getparam(req, name);
+}
+
+/* Write a string to a request's output stream */
+int
+quilt_request_puts(QUILTREQ *req, const char *str)
+{
+	return req->impl->put(req, (const unsigned char *) str, strlen(str));
+}
+
+/* Write a byte sequence to a request's output stream */
+int
+quilt_request_put(QUILTREQ *req, const unsigned char *bytes, size_t len)
+{
+	return req->impl->put(req, bytes, len);
+}
+
+/* Perform formatted stream output */
+int
+quilt_request_printf(QUILTREQ *req, const char *format, ...)
+{
+	va_list ap;
+
+	va_start(ap, format);
+	return req->impl->vprintf(req, format, ap);
+}
+
+int
+quilt_request_vprintf(QUILTREQ *req, const char *format, va_list ap)
+{
+	return req->impl->vprintf(req, format, ap);
+}
+
+/* Return the base URI for all requests */
 char *
 quilt_request_base(void)
 {
 	return uri_stralloc(quilt_base_uri);
 }
 
+/* SAPI: Free the resources used by a request */
 int
 quilt_request_free(QUILTREQ *req)
 {
@@ -250,7 +297,7 @@ quilt_request_free(QUILTREQ *req)
 	return 0;
 }
 
-/* Hand off the request to a processing engine; if needed, serialize the
+/* SAPI: Hand off the request to a processing engine; if needed, serialize the
  * model (i.e., if no error occurred and the engine didn't serialize itself).
  */
 int
@@ -277,7 +324,7 @@ quilt_request_process(QUILTREQ *request)
 	return r;
 }
 
-/* Serialize the model attached to a request according to the negotiated
+/* SAPI: Serialize the model attached to a request according to the negotiated
  * response media type.
  */
 int

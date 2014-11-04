@@ -47,8 +47,7 @@ static int fcgi_fallback_error_(QUILTIMPLDATA *data, int code);
 /* QUILTIMPL methods */
 static const char *fcgi_getenv(QUILTREQ *request, const char *name);
 static const char *fcgi_getparam(QUILTREQ *request, const char *name);
-static int fcgi_put(QUILTREQ *request, const char *str, size_t len);
-static int fcgi_printf(QUILTREQ *request, const char *format, ...);
+static int fcgi_put(QUILTREQ *request, const unsigned char *str, size_t len);
 static int fcgi_vprintf(QUILTREQ *request, const char *format, va_list ap);
 
 static QUILTIMPL fcgi_impl = {
@@ -56,7 +55,6 @@ static QUILTIMPL fcgi_impl = {
 	fcgi_getenv,
 	fcgi_getparam,
 	fcgi_put,
-	fcgi_printf,
 	fcgi_vprintf,
 };
 
@@ -498,18 +496,9 @@ fcgi_getparam(QUILTREQ *request, const char *name)
 }
 
 static int
-fcgi_put(QUILTREQ *request, const char *str, size_t len)
+fcgi_put(QUILTREQ *request, const unsigned char *str, size_t len)
 {
-	return FCGX_PutStr(str, len, request->data->req.out);
-}
-
-static int
-fcgi_printf(QUILTREQ *request, const char *format, ...)
-{
-	va_list ap;
-
-	va_start(ap, format);
-	return FCGX_VFPrintF(request->data->req.out, format, ap);
+	return FCGX_PutStr((const char *) str, len, request->data->req.out);
 }
 
 static int

@@ -76,7 +76,7 @@ coref_process(QUILTREQ *request)
 	int r;
 		
 	qclass = NULL;
-	t = request->impl->getparam(request, "class");
+	t = quilt_request_getparam(request, "class");
 	if(t)
 	{
 		qclass = (char *) calloc(1, 32 + strlen(t));
@@ -413,7 +413,7 @@ coref_lookup(QUILTREQ *request, const char *target)
 		buf = strdup(uristr);
 	}
 	sparqlres_destroy(res);
-	request->impl->printf(request, "Status: 302 Moved\n"
+	quilt_request_printf(request, "Status: 302 Moved\n"
 				 "Server: Quilt/" PACKAGE_VERSION "\n"
 				 "Location: %s\n"
 				 "\n", buf);
@@ -430,7 +430,7 @@ coref_home(QUILTREQ *request)
 
 	const char *uri;
 
-	uri = request->impl->getparam(request, "uri");
+	uri = quilt_request_getparam(request, "uri");
 	if(uri)
 	{
 		return coref_lookup(request, uri);

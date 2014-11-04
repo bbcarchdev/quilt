@@ -36,18 +36,6 @@ typedef struct quilt_type_struct QUILTTYPE;
 typedef struct quilt_impldata_struct QUILTIMPLDATA;
 # endif
 
-struct quilt_impl_struct
-{
-	void *reserved1;
-	void *reserved2;
-	void *reserved3;
-	const char *(*getenv)(QUILTREQ *request, const char *name);
-	const char *(*getparam)(QUILTREQ *request, const char *name);
-	int (*put)(QUILTREQ *request, const char *str, size_t len);
-	int (*printf)(QUILTREQ *request, const char *format, ...);
-	int (*vprintf)(QUILTREQ *request, const char *format, va_list ap);
-};
-
 struct quilt_request_struct
 {
 	/* Pointer to the implementation */
@@ -144,6 +132,12 @@ int quilt_config_get_bool(const char *key, int defval);
 int quilt_config_get_all(const char *section, const char *key, int (*fn)(const char *key, const char *value, void *data), void *data);
 
 /* Request processing */
+const char *quilt_request_getenv(QUILTREQ *req, const char *name);
+const char *quilt_request_getparam(QUILTREQ *req, const char *name);
+int quilt_request_puts(QUILTREQ *req, const char *str);
+int quilt_request_put(QUILTREQ *req, const unsigned char *bytes, size_t len);
+int quilt_request_printf(QUILTREQ *req, const char *format, ...);
+int quilt_request_vprintf(QUILTREQ *req, const char *format, va_list ap);
 char *quilt_request_base(void);
 
 /* SPARQL queries */

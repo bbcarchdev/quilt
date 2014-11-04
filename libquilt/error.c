@@ -157,11 +157,11 @@ quilt_error(QUILTREQ *request, int code)
 			return 0;
 		}
 	}
-	request->impl->printf(request, "Status: %d %s\n"
+	quilt_request_printf(request, "Status: %d %s\n"
 				 "Content-type: text/html; charset=utf-8\n"
 						  "Server: Quilt/" PACKAGE_VERSION "\n"
 						  "\n", code, request->statustitle);
-	request->impl->printf(request, "<!DOCTYPE html>\n"
+	quilt_request_printf(request, "<!DOCTYPE html>\n"
 						  "<html>\n"
 						  "\t<head>\n"
 						  "\t\t<meta charset=\"utf-8\">\n"
@@ -170,8 +170,8 @@ quilt_error(QUILTREQ *request, int code)
 						  "\t<body>\n"
 						  "\t\t<h1>%s</h1>\n",
 						  request->statustitle, request->statustitle);
-    request->impl->printf(request, "\t\t<p>%s</p>\n", request->errordesc);
-	request->impl->printf(request, "\t</body>\n"
+	quilt_request_printf(request, "\t\t<p>%s</p>\n", request->errordesc);
+	quilt_request_printf(request, "\t</body>\n"
 						  "</html>\n");
 	return 0;
 }

@@ -154,12 +154,13 @@ int quilt_librdf_serialize_(QUILTREQ *request)
 	{
 		tsuffix = "";
 	}
-	request->impl->printf(request, "Status: %d %s\n"
-				 "Content-type: %s%s\n"
-				 "Vary: Accept\n"
-				 "Server: Quilt/" PACKAGE_VERSION "\n"
-				 "\n", request->status, request->statustitle, request->type, tsuffix);
-	request->impl->put(request, buf, strlen(buf));
+	quilt_request_printf(request, "Status: %d %s\n"
+						 "Content-type: %s%s\n"
+						 "Vary: Accept\n"
+						 "Server: Quilt/" PACKAGE_VERSION "\n"
+						 "\n",
+						 request->status, request->statustitle, request->type, tsuffix);
+	quilt_request_puts(request, buf);
 	free(buf);
 	return 0;	
 }

@@ -42,8 +42,7 @@ static int cli_fallback_error_(QUILTIMPLDATA *data, int code);
 /* QUILTIMPL methods */
 static const char *cli_getenv(QUILTREQ *request, const char *name);
 static const char *cli_getparam(QUILTREQ *request, const char *name);
-static int cli_put(QUILTREQ *request, const char *str, size_t len);
-static int cli_printf(QUILTREQ *request, const char *format, ...);
+static int cli_put(QUILTREQ *request, const unsigned char *str, size_t len);
 static int cli_vprintf(QUILTREQ *request, const char *format, va_list ap);
 
 static QUILTIMPL cli_impl = {
@@ -51,7 +50,6 @@ static QUILTIMPL cli_impl = {
 	cli_getenv,
 	cli_getparam,
 	cli_put,
-	cli_printf,
 	cli_vprintf,
 };
 
@@ -329,23 +327,12 @@ cli_getparam(QUILTREQ *request, const char *name)
 }
 
 static int
-cli_put(QUILTREQ *request, const char *str, size_t len)
+cli_put(QUILTREQ *request, const unsigned char *str, size_t len)
 {
 	(void) request;
 
-	fwrite(str, len, 1, stdout);
+	fwrite((void *) str, len, 1, stdout);
 	return 0;
-}
-
-static int
-cli_printf(QUILTREQ *request, const char *format, ...)
-{
-	va_list ap;
-
-	(void) request;
-
-	va_start(ap, format);
-	return vprintf(format, ap);
 }
 
 static int

@@ -107,12 +107,12 @@ html_serialize(QUILTREQ *req)
 			/* Set status to zero to suppress output */
 			status = 0;
 			buf = liquify_apply(tpl, dict);
-			req->impl->printf(req, "Status: %d %s\n"
+			quilt_request_printf(req, "Status: %d %s\n"
 							  "Content-type: %s; charset=utf-8\n"
 							  "Vary: Accept\n"
 							  "Server: Quilt/" PACKAGE_VERSION "\n"
 							  "\n", req->status, req->statustitle, req->type);
-			req->impl->put(req, buf, strlen(buf));
+			quilt_request_puts(req, buf);
 			free(buf);
 		}
 	}
