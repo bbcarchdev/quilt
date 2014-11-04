@@ -34,6 +34,27 @@ struct namespace_struct
 	size_t len;
 };
 
+struct override_struct
+{
+	const char *matchmime;
+	const char *desc;
+	const char *extensions;
+	float qs;
+	float limit;
+	int visible;
+	const char *newmime;
+};
+
+static struct override_struct overrides[] = {
+	
+	{ "application/rdf+xml", "RDF/XML", "rdf", -1.0f, 0.75f, 1, NULL },
+	{ "application/n-triples", "N-Triples", "nt", -1.0f, 0.75f, 1, NULL },
+	{ "text/turtle", "Turtle", "ttl", 0.9f, -1.0f, 1, NULL },
+	{ "text/x-nquads", "N-Quads", "nq", -1.0f, -1.0f, 1, "application/x-nquads" },
+	{ "application/json", "RDF/JSON", "rj json", -1.0f, -1.0f, 1, NULL },
+	{ NULL, NULL, NULL, -1.0f, -1.0f, 0, NULL }
+};
+
 static librdf_world *quilt_world;
 static struct namespace_struct *namespaces;
 static size_t nscount;
@@ -48,7 +69,7 @@ quilt_librdf_init_(void)
 {
 	QUILTTYPE type;
 	const raptor_syntax_description *desc;
-	unsigned int c, i;
+	unsigned int c, i, d;
 
 	if(!quilt_world)
 	{
@@ -70,54 +91,34 @@ quilt_librdf_init_(void)
 			for(i = 0; i < desc->mime_types_count; i++)
 			{
 				memset(&type, 0, sizeof(type));
-				type.visible = 1;
 				type.mimetype = desc->mime_types[i].mime_type;
 				type.qs = (float) desc->mime_types[i].q / 10.0f;
-				/* Cap certain specific types */
-				if(!strcmp(desc->mime_types[i].mime_type, "application/rdf+xml") && type.qs > 0.75)
-				{
-					type.qs = 0.75;
-				}
-				else if(!strcmp(desc->mime_types[i].mime_type, "application/n-triples") && type.qs > 0.75)
-				{
-					type.qs = 0.75;
-				}
-				else if(type.qs > 0.85)
+				if(type.qs > 0.85)
 				{
 					type.qs = 0.85;
 				}
-				/* Force the qs-value of text/turtle to be high */
-				if(!strcmp(type.mimetype, "text/turtle"))
+				for(d = 0; overrides[d].matchmime; d++)
 				{
-					type.qs = 0.9f;
-					type.extensions = "ttl";
-					type.desc = "Turtle";
-					type.visible = 1;
-				}
-				else if(!strcmp(type.mimetype, "application/rdf+xml"))
-				{
-					type.extensions = "rdf";
-					type.desc = "RDF/XML";
-					type.visible = 1;
-				}
-				else if(!strcmp(type.mimetype, "text/x-nquads"))
-				{
-					type.mimetype = "application/x-nquads";
-					type.extensions = "nq";
-					type.desc = "N-Quads";
-					type.visible = 1;
-				}
-				else if(!strcmp(type.mimetype, "application/n-triples"))
-				{
-					type.extensions = "nt";
-					type.desc = "N-Triples";
-					type.visible = 1;
-				}
-				else if(!strcmp(type.mimetype, "application/json"))
-				{
-					type.extensions = "json";
-					type.desc = "RDF/JSON";
-					type.visible = 1;
+					if(strcasecmp(type.mimetype, overrides[d].matchmime))
+					{
+						continue;
+					}
+					type.desc = overrides[d].desc;
+					type.extensions = overrides[d].extensions;
+					type.visible = overrides[d].visible;
+					if(overrides[d].newmime)
+					{
+						type.mimetype = overrides[d].newmime;
+					}
+					if(overrides[d].qs >= 0.0f)
+					{
+						type.qs = overrides[d].qs;
+					}
+					else if(overrides[d].limit >= 0.0f && type.qs > overrides[d].limit)
+					{
+						type.qs = overrides[d].limit;
+					}
+					break;
 				}
 				if(quilt_plugin_register_serializer(&type, quilt_librdf_serialize_))
 				{
@@ -126,9 +127,6 @@ quilt_librdf_init_(void)
 			}
 		}
 		quilt_logf(LOG_DEBUG, "librdf wrapper initialised\n");
-		/* Artifically inflate the q-values of some types */
-/*		neg_add(quilt_types, "text/turtle", 0.9f);
-  neg_add(quilt_types, "text/html", 0.95f); */
 	}
 	return 0;
 }
