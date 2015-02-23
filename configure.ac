@@ -2,7 +2,7 @@
 ##
 ## Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 ##
-## Copyright (c) 2014 BBC
+## Copyright (c) 2014-2015 BBC
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -25,8 +25,9 @@ AC_CONFIG_HEADER([config.h])
 
 BT_PROG_XCODE
 AC_PROG_CC
-AC_PROG_CC_C99
+BT_PROG_CC_DEBUG
 BT_PROG_CC_WARN
+AC_PROG_CC_C99
 
 LT_INIT
 
