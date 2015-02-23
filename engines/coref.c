@@ -3,7 +3,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -271,7 +271,8 @@ coref_index_metadata_stream(QUILTREQ *request, librdf_stream *stream, int subjob
 	const char *uristr;
 	librdf_statement *st;
 
-	buflen = 256 + strlen(request->base);
+	buflen = 256 + strlen(request->subject) + strlen(request->base);
+	/*	quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": encoded buffer size is now %lu bytes\n", (unsigned long) buflen); */
 	query = (char *) calloc(1, buflen);
 	/*
 	  PREFIX ...
@@ -284,6 +285,7 @@ coref_index_metadata_stream(QUILTREQ *request, librdf_stream *stream, int subjob
 	  }
 	*/
 	sprintf(query, "SELECT ?s ?p ?o ?g WHERE { GRAPH ?g { ?s ?p ?o . FILTER(?g != <%s> && ?g != <%s>) FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label> || ?p = <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>) FILTER(", request->subject, request->base);
+/*	quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": encoded query length is now %lu bytes\n", (unsigned long) strlen(query)); */
 	subj = 0;
 	while(!librdf_stream_end(stream))
 	{
@@ -307,7 +309,8 @@ coref_index_metadata_stream(QUILTREQ *request, librdf_stream *stream, int subjob
 /*			st = quilt_st_create_uri(request->path, "http://www.w3.org/2000/01/rdf-schema#seeAlso", uristr);
 			if(!st) return -1;
 			librdf_model_context_add_statement(request->model, request->basegraph, st); */
-			buflen += 8 + (strlen(uristr) * 3);
+			buflen += 16 + (strlen(uristr) * 3);
+/*			quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": encoded buffer size is now %lu bytes\n", (unsigned long) buflen); */
 			p = (char *) realloc(query, buflen);
 			if(!p)
 			{
@@ -337,11 +340,13 @@ coref_index_metadata_stream(QUILTREQ *request, librdf_stream *stream, int subjob
 			strcpy(p, "> ||");
 			subj = 1;
 		}
+/*		quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": encoded query length is now %lu bytes\n", (unsigned long) strlen(query)); */
 		librdf_stream_next(stream);
 	}
 	if(subj)
 	{
 		strcpy(p, "> ) } }");
+/*		quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": encoded query length is now %lu bytes\n", (unsigned long) strlen(query)); */
 		if(quilt_sparql_query_rdf(query, request->model))
 		{
 			quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": failed to create model from query\n");
