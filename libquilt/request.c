@@ -32,7 +32,7 @@ struct typemap_struct quilt_typemap[] =
 	{ "ttl", "text/turtle", "Turtle", 1 },
 	{ "n3", "text/rdf+n3", "N3", 0 },
 	{ "gv", "text/x-graphviz", "Graphviz", 0 },
-	{ "nq", "text/x-nquads", "NQuads", 1 },
+	{ "nq", "application/nquads", "NQuads", 1 },
 	{ "html", "text/html", "HTML", 1 },
 	{ "xml", "text/xml", "XML", 0 },
 	{ "nt", "application/n-triples", "NTriples", 1 },
