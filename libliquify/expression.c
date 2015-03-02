@@ -98,10 +98,10 @@ int
 liquify_eval_(struct liquify_expression *expr, jd_var *dict, jd_var *dest, int vivify)
 {
 	jd_var *key;
-	
+
 	switch(expr->root.right->type)
 	{
-	case TOK_DOT:		
+	case TOK_DOT:
 	case TOK_IDENT:
 		key = locate_var(expr->root.right, dict, vivify);
 		if(key)
@@ -145,7 +145,7 @@ liquify_eval_truth_(struct liquify_expression *expr, jd_var *dict)
 			break;
 		}
 		return 1;
-	case TOK_STRING:		
+	case TOK_STRING:
 		return 1;
 	}
 	return 0;
@@ -156,7 +156,7 @@ int
 liquify_assign_(struct liquify_expression *expr, jd_var *dict, jd_var *newval)
 {
 	jd_var *key;
-	
+
 	switch(expr->root.right->type)
 	{
 	case TOK_IDENT:
@@ -172,7 +172,7 @@ static int
 insert_token(struct liquify_expression *expr, struct liquify_token *tok)
 {
 	struct liquify_token save;
-	
+
 	save = *(expr->cur->right);
 	*(expr->cur->right) = *tok;
 	*tok = save;
