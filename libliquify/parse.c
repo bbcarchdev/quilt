@@ -1,6 +1,6 @@
 /* Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC.
+ * Copyright (c) 2014-2015 BBC.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -199,7 +199,7 @@ static struct liquify_part *
 add_part(LIQUIFYTPL *tpl, int type)
 {
 	struct liquify_part *part;
-	
+
 	part = (struct liquify_part *) liquify_alloc(tpl->env, sizeof(struct liquify_part));
 	part->line = tpl->line;
 	part->col = tpl->col;
@@ -221,7 +221,7 @@ static struct liquify_part *
 add_text(LIQUIFYTPL *tpl, int line, int col, const char *text, size_t len)
 {
 	struct liquify_part *part;
-	
+
 	part = add_part(tpl, LPT_TEXT);
 	part->line = line;
 	part->col = col;
@@ -236,7 +236,7 @@ static struct liquify_filter *
 add_filter(LIQUIFYTPL *tpl, struct liquify_part *part)
 {
 	struct liquify_filter *p;
-	
+
 	if(part->type != LPT_VAR)
 	{
 		return NULL;
@@ -258,7 +258,7 @@ static struct liquify_param *
 add_filter_param(LIQUIFYTPL *tpl, struct liquify_filter *filter)
 {
 	struct liquify_param *p;
-	
+
 	p = (struct liquify_param *) liquify_alloc(tpl->env, sizeof(struct liquify_param));
 	if(filter->pfirst)
 	{
@@ -276,7 +276,7 @@ static struct liquify_param *
 add_tag_param(LIQUIFYTPL *tpl, struct liquify_part *tag)
 {
 	struct liquify_param *p;
-	
+
 	p = (struct liquify_param *) liquify_alloc(tpl->env, sizeof(struct liquify_param));
 	if(tag->d.tag.pfirst)
 	{
@@ -296,7 +296,7 @@ parse_filter(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_filter *
 {
 	struct liquify_expression *expr;
 	struct liquify_param *param;
-	
+
 	expr = &(filter->expr);
 	cur = liquify_expression_(tpl, part, expr, cur, flags | TKF_COLON);
 	if(!cur)
@@ -356,7 +356,7 @@ parse_var(LIQUIFYTPL *tpl, const char *cur)
 	struct liquify_expression *expr;
 	struct liquify_filter *filter;
 	int t;
-	
+
 	part = add_part(tpl, LPT_VAR);
 	if(!part)
 	{
@@ -426,6 +426,7 @@ parse_tag(LIQUIFYTPL *tpl, const char *cur)
 	{
 		return NULL;
 	}
+	finished = 0;
 	first = 1;
 	cur += 2, tpl->pos += 2, tpl->col += 2;
 	while(!finished && tpl->pos < tpl->len)
@@ -460,7 +461,7 @@ parse_tag(LIQUIFYTPL *tpl, const char *cur)
 			liquify_token_free_(tpl, expr->last);
 			expr->last = NULL;
 		}
-	}	
+	}
 	if(!finished)
 	{
 		PARTERRS(tpl, part, "expected end-of-tag ('%}'), but reached end of template\n");
