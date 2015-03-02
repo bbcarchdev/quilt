@@ -2,7 +2,7 @@
 ##
 ## Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 ##
-## Copyright (c) 2014 BBC
+## Copyright (c) 2014-2015 BBC
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -16,8 +16,12 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-AM_CPPFLAGS = @AM_CPPFLAGS@ -I$(top_srcdir)/libquilt
-LIBS = $(top_builddir)/libquilt/libquilt.la
+AM_CPPFLAGS = @AM_CPPFLAGS@ \
+	-I$(top_builddir)/libquilt -I$(top_srcdir)/libquilt \
+	-I$(top_builddir)/libs3client -I$(top_srcdir)/libs3client
+
+LIBS = $(top_builddir)/libquilt/libquilt.la \
+	$(top_builddir)/libs3client/libs3client.la
 
 moduledir = $(libdir)/quilt
 

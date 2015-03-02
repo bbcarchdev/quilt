@@ -31,6 +31,13 @@ struct index_struct
 	const char *qclass;
 };
 
+struct data_struct
+{
+	char *buf;
+	size_t size;
+	size_t pos;
+};
+
 /* XXX replace with config */
 static struct index_struct indices[] = {
 	{ "/everything", "Everything", NULL },
@@ -51,17 +58,51 @@ static int coref_process(QUILTREQ *request);
 static int coref_index(QUILTREQ *req, const char *qclass);
 static int coref_home(QUILTREQ *req);
 static int coref_item(QUILTREQ *req);
+static int coref_item_s3(QUILTREQ *req);
 static int coref_lookup(QUILTREQ *req, const char *uri);
 static int coref_index_metadata_sparqlres(QUILTREQ *request, SPARQLRES *res);
 static int coref_index_metadata_stream(QUILTREQ *request, librdf_stream *stream, int subjobj);
+static size_t coref_s3_write(char *ptr, size_t size, size_t nemb, void *userdata);
+
+static S3BUCKET *coref_bucket;
+static int coref_s3_verbose;
 
 int
 quilt_plugin_init(void)
 {
+	char *t;
+
 	if(quilt_plugin_register_engine(QUILT_PLUGIN_NAME, coref_process))
 	{
 		quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to register engine\n");
 		return -1;
+	}
+	if((t = quilt_config_geta(QUILT_PLUGIN_NAME ":bucket", NULL)))
+	{
+		coref_bucket = s3_create(t);
+		if(!coref_bucket)
+		{
+			quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to initialise S3 bucket '%s'\n", t);
+			free(t);
+			return -1;
+		}
+		free(t);
+		if((t = quilt_config_geta("s3:endpoint", NULL)))
+		{
+			s3_set_endpoint(coref_bucket, t);
+			free(t);
+		}
+		if((t = quilt_config_geta("s3:access", NULL)))
+		{
+			s3_set_access(coref_bucket, t);
+			free(t);
+		}
+		if((t = quilt_config_geta("s3:secret", NULL)))
+		{
+			s3_set_secret(coref_bucket, t);
+			free(t);
+		}
+		coref_s3_verbose = quilt_config_get_bool("s3:verbose", 0);
 	}
 	return 0;
 }
@@ -108,7 +149,11 @@ coref_process(QUILTREQ *request)
 	else if(request->index)
 	{
 		r = coref_index(request, qclass);
-	}   
+	}
+	else if(coref_bucket)
+	{
+		r = coref_item_s3(request);
+	}
 	else
 	{
 		r = coref_item(request);
@@ -507,4 +552,97 @@ coref_item(QUILTREQ *request)
 	librdf_free_node(g);
 	/* Return 200, rather than 0, to auto-serialise the model */
 	return 200;
+}
+
+/* Fetch an item by retrieving triples or quads from an S3 bucket */
+static int
+coref_item_s3(QUILTREQ *request)
+{
+	S3REQUEST *req;
+	CURL *ch;
+	struct data_struct data;
+	long status;
+	char *mime;
+
+	/* Perform a basic sanity-check on the path */
+	if(request->path[0] != '/' ||
+	   strchr(request->path, '.') ||
+	   strchr(request->path, '%'))
+	{
+		return 404;
+	}
+	quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": S3: request path is %s\n", request->path);
+	memset(&data, 0, sizeof(struct data_struct));
+	req = s3_request_create(coref_bucket, request->path, "GET");
+	if(!req)
+	{
+		quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": S3: failed to create S3 request\n");
+		return 500;
+	}
+	ch = s3_request_curl(req);
+	curl_easy_setopt(ch, CURLOPT_HEADER, 0);
+	curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1);
+	curl_easy_setopt(ch, CURLOPT_VERBOSE, coref_s3_verbose);
+	curl_easy_setopt(ch, CURLOPT_WRITEDATA, (void *) &data);
+	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, coref_s3_write);
+	if(s3_request_perform(req))
+	{
+		quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": S3: request failed\n");
+		free(data.buf);
+		s3_request_destroy(req);
+		return 500;
+	}
+	curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &status);
+	if(status != 200)
+	{
+		quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": S3: request failed with HTTP status %d\n", (int) status);
+		free(data.buf);
+		s3_request_destroy(req);
+		return (int) status;
+	}
+	mime = NULL;
+	curl_easy_getinfo(ch, CURLINFO_CONTENT_TYPE, &mime);
+	if(!mime)
+	{
+		quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": S3: server did not send a Content-Type\n");
+		free(data.buf);
+		s3_request_destroy(req);
+		return 500;
+	}	
+	if(quilt_model_parse(request->model, mime, data.buf, data.pos))
+	{
+		quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": S3: failed to parse buffer as '%s'\n", mime);
+		free(data.buf);
+		s3_request_destroy(req);
+		return 500;
+	}
+	free(data.buf);
+	s3_request_destroy(req);
+	return 200;
+}
+
+static size_t
+coref_s3_write(char *ptr, size_t size, size_t nemb, void *userdata)
+{
+	struct data_struct *data;
+	char *p;
+
+	data = (struct data_struct *) userdata;
+
+	size *= nemb;
+	if(data->pos + size >= data->size)
+	{
+		p = (char *) realloc(data->buf, data->size + size + 1);
+		if(!p)
+		{
+			quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": S3: failed to expand receive buffer\n");
+			return 0;
+		}
+		data->buf = p;
+		data->size += size;
+	}
+	memcpy(&(data->buf[data->pos]), ptr, size);
+	data->pos += size;
+	data->buf[data->pos] = 0;
+	return size;
 }

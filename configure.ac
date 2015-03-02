@@ -35,6 +35,7 @@ BT_ENABLE_XSI
 BT_ENABLE_POSIX
 
 BT_REQUIRE_LIBDL
+BT_REQUIRE_OPENSSL
 BT_REQUIRE_LIBCURL
 BT_REQUIRE_LIBRDF
 BT_REQUIRE_LIBXML2
@@ -74,6 +75,7 @@ libsupport/Makefile
 m4/Makefile
 libnegotiate/Makefile
 libliquify/Makefile
+libs3client/Makefile
 templates/Makefile
 public/Makefile
 libquilt/Makefile

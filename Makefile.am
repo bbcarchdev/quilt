@@ -2,7 +2,7 @@
 ##
 ## Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 ##
-## Copyright (c) 2014 BBC
+## Copyright (c) 2014-2015 BBC
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@
 ACLOCAL_AMFLAGS = -I m4
 
 DIST_SUBDIRS = m4 libsupport liburi libsparqlclient libnegotiate jsondata \
-	templates public libquilt engines serialisers
+	libs3client templates public libquilt engines serialisers
 
-SUBDIRS = libsupport @subdirs@ libnegotiate libliquify templates public \
-	libquilt engines serialisers .
+SUBDIRS = libsupport @subdirs@ libnegotiate libliquify libs3client \
+	templates public libquilt engines serialisers .
 
 doc_DATA = apache2-example.conf
 
