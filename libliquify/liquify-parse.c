@@ -119,6 +119,24 @@ readfile(const char *path)
 	return buf;
 }
 
+static LIQUIFYTPL *
+loader(LIQUIFY *env, const char *name, void *data)
+{
+	char *buf;
+	LIQUIFYTPL *template;
+
+	(void) data;
+
+	buf = readfile(name);
+	if(!buf)
+	{
+		return NULL;
+	}
+	template = liquify_parse(env, name, buf, strlen(buf));
+	free(buf);
+	return template;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -141,6 +159,7 @@ main(int argc, char **argv)
 	{
 		return 1;
 	}
+	liquify_set_loader(env, loader, NULL);
 	tpl = liquify_parse(env, template_file, buf, strlen(buf));
 	free(buf);
 	if(!tpl)
