@@ -261,6 +261,10 @@ quilt_model_serialize(librdf_model *model, const char *mime)
 	{
 		name = "html";
 	}
+	else if(!strcmp(mime, "application/rdf+json") || !strcmp(mime, "application/json"))
+	{
+		name = "json";
+	}
 	/* If we have a specific serializer name, don't use the MIME type */
 	if(name)
 	{

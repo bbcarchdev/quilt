@@ -40,7 +40,8 @@ struct typemap_struct quilt_typemap[] =
 	{ "rss", "application/rss+xml", "RSS", 0 },
 	{ "atom", "application/atom+xml", "Atom", 0 },
 	{ "xhtml", "application/xhtml+xml", "XHTML", 0 },
-	{ "json", "application/json", "RDF/JSON", 1 },
+	{ "json", "application/json", "JSON", 0 },
+	{ "rj", "application/json", "RDF/JSON", 1 },
 	{ NULL, NULL, NULL, 0 }
 };
 
