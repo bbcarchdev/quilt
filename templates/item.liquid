@@ -5,8 +5,9 @@
 		<title>{{ object.title | escape }} • Quilt</title>
 	</head>
 	<body class="refentry">
-		<header>{% include 'header.liquid' %}
+		<header>
 			<h1>{{ object.title | escape }}</h1>
+			{% include 'header.liquid' %}
 		</header>
 		<article>
 
