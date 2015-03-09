@@ -61,7 +61,6 @@ static int coref_item(QUILTREQ *req);
 static int coref_item_s3(QUILTREQ *req);
 static int coref_lookup(QUILTREQ *req, const char *uri);
 static int coref_index_metadata_sparqlres(QUILTREQ *request, SPARQLRES *res);
-static int coref_index_metadata_stream(QUILTREQ *request, librdf_stream *stream, int subjobj);
 static size_t coref_s3_write(char *ptr, size_t size, size_t nemb, void *userdata);
 
 static S3BUCKET *coref_bucket;
@@ -168,8 +167,9 @@ coref_index(QUILTREQ *request, const char *qclass)
 	SPARQL *sparql;
 	SPARQLRES *res;
 	char limofs[128];
+	char *uristr;
 	librdf_statement *st;
-	int r;
+	int r, i;
 
 	if(request->offset)
 	{
@@ -184,14 +184,15 @@ coref_index(QUILTREQ *request, const char *qclass)
 	{
 		return 500;
 	}
-	res = sparql_queryf(sparql, "SELECT DISTINCT ?s\n"
+	res = sparql_queryf(sparql, "SELECT DISTINCT ?s ?class\n"
 						"WHERE {\n"
 						" GRAPH <%s> {\n"
 						"  ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?class .\n"
+						"  ?ir <http://xmlns.com/foaf/0.1/primaryTopic> ?s .\n"
+						"  ?ir <http://purl.org/dc/terms/modified> ?modified .\n"
+						"  ?ir <http://bbcarchdev.github.io/ns/spindle#score> ?score .\n"
 						"  %s"
-						"}\n"
-						" GRAPH ?g {\n"
-						"  ?s <http://purl.org/dc/terms/modified> ?modified\n"
+						"  FILTER(?score <= 40)"
 						" }\n"
 						"}\n"
 						"ORDER BY DESC(?modified)\n"
@@ -202,18 +203,48 @@ coref_index(QUILTREQ *request, const char *qclass)
 		quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": SPARQL query for index subjects failed\n");
 		return 500;
 	}
+	/* Add information about each of the result items to the model */
 	if((r = coref_index_metadata_sparqlres(request, res)))
 	{
 		sparqlres_destroy(res);
 		return r;
 	}
 	sparqlres_destroy(res);	
+	/* Add statements about the index itself */
 	st = quilt_st_create_literal(request->path, "http://www.w3.org/2000/01/rdf-schema#label", request->indextitle, "en");
 	if(!st) return -1;
 	librdf_model_context_add_statement(request->model, request->basegraph, st);
+	librdf_free_statement(st);
 	st = quilt_st_create_uri(request->path, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://rdfs.org/ns/void#Dataset");
 	if(!st) return -1;
 	librdf_model_context_add_statement(request->model, request->basegraph, st);
+	librdf_free_statement(st);
+	uristr = (char *) calloc(1, strlen(request->path) + 128);
+	if(request->offset)
+	{
+		i = request->offset - request->limit;
+		if(i < 0)
+		{
+			i = 0;
+		}
+		if(i)
+		{
+			sprintf(uristr, "%s?offset=%d", request->path, i);
+		}
+		else
+		{
+			strcpy(uristr, request->path);
+		}
+		st = quilt_st_create_uri(request->path, "http://www.w3.org/1999/xhtml/vocab#prev", uristr);
+		librdf_model_context_add_statement(request->model, request->basegraph, st);
+		librdf_free_statement(st);
+	}
+	sprintf(uristr, "%s?offset=%d", request->path, request->offset + request->limit);
+	st = quilt_st_create_uri(request->path, "http://www.w3.org/1999/xhtml/vocab#next", uristr);
+	librdf_model_context_add_statement(request->model, request->basegraph, st);
+	librdf_free_statement(st);
+
+	free(uristr);
 	/* Return 200, rather than 0, to auto-serialise the model */
 	return 200;
 }
@@ -240,12 +271,12 @@ coref_index_metadata_sparqlres(QUILTREQ *request, SPARQLRES *res)
 	  SELECT ?s ?p ?o ?g WHERE {
 	  GRAPH ?g {
 	  ?s ?p ?o .
+	  FILTER( ?g = <root> )
 	  FILTER( ...subjects... )
-	  FILTER( ...predicates... )
 	  }
 	  }
 	*/
-	sprintf(query, "SELECT ?s ?p ?o ?g WHERE { GRAPH ?g { ?s ?p ?o . FILTER(?g != <%s>) FILTER(", request->base);
+	sprintf(query, "SELECT ?s ?p ?o ?g WHERE { GRAPH ?g { ?s ?p ?o . FILTER(?g = <%s>) FILTER(", request->base);
 	subj = 0;
 	while((row = sparqlres_next(res)))
 	{
@@ -294,104 +325,6 @@ coref_index_metadata_sparqlres(QUILTREQ *request, SPARQLRES *res)
 	if(subj)
 	{
 		strcpy(p, "> ) } }");
-		if(quilt_sparql_query_rdf(query, request->model))
-		{
-			quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": failed to create model from query\n");
-			free(query);
-			return 500;
-		}
-	}
-	free(query);
-	return 0;
-}
-
-static int
-coref_index_metadata_stream(QUILTREQ *request, librdf_stream *stream, int subjobj)
-{
-	char *query, *p;
-	size_t buflen;
-	librdf_node *node;
-	librdf_uri *uri;
-	int subj;
-	const char *uristr;
-	librdf_statement *st;
-
-	buflen = 256 + strlen(request->subject) + strlen(request->base);
-	/*	quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": encoded buffer size is now %lu bytes\n", (unsigned long) buflen); */
-	query = (char *) calloc(1, buflen);
-	/*
-	  PREFIX ...
-	  SELECT ?s ?p ?o ?g WHERE {
-	  GRAPH ?g {
-	  ?s ?p ?o .
-	  FILTER( ...subjects... )
-	  FILTER( ...predicates... )
-	  }
-	  }
-	*/
-	sprintf(query, "SELECT ?s ?p ?o ?g WHERE { GRAPH ?g { ?s ?p ?o . FILTER(?g != <%s> && ?g != <%s>) FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label> || ?p = <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>) FILTER(", request->subject, request->base);
-/*	quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": encoded query length is now %lu bytes\n", (unsigned long) strlen(query)); */
-	subj = 0;
-	while(!librdf_stream_end(stream))
-	{
-		st = librdf_stream_get_object(stream);
-		if(subjobj)
-		{
-			node = librdf_statement_get_subject(st);
-		}
-		else
-		{
-			node = librdf_statement_get_object(st);
-		}
-		if(!librdf_node_is_resource(node))
-		{
-			librdf_stream_next(stream);
-			continue;
-		}
-		if((uri = librdf_node_get_uri(node)) &&
-		   (uristr = (const char *) librdf_uri_as_string(uri)))
-		{
-/*			st = quilt_st_create_uri(request->path, "http://www.w3.org/2000/01/rdf-schema#seeAlso", uristr);
-			if(!st) return -1;
-			librdf_model_context_add_statement(request->model, request->basegraph, st); */
-			buflen += 16 + (strlen(uristr) * 3);
-/*			quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": encoded buffer size is now %lu bytes\n", (unsigned long) buflen); */
-			p = (char *) realloc(query, buflen);
-			if(!p)
-			{
-				quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to reallocate buffer to %lu bytes\n", (unsigned long) buflen);
-				return 500;
-			}
-			query = p;
-			p = strchr(query, 0);
-			strcpy(p, "?s = <");
-			for(p = strchr(query, 0); *uristr; uristr++)
-			{
-				if(*uristr == '>')
-				{
-					*p = '%';
-					p++;
-					*p = '3';
-					p++;
-					*p = 'e';
-				}
-				else
-				{
-					*p = *uristr;
-				}
-				p++;
-			}
-			*p = 0;
-			strcpy(p, "> ||");
-			subj = 1;
-		}
-/*		quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": encoded query length is now %lu bytes\n", (unsigned long) strlen(query)); */
-		librdf_stream_next(stream);
-	}
-	if(subj)
-	{
-		strcpy(p, "> ) } }");
-/*		quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": encoded query length is now %lu bytes\n", (unsigned long) strlen(query)); */
 		if(quilt_sparql_query_rdf(query, request->model))
 		{
 			quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": failed to create model from query\n");
@@ -463,7 +396,7 @@ coref_lookup(QUILTREQ *request, const char *target)
 		buf = strdup(uristr);
 	}
 	sparqlres_destroy(res);
-	quilt_request_printf(request, "Status: 302 Moved\n"
+	quilt_request_printf(request, "Status: 303 See other\n"
 				 "Server: Quilt/" PACKAGE_VERSION "\n"
 				 "Location: %s\n"
 				 "\n", buf);
@@ -514,9 +447,6 @@ static int
 coref_item(QUILTREQ *request)
 {
 	char *query;
-	librdf_node *g;
-	librdf_stream *stream;
-	librdf_world *world;
 
 	query = (char *) malloc(strlen(request->subject) + 1024);
 	if(!query)
@@ -524,6 +454,7 @@ coref_item(QUILTREQ *request)
 		quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to allocate %u bytes\n", (unsigned) strlen(request->subject) + 128);
 		return 500;
 	}
+	/* Fetch the contents of the graph named in the request */
 	sprintf(query, "SELECT DISTINCT * WHERE {\n"
 			"GRAPH ?g {\n"
 			"  ?s ?p ?o . \n"
@@ -543,13 +474,6 @@ coref_item(QUILTREQ *request)
 		return 404;
 	}
 	free(query);
-	/* Find all of the objects of statements in our graph */
-	world = quilt_librdf_world();
-	g = librdf_new_node_from_uri_string(world, (const unsigned char *) request->subject);
-	stream = librdf_model_context_as_stream(request->model, g);
-	coref_index_metadata_stream(request, stream, 0);
-	librdf_free_stream(stream);
-	librdf_free_node(g);
 	/* Return 200, rather than 0, to auto-serialise the model */
 	return 200;
 }
