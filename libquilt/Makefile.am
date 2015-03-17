@@ -22,7 +22,7 @@ EXTRA_DIST = libquilt.pc.in libquilt-uninstalled.pc.in
 
 pkgconfigdir = $(libdir)/pkgconfig
 
-pkgconfig_DATA = libquilt.pc.in
+pkgconfig_DATA = libquilt.pc
 
 noinst_DATA = libquilt-uninstalled.pc.in
 
