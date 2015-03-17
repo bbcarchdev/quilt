@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ quilt_sparql_init_(void)
 {
 	char *buf;
 	librdf_world *world;
-	
+
 	world = quilt_librdf_world();
 	if(!world)
 	{
@@ -39,15 +39,15 @@ quilt_sparql_init_(void)
 	sparql = sparql_create(NULL);
 	if(!sparql)
 	{
-		log_printf(LOG_CRIT, "failed to create SPARQL query object\n");
+		quilt_logf(LOG_CRIT, "failed to create SPARQL query object\n");
 		return -1;
 	}
-	buf = config_geta("sparql:query", NULL);	
+	buf = quilt_config_geta("sparql:query", NULL);
 	sparql_set_query_uri(sparql, buf);
 	free(buf);
 	sparql_set_world(sparql, world);
-	sparql_set_logger(sparql, log_vprintf);
-	sparql_set_verbose(sparql, config_get_int("sparql:verbose", 1));
+	sparql_set_logger(sparql, quilt_vlogf);
+	sparql_set_verbose(sparql, quilt_config_get_int("sparql:verbose", 1));
 	return 0;
 }
 

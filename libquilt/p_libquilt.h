@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -33,13 +33,13 @@
 # include <sys/types.h>
 # include <sys/stat.h>
 # include <dlfcn.h>
+# include <errno.h>
 
 # include <liburi.h>
 # include <librdf.h>
 # include <libxml/parser.h>
 # include <curl/curl.h>
 
-# include "libsupport.h"
 # include "libnegotiate.h"
 # include "libsparqlclient.h"
 

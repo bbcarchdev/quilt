@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ quilt_request_init_(void)
 		return -1;
 	}
 	neg_add(quilt_charsets_, "utf-8", 1);
-	p = config_geta("quilt:base", NULL);
+	p = quilt_config_geta("quilt:base", NULL);
 	if(!p)
 	{
 		quilt_logf(LOG_CRIT, "failed to determine base URI from configuration\n");
@@ -89,9 +89,9 @@ quilt_request_init_(void)
 int
 quilt_request_sanity_(void)
 {
-	const char *engine;
-	
-	engine = config_getptr_unlocked("quilt:engine", NULL);
+	char *engine;
+
+	engine = quilt_config_geta("quilt:engine", NULL);
 	if(!engine)
 	{
 		quilt_logf(LOG_CRIT, "no engine was specified in the [quilt] section of the configuration file\n");
@@ -101,15 +101,17 @@ quilt_request_sanity_(void)
 	if(!quilt_engine_cb)
 	{
 		quilt_logf(LOG_CRIT, "engine '%s' is unknown (has the relevant module been loaded?)\n", engine);
+		free(engine);
 		return -1;
 	}
+	free(engine);
 	return 0;
 }
 
 /* SAPI: Invoked by the server to create a new request object */
 QUILTREQ *
 quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data)
-{	
+{
 	QUILTREQ *p;
 	const char *accept, *uri, *t;
 	char date[32];
@@ -362,7 +364,7 @@ quilt_request_process_path_(QUILTREQ *req, const char *uri)
 	if(!uri || uri[0] != '/')
 	{
 		/* Bad request */
-		log_printf(LOG_ERR, "malformed request-URI <%s>\n", uri);
+		quilt_logf(LOG_ERR, "malformed request-URI <%s>\n", uri);
 		return -1;
 	}
 	buf = strdup(uri);

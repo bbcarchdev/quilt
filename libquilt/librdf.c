@@ -83,7 +83,7 @@ quilt_librdf_init_(void)
 		librdf_world_open(quilt_world);
 		librdf_world_set_logger(quilt_world, NULL, quilt_librdf_logger_);
 		/* Obtain all of our namespaces from the configuration */
-		config_get_all("namespaces", NULL, quilt_ns_cb_, NULL);
+		quilt_config_get_all("namespaces", NULL, quilt_ns_cb_, NULL);
 		/* Register our MIME types for the built-in serializer */
 		for(c = 0; (desc = librdf_serializer_get_description(quilt_world, c)); c++)
 		{
