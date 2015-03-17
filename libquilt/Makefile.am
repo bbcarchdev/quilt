@@ -15,7 +15,6 @@
 ##  limitations under the License.
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
-	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
 	-I$(top_builddir)/libnegotiate -I$(top_srcdir)/libnegotiate
 
 EXTRA_DIST = libquilt.pc.in libquilt-uninstalled.pc.in

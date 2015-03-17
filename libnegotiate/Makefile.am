@@ -18,5 +18,3 @@ noinst_LTLIBRARIES = libnegotiate.la
 
 libnegotiate_la_SOURCES = libnegotiate.h p_libnegotiate.h \
 	negotiate.c
-
-libnegotiate_la_LDFLAGS = -static
