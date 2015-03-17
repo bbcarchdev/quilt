@@ -1,2 +1,3 @@
 usr/include/libquilt.h
 usr/include/libquilt-sapi.h
+usr/lib/pkgconfig/libquilt.pc

@@ -79,6 +79,8 @@ libs3client/Makefile
 templates/Makefile
 public/Makefile
 libquilt/Makefile
+libquilt/libquilt-uninstalled.pc
+libquilt/libquilt.pc
 engines/Makefile
 serialisers/Makefile
 apache2-example.conf

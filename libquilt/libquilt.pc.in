@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+moduledir=@libdir@/quilt
+
+Name: libquilt
+Description: Quilt engine API
+Requires.private: libsparqlclient, liburi, raptor2
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lquilt
+Libs.private: @LIBDL_LDFLAGS@ @LIBDL_LIBS@
+Cflags: -I${includedir}

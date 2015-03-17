@@ -18,6 +18,14 @@ AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
 	-I$(top_builddir)/libnegotiate -I$(top_srcdir)/libnegotiate
 
+EXTRA_DIST = libquilt.pc.in libquilt-uninstalled.pc.in
+
+pkgconfigdir = $(libdir)/pkgconfig
+
+pkgconfig_DATA = libquilt.pc.in
+
+noinst_DATA = libquilt-uninstalled.pc.in
+
 include_HEADERS = libquilt.h libquilt-sapi.h
 
 lib_LTLIBRARIES = libquilt.la
