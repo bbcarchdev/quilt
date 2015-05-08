@@ -2,7 +2,7 @@
 ##
 ## Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 ##
-## Copyright (c) 2014 BBC
+## Copyright (c) 2014-2015 BBC
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ AM_CPPFLAGS = @AM_CPPFLAGS@ \
 
 moduledir = $(libdir)/quilt
 
-module_LTLIBRARIES = html.la
+module_LTLIBRARIES = html.la text.la
 
 html_la_SOURCES = p_html.h html.c html-types.c html-classes.c
 html_la_LIBADD = $(top_builddir)/libquilt/libquilt.la \
@@ -30,3 +30,7 @@ html_la_LIBADD = $(top_builddir)/libquilt/libquilt.la \
 	@LIBJSONDATA_LOCAL_LIBS@ @LIBJSONDATA_LIBS@
 
 html_la_LDFLAGS = -module -no-undefined -avoid-version
+
+text_la_SOURCES = p_text.h text.c
+text_la_LIBADD = $(top_builddir)/libquilt/libquilt.la
+text_la_LDFLAGS = -module -no-undefined -avoid-version
