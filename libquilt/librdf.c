@@ -47,7 +47,7 @@ struct override_struct
 
 static struct override_struct overrides[] = {
 	
-	{ "application/rdf+xml", "RDF/XML", "rdf", -1.0f, 0.75f, 1, NULL },
+	{ "application/rdf+xml", "RDF/XML", "rdf xml", -1.0f, 0.75f, 1, NULL },
 	{ "application/n-triples", "N-Triples", "nt", -1.0f, 0.75f, 1, NULL },
 	{ "text/turtle", "Turtle", "ttl", 0.9f, -1.0f, 1, NULL },
 	{ "text/x-nquads", "N-Quads", "nq", -1.0f, -1.0f, 1, "application/nquads" },

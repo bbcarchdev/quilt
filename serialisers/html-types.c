@@ -24,6 +24,6 @@
 #include "p_html.h"
 
 QUILTTYPE html_types[] = {
-	{ "text/html", "html", "HTML", 0.95f, 1, NULL },
+	{ "text/html", "html htm", "HTML", 0.95f, 1, NULL },
 	{ NULL, NULL, NULL, 0, 0, NULL },
 };

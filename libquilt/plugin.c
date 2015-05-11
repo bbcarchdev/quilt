@@ -31,6 +31,7 @@ static void *current;
 static int quilt_plugin_load_cb_(const char *key, const char *value, void *data);
 static QUILTMIME *mime_create(const QUILTTYPE *type);
 static void mime_destroy(QUILTMIME *mime);
+static void quilt_copy_quilttype_(QUILTTYPE *dest, QUILTCB *src);
 
 /* Private: initialise plug-ins
  * Note that plug-in registration functions will be invoked BEFORE
@@ -310,6 +311,55 @@ quilt_plugin_invoke_serialize_(QUILTCB *cb, QUILTREQ *req)
 }
 
 QUILTTYPE *
+quilt_plugin_serializer_match_ext(const char *ext, QUILTTYPE *dest)
+{
+	QUILTCB *cur;
+	size_t c;
+	for(cur = cb_first; cur; cur = cur->next)
+	{
+		if(cur->type != QCB_SERIALIZE)
+		{
+			continue;
+		}
+		if(!cur->mime->extensions)
+		{
+			continue;
+		}
+		for(c = 0; cur->mime->extensions[c]; c++)
+		{
+			if(!strcasecmp(ext, cur->mime->extensions[c]))
+			{
+				quilt_copy_quilttype_(dest, cur);
+				return dest;
+			}
+		}
+	}
+	return NULL;
+}
+
+QUILTTYPE *
+quilt_plugin_serializer_match_mime(const char *mime, QUILTTYPE *dest)
+{
+	QUILTCB *cur;
+	
+	for(cur = cb_first; cur; cur = cur->next)
+	{
+		if(cur->type != QCB_SERIALIZE)
+		{
+			continue;
+		}
+		if(!strcasecmp(mime, cur->mime->mimetype))
+		{
+			quilt_copy_quilttype_(dest, cur);
+			return dest;
+		}
+	}
+	return NULL;
+}
+
+
+/* Obtain a QUILTTYPE for a plugin */
+QUILTTYPE *
 quilt_plugin_serializer_first(QUILTTYPE *buf)
 {
 	QUILTCB *cur;
@@ -321,12 +371,7 @@ quilt_plugin_serializer_first(QUILTTYPE *buf)
 		{
 			continue;
 		}
-		buf->data = (void *) cur;
-		buf->mimetype = cur->mime->mimetype;
-		buf->extensions = cur->mime->extensions;
-		buf->desc = cur->mime->desc;
-		buf->visible = cur->mime->visible;
-		buf->qs = cur->mime->qs;
+		quilt_copy_quilttype_(buf, cur);
 		return buf;
 	}
 	return NULL;
@@ -346,12 +391,7 @@ QUILTTYPE *quilt_plugin_next(QUILTTYPE *current)
 		{
 			continue;
 		}
-		current->data = (void *) cur;
-		current->mimetype = cur->mime->mimetype;
-		current->extensions = cur->mime->extensions;
-		current->desc = cur->mime->desc;
-		current->visible = cur->mime->visible;
-		current->qs = cur->mime->qs;
+		quilt_copy_quilttype_(current, cur);
 		return current;
 	}
 	return NULL;
@@ -363,6 +403,8 @@ static QUILTMIME *
 mime_create(const QUILTTYPE *type)
 {
 	QUILTMIME *p;
+	size_t count;
+	const char *s, *t;
 
 	if(strlen(type->mimetype) > QUILT_MIME_LEN)
 	{
@@ -382,12 +424,58 @@ mime_create(const QUILTTYPE *type)
 	p->visible = type->visible;
 	if(type->extensions)
 	{
-		p->extensions = strdup(type->extensions);
+		count = 0;
+		t = type->extensions;
+		for(t = type->extensions; *t; t++)
+		{
+			if(isspace(*t))
+			{
+				continue;
+			}
+			count++;
+			while(*t && !isspace(*t))
+			{
+				t++;
+			}
+			if(!*t)
+			{
+				break;
+			}
+		}
+		p->extensions = (char **) calloc(count + 1, sizeof(char *));
 		if(!p->extensions)
 		{
-			quilt_logf(LOG_CRIT, "failed to duplicate '%s'\n", type->extensions);
+			quilt_logf(LOG_CRIT, "failed to allocate extensions list for MIME type '%s'\n", type->mimetype);
 			mime_destroy(p);
 			return NULL;
+		}
+		count = 0;
+		for(t = type->extensions; *t; t++)
+		{
+			if(isspace(*t))
+			{
+				continue;
+			}
+			s = t;
+			while(*t && !isspace(*t))
+			{
+				t++;
+			}
+			p->extensions[count] = (char *) malloc(t - s + 1);
+			if(!p->extensions[count])
+			{
+				quilt_logf(LOG_CRIT, "failed to allocate memory to duplicate file extension\n");
+				mime_destroy(p);
+				return NULL;
+			}
+			memcpy(p->extensions[count], s, t - s);
+			p->extensions[count][t - s] = 0;
+			quilt_logf(LOG_DEBUG, "added extension '%s' for type '%s'\n", p->extensions[count], type->mimetype);
+			count++;
+			if(!*t)
+			{
+				break;
+			}
 		}
 	}
 	if(type->desc)
@@ -407,10 +495,39 @@ mime_create(const QUILTTYPE *type)
 static void
 mime_destroy(QUILTMIME *mime)
 {
+	size_t c;
+
 	if(mime)
 	{
-		free(mime->extensions);
+		if(mime->extensions)
+		{
+			for(c = 0; mime->extensions[c]; c++)
+			{
+				free(mime->extensions[c]);
+			}
+			free(mime->extensions);
+		}
 		free(mime->desc);
 		free(mime);
 	}
+}
+
+/* Copy the contents of a QUILTCB's QUILTMIME structure into a constant
+ * QUILTTYPE used by the public interface.
+ *
+ * Note that only the preferred extension (if any) is returned.
+ */
+static void
+quilt_copy_quilttype_(QUILTTYPE *dest, QUILTCB *src)
+{
+	memset(dest, 0, sizeof(QUILTTYPE));
+	dest->data = (void *) src;
+	dest->mimetype = src->mime->mimetype;
+	if(src->mime->extensions)
+	{
+		dest->extensions = src->mime->extensions[0];
+	}
+	dest->desc = src->mime->desc;
+	dest->visible = src->mime->visible;
+	dest->qs = src->mime->qs;
 }

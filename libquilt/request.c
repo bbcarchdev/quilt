@@ -26,27 +26,9 @@
 static URI *quilt_base_uri;
 static QUILTCB *quilt_engine_cb;
 
-struct typemap_struct quilt_typemap[] = 
-{
-	{ "txt", "text/plain", "Plain text", 0 },
-	{ "ttl", "text/turtle", "Turtle", 1 },
-	{ "n3", "text/rdf+n3", "N3", 0 },
-	{ "gv", "text/x-graphviz", "Graphviz", 0 },
-	{ "nq", "application/nquads", "NQuads", 1 },
-	{ "html", "text/html", "HTML", 1 },
-	{ "xml", "text/xml", "XML", 0 },
-	{ "nt", "application/n-triples", "NTriples", 1 },
-	{ "rdf", "application/rdf+xml", "RDF/XML", 1 },
-	{ "rss", "application/rss+xml", "RSS", 0 },
-	{ "atom", "application/atom+xml", "Atom", 0 },
-	{ "xhtml", "application/xhtml+xml", "XHTML", 0 },
-	{ "json", "application/json", "JSON", 0 },
-	{ "rj", "application/json", "RDF/JSON", 1 },
-	{ NULL, NULL, NULL, 0 }
-};
-
 static int quilt_request_process_path_(QUILTREQ *req, const char *uri);
 static const char *quilt_request_match_ext_(QUILTREQ *req);
+static const char *quilt_request_match_mime_(QUILTREQ *req);
 
 NEGOTIATE *quilt_types_;
 NEGOTIATE *quilt_charsets_;
@@ -117,7 +99,7 @@ quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data)
 	char date[32];
 	struct tm now;
 	librdf_world *world;
-	
+
 	p = (QUILTREQ *) calloc(1, sizeof(QUILTREQ));
 	if(!p)
 	{
@@ -182,6 +164,7 @@ quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data)
 		p->status = 406;
 		return p;
 	}
+	p->canonext = quilt_request_match_mime_(p);
 	world = quilt_librdf_world();
 	if(!world)
 	{
@@ -202,8 +185,9 @@ quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data)
 		p->status = 500;
 		return p;
 	}
-	quilt_logf(LOG_DEBUG, "negotiated type '%s' from '%s'\n", p->type, accept);
+	quilt_logf(LOG_DEBUG, "negotiated type '%s' (extension '%s') from '%s'\n", p->type, p->canonext, accept);
 	p->limit = DEFAULT_LIMIT;
+	p->deflimit = DEFAULT_LIMIT;
 	p->offset = 0;
 	if((t = impl->getparam(p, "offset")))
 	{
@@ -405,19 +389,33 @@ quilt_request_process_path_(QUILTREQ *req, const char *uri)
 /* Match the extension within a request to a media type in the typemap
  * list.
  */
-
-/* XXX examine the extensions in registered serializer callbacks */
 static const char *
 quilt_request_match_ext_(QUILTREQ *req)
 {
-	size_t c;
-	
-	for(c = 0; quilt_typemap[c].ext; c++)
+	QUILTTYPE buf, *type;
+
+	if(!req->ext)
 	{
-		if(!strcmp(req->ext, quilt_typemap[c].ext))
-		{
-			return quilt_typemap[c].type;
-		}
+		return NULL;
 	}
-	return NULL;
+	type = quilt_plugin_serializer_match_ext(req->ext, &buf);
+	if(!type)
+	{
+		return NULL;
+	}
+	return type->mimetype;
+}
+
+/* Return the preferred file extension, if any, for the negotiated type */
+static const char *
+quilt_request_match_mime_(QUILTREQ *req)
+{
+	QUILTTYPE buf, *type;
+	
+	type = quilt_plugin_serializer_match_mime(req->type, &buf);
+	if(!type)
+	{
+		return NULL;
+	}
+	return type->extensions;
 }

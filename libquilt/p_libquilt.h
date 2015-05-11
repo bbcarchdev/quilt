@@ -60,7 +60,10 @@ typedef enum
 	/* 2 */ QCB_ENGINE
 } QUILTCBTYPE;
 
-/* Not currently used */
+/* This structure is dynamically-allocated, and represents a MIME type that
+ * has been registered by a plugin; the constant version, passed to the
+ * plugin registration functions, is QUILTTYPE (defined in libquilt.h)
+ */
 struct quilt_mime_struct
 {
 	/* The actual MIME type */
@@ -69,7 +72,7 @@ struct quilt_mime_struct
 	 * is space-separated and without a leading period. The first listed
 	 * extension is considered preferred for the type.
 	 */
-	char *extensions;
+	char **extensions;
 	/* A short human-readable description of the type */
 	char *desc;
 	/* The server-side score for this type, from 0 to 1000. 0=never serve,
@@ -79,15 +82,6 @@ struct quilt_mime_struct
 	/* If this type is supported, but not directly exposed to consumers,
 	 * this flag is unset.
 	 */
-	int visible;
-};
-
-/* Information about known MIME types */
-struct typemap_struct
-{
-	const char *ext;
-	const char *type;
-	const char *name;
 	int visible;
 };
 
@@ -108,8 +102,6 @@ struct quilt_callback_struct
 /* Content negotiation */
 extern NEGOTIATE *quilt_types_;
 extern NEGOTIATE *quilt_charsets_;
-
-extern struct typemap_struct quilt_typemap_[];
 
 /* Logging */
 int quilt_log_init_(quilt_log_fn logger);

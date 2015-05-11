@@ -30,7 +30,7 @@ static int text_serialize_uri(QUILTREQ *req, librdf_uri *uri);
 static int text_serialize_node(QUILTREQ *req, librdf_node *node);
 
 static QUILTTYPE text_types[] = {
-	{ "text/plain", "txt", "Plain text", 0.95f, 1, NULL },
+	{ "text/plain", "text txt", "Plain text", 0.95f, 1, NULL },
 	{ NULL, NULL, NULL, 0, 0, NULL },
 };
 

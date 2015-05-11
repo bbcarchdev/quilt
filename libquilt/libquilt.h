@@ -79,6 +79,10 @@ struct quilt_request_struct
 	/* Query parameters */
 	int limit;
 	int offset;
+	/* The default limit */
+	int deflimit;
+	/* The canonical extension for the MIME type */
+	const char *canonext;
 };
 
 /* A typemap structure, filled in by a serialising plug-in for registration */
@@ -120,6 +124,8 @@ int quilt_plugin_register_serializer(const QUILTTYPE *type, quilt_serialize_fn f
 int quilt_plugin_register_engine(const char *name, quilt_engine_fn fn);
 QUILTTYPE *quilt_plugin_serializer_first(QUILTTYPE *buf);
 QUILTTYPE *quilt_plugin_next(QUILTTYPE *current);
+QUILTTYPE *quilt_plugin_serializer_match_ext(const char *ext, QUILTTYPE *dest);
+QUILTTYPE *quilt_plugin_serializer_match_mime(const char *mime, QUILTTYPE *dest);
 
 /* Logging */
 void quilt_logf(int priority, const char *message, ...);
