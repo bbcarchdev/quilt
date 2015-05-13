@@ -18,7 +18,7 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-DIST_SUBDIRS = m4 libsupport liburi libsparqlclient libnegotiate jsondata \
+DIST_SUBDIRS = m4 libsupport liburi libsparqlclient libnegotiate \
 	libs3client templates public libquilt engines serialisers
 
 SUBDIRS = libsupport @subdirs@ libnegotiate libliquify libs3client \
