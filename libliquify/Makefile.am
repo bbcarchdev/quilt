@@ -23,12 +23,12 @@ libliquify_la_SOURCES = libliquify.h p_libliquify.h \
 	block-for.c block-if.c \
 	filter-escape.c filter-case.c
 
-libliquify_la_LIBADD = $(LIBJSONDATA_LOCAL_LIBS) $(LIBJSONDATA_LIBS)
+libliquify_la_LIBADD = $(LIBJANSSON_LOCAL_LIBS) $(LIBJANSSON_LIBS)
 
 noinst_PROGRAMS = liquify-parse liquify-apply
 
 liquify_parse_SOURCES = liquify-parse.c
-liquify_parse_LDADD = libliquify.la $(LIBJSONDATA_LOCAL_LIBS) $(LIBJSONDATA_LIBS)
+liquify_parse_LDADD = libliquify.la $(LIBJANSSON_LOCAL_LIBS) $(LIBJANSSON_LIBS)
 
 liquify_apply_SOURCES = liquify-apply.c
-liquify_apply_LDADD = libliquify.la $(LIBJSONDATA_LOCAL_LIBS) $(LIBJSONDATA_LIBS)
+liquify_apply_LDADD = libliquify.la $(LIBJANSSON_LOCAL_LIBS) $(LIBJANSSON_LIBS)

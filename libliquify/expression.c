@@ -5,7 +5,8 @@
 #include "p_libliquify.h"
 
 static int insert_token(struct liquify_expression *expr, struct liquify_token *token);
-static jd_var *locate_var(struct liquify_token *tok, jd_var *dict, int vivify);
+/* Locate or set a value in a tree of dictionaries */
+static json_t *locate_var(struct liquify_token *tok, json_t *dict, json_t *newval);
 
 /* This is not a real expression parser - it reads a token, which must be an
  * identifier or a string literal, and will be followed by a terminator of
@@ -93,75 +94,83 @@ liquify_expression_(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_e
 	return NULL;
 }
 
-/* Evaluate an expression */
-int
-liquify_eval_(struct liquify_expression *expr, jd_var *dict, jd_var *dest, int vivify)
+/* Evaluate an expression; returns NULL if:
+ * - an error occurred
+ * - if newval was not specified, the expression did not evaluate to an object
+ * otherwise, returns a new reference to an object which must be decremented.
+ */
+json_t *
+liquify_eval_(struct liquify_expression *expr, json_t *dict, json_t *newval)
 {
-	jd_var *key;
-
 	switch(expr->root.right->type)
 	{
 	case TOK_DOT:
 	case TOK_IDENT:
-		key = locate_var(expr->root.right, dict, vivify);
-		if(key)
-		{
-			jd_assign(dest, key);
-		}
-		return 0;
+		return locate_var(expr->root.right, dict, newval);
 	case TOK_STRING:
-		jd_set_string(dest, expr->root.right->text);
-		return 0;
+		return json_string(expr->root.right->text);
 	}
-	return -1;
+	return NULL;
 }
 
 /* Evaluate an expression to a boolean value */
 int
-liquify_eval_truth_(struct liquify_expression *expr, jd_var *dict)
+liquify_eval_truth_(struct liquify_expression *expr, json_t *dict)
 {
-	jd_var *key;
+	const char *t;
+	json_t *value;
+	int r;
 
 	switch(expr->root.right->type)
 	{
 	case TOK_DOT:
 	case TOK_IDENT:
-		key = locate_var(expr->root.right, dict, 0);
-		if(!key)
+		value = locate_var(expr->root.right, dict, NULL);
+		if(!value)
 		{
 			return 0;
 		}
-		switch(key->type)
+		r = 0;
+		switch(json_typeof(value))
 		{
-		case VOID:
-			return 0;
-		case BOOL:
-			return key->v.b;
-		case INTEGER:
-			return key->v.i == 0 ? 0 : 1;
-		case REAL:
-			return key->v.r == 0.0 ? 0 : 1;
+		case JSON_NULL:
+		case JSON_FALSE:
+			break;
+		case JSON_TRUE:
+			r = 1;
+			break;
+		case JSON_INTEGER:
+			r = json_integer_value(value) == 0 ? 0 : 1;
+			break;
+		case JSON_REAL:
+			r = json_real_value(value) == 0.0 ? 0 : 1;
+			break;
+		case JSON_STRING:
+			t = json_string_value(value);
+			if(t && t[0])
+			{
+				r = 1;
+			}
+			break;
 		default:
 			break;
 		}
-		return 1;
+		json_decref(value);
+		return r;
 	case TOK_STRING:
 		return 1;
 	}
 	return 0;
 }
 
-/* Assign a value to an expression */
+/* Assign a value to an expression (currently non-hierarchical) */
 int
-liquify_assign_(struct liquify_expression *expr, jd_var *dict, jd_var *newval)
+liquify_assign_(struct liquify_expression *expr, json_t *dict, json_t *newval)
 {
-	jd_var *key;
-
 	switch(expr->root.right->type)
 	{
 	case TOK_IDENT:
-		key = jd_get_ks(dict, expr->root.right->text, 1);
-		jd_assign(key, newval);
+		json_object_set(dict, expr->root.right->text, newval);
 		return 0;
 	}
 	return -1;
@@ -181,11 +190,14 @@ insert_token(struct liquify_expression *expr, struct liquify_token *tok)
 	return 0;
 }
 
-/* Locate an lvalue within dict based upon the contents of tok */
-static jd_var *
-locate_var(struct liquify_token *tok, jd_var *dict, int vivify)
+/* Locate an lvalue within dict based upon the contents of tok;
+ * the result, if successful, is ALWAYS a new reference - even if it's
+ * a copy of the pointer to newval
+ */
+static json_t *
+locate_var(struct liquify_token *tok, json_t *dict, json_t *newval)
 {
-	jd_var *left;
+	json_t *left, *r;
 
 	if(!tok || !dict)
 	{
@@ -194,14 +206,31 @@ locate_var(struct liquify_token *tok, jd_var *dict, int vivify)
 	switch(tok->type)
 	{
 	case TOK_DOT:
-		left = locate_var(tok->left, dict, 0);
+		left = locate_var(tok->left, dict, newval);
 		if(!left)
 		{
 			return NULL;
 		}
-		return locate_var(tok->right, left, vivify);
+		r = locate_var(tok->right, left, newval);
+		json_decref(left);
+		return r;
 	case TOK_IDENT:
-		return jd_get_ks(dict, tok->text, vivify);
+		if(newval)
+		{
+			if(json_object_set(dict, tok->text, newval))
+			{
+				return NULL;
+			}
+			json_incref(newval);
+			return newval;
+		}
+		newval = json_object_get(dict, tok->text);
+		if(!newval)
+		{
+			return NULL;
+		}
+		json_incref(newval);
+		return newval;
 	}
 	return NULL;
 }

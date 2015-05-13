@@ -43,7 +43,7 @@ liquify_locate(LIQUIFY *env, const char *name)
 }
 
 char *
-liquify_apply_name(LIQUIFY *env, const char *name, jd_var *dict)
+liquify_apply_name(LIQUIFY *env, const char *name, json_t *dict)
 {
 	LIQUIFYTPL *tpl;
 	
@@ -57,18 +57,18 @@ liquify_apply_name(LIQUIFY *env, const char *name, jd_var *dict)
 }
 
 char *
-liquify_apply(LIQUIFYTPL *template, jd_var *dict)
+liquify_apply(LIQUIFYTPL *template, json_t *dict)
 {
 	LIQUIFYCTX context;
 	struct liquify_part *part;
 	struct liquify_filter *filter;
 	struct liquify_stack *sp;
-	jd_var value = JD_INIT;
 	size_t len;
 	int r;
 	char *str, *buf;
 	const char *ident;
-	
+	json_t *value;
+
 	memset(&context, 0, sizeof(LIQUIFYCTX));
 	context.tpl = template;
 	context.cp = template->first;
@@ -82,6 +82,7 @@ liquify_apply(LIQUIFYTPL *template, jd_var *dict)
 		switch(part->type)
 		{
 		case LPT_TEXT:
+			/* Emit a block of literal text */
 			if(context.capture && context.capture->inhibit)
 			{
 				break;
@@ -93,52 +94,54 @@ liquify_apply(LIQUIFYTPL *template, jd_var *dict)
 			}
 			break;
 		case LPT_VAR:
+			/* Emit the contents of a variable */
 			if(context.capture && context.capture->inhibit)
 			{
 				break;
 			}
-			JD_SCOPE
+			value = liquify_eval_(&(part->d.var.expr), dict, NULL);
+			if(part->d.var.ffirst)
 			{
-				liquify_eval_(&(part->d.var.expr), dict, &value, 0);
+				if(liquify_capture(&context))
+				{
+					if(value)
+					{
+						json_decref(value);
+					}
+					r = -1;
+				}
+			}
+			if(!r)
+			{
+				liquify_emit_json(&context, value);
+				json_decref(value);
 				if(part->d.var.ffirst)
 				{
-					if(liquify_capture(&context))
+					for(filter = part->d.var.ffirst; filter; filter = filter->next)
 					{
-						jd_release(&value);
-						r = -1;
+						buf = context.capture->buf;
+						len = context.capture->buflen;
+						context.capture->buf = NULL;
+						context.capture->buflen = 0;
+						context.capture->bufsize = 0;
+						if(apply_filter(&context, buf, len, filter))
+						{
+							r = -1;
+							break;
+						}
+						liquify_free(template->env, buf);
 					}
-				}
-				if(!r)
-				{
-					liquify_emit_json(&context, &value);
-					jd_release(&value);
-					if(part->d.var.ffirst)
+					len = 0;
+					str = liquify_capture_end(&context, &len);
+					if(!r)
 					{
-						for(filter = part->d.var.ffirst; filter; filter = filter->next)
-						{
-							buf = context.capture->buf;
-							len = context.capture->buflen;
-							context.capture->buf = NULL;
-							context.capture->buflen = 0;
-							context.capture->bufsize = 0;
-							if(apply_filter(&context, buf, len, filter))
-							{
-								r = -1;
-								break;
-							}
-							liquify_free(template->env, buf);
-						}
-						len = 0;
-						str = liquify_capture_end(&context, &len);
-						if(!r)
-						{
-							liquify_emit(&context, str, len);
-						}
+						liquify_emit(&context, str, len);
 					}
 				}
 			}
 			break;
 		case LPT_TAG:
+			/* Apply a tag of some kind */
 			if(part->d.tag.kind == TPK_END)
 			{
 				if(!context.stack ||
@@ -247,25 +250,51 @@ liquify_apply(LIQUIFYTPL *template, jd_var *dict)
 	return context.buf;
 }
 
-/* Write a JSON value to the current context */
+/* Write a value to the current context */
 int
-liquify_emit_json(LIQUIFYCTX *ctx, jd_var *value)
+liquify_emit_json(LIQUIFYCTX *ctx, json_t *value)
 {
-	jd_var str = JD_INIT;
+	char buf[128];
 	size_t len;
-	const char *p;
+	const char *s;
+	char *p;
 	int r;
-	
-	JD_SCOPE
-	{		
-		jd_stringify(&str, value);
-		len = 0;
-		p = jd_bytes(&str, &len);
-		if(len)
-		{
-			r = liquify_emit(ctx, p, len - 1);
-		}
+
+	if(!value)
+	{
+		return liquify_emit(ctx, "null", 4);
 	}
+	switch(json_typeof(value))
+	{
+	case JSON_NULL:
+		return liquify_emit(ctx, "null", 4);
+	case JSON_TRUE:
+		return liquify_emit(ctx, "true", 4);
+	case JSON_FALSE:
+		return liquify_emit(ctx, "false", 4);
+	case JSON_STRING:
+		s = json_string_value(value);
+		return liquify_emit(ctx, s, strlen(s));
+	case JSON_INTEGER:
+		sprintf(buf, "%" JSON_INTEGER_FORMAT, json_integer_value(value));
+		return liquify_emit(ctx, buf, strlen(buf));
+	case JSON_REAL:
+		sprintf(buf, "%f", json_real_value(value));
+		return liquify_emit(ctx, buf, strlen(buf));
+	default:
+		break;
+	}
+	p = json_dumps(value, JSON_ENCODE_ANY | JSON_SORT_KEYS | JSON_INDENT(4));
+	if(!p)
+	{
+		return -1;
+	}
+	len = strlen(p);
+	if(len)
+	{
+		r = liquify_emit(ctx, p, len);
+	}
+	free(p);
 	return r;
 }
 

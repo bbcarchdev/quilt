@@ -38,11 +38,11 @@ static LIQUIFYTPL *tpl_error;
 static int html_serialize(QUILTREQ *req);
 static LIQUIFYTPL *quilt_html_parse_(LIQUIFY *liquify, const char *pathname, void *data);
 static LIQUIFYTPL *quilt_html_template_(QUILTREQ *req);
-static int add_req(jd_var *dict, QUILTREQ *req);
-static int add_data(jd_var *dict, QUILTREQ *req);
-static int add_subject(QUILTREQ *req, jd_var *item, librdf_model *model, librdf_node *subject, const char *uri);
-static int add_predicate(QUILTREQ *req, jd_var *value, librdf_node *predicate, const char *uri);
-static int add_object(QUILTREQ *req, jd_var *value, librdf_node *object);
+static int add_req(json_t *dict, QUILTREQ *req);
+static int add_data(json_t *dict, QUILTREQ *req);
+static int add_subject(QUILTREQ *req, json_t *item, librdf_model *model, librdf_node *subject, const char *uri);
+static int add_predicate(QUILTREQ *req, json_t *value, librdf_node *predicate, const char *uri);
+static int add_object(QUILTREQ *req, json_t *value, librdf_node *object);
 static char *get_title(QUILTREQ *req, librdf_model *model, librdf_node *subject);
 static char *get_shortdesc(QUILTREQ *req, librdf_model *model, librdf_node *subject);
 static char *get_longdesc(QUILTREQ *req, librdf_model *model, librdf_node *subject);
@@ -91,31 +91,31 @@ static int
 html_serialize(QUILTREQ *req)
 {
 	LIQUIFYTPL *tpl;
-	jd_var *dict;
+	json_t *dict;
 	char *buf;
 	int status;
 
 	status = 500;
-	JD_SCOPE
-	{		
-		dict = jd_nhv(8);
-		add_req(dict, req);
-		add_data(dict, req);
-		tpl = quilt_html_template_(req);
-		if(tpl)
-		{
-			/* Set status to zero to suppress output */
-			status = 0;
-			buf = liquify_apply(tpl, dict);
-			quilt_request_printf(req, "Status: %d %s\n"
-							  "Content-type: %s; charset=utf-8\n"
-							  "Vary: Accept\n"
-							  "Server: Quilt/" PACKAGE_VERSION "\n"
-							  "\n", req->status, req->statustitle, req->type);
-			quilt_request_puts(req, buf);
-			free(buf);
-		}
+	dict = json_object();
+	add_req(dict, req);
+	add_data(dict, req);
+	/*	json_dumpf(dict, stderr, JSON_INDENT(4)); 
+		exit(0); */
+	tpl = quilt_html_template_(req);
+	if(tpl)
+	{
+		/* Set status to zero to suppress output */
+		status = 0;
+		buf = liquify_apply(tpl, dict);
+		quilt_request_printf(req, "Status: %d %s\n"
+							 "Content-type: %s; charset=utf-8\n"
+							 "Vary: Accept\n"
+							 "Server: Quilt/" PACKAGE_VERSION "\n"
+							 "\n", req->status, req->statustitle, req->type);
+		quilt_request_puts(req, buf);
+		free(buf);
 	}
+	json_decref(dict);
 	return status;
 }
 
@@ -150,20 +150,20 @@ quilt_html_template_(QUILTREQ *req)
 
 /* Add the details of req to a 'request' member of the dictionary */
 static int
-add_req(jd_var *dict, QUILTREQ *req)
+add_req(json_t *dict, QUILTREQ *req)
 {
-	jd_var *r, *a;
+	json_t *r, *a;
 	char *pathbuf, *t;
 	QUILTTYPE typebuf, *type;
 	size_t l;
 	const char *s;
 
-	r = jd_nhv(8);
+	r = json_object();
 	pathbuf = NULL;
 	if(req->path)
 	{
 		pathbuf = (char *) malloc(strlen(req->path) + 32);
-		jd_set_string(jd_get_ks(r, "path", 1), req->path);
+		json_object_set_new(r, "path", json_string(req->path));
 		if(req->path[0] == '/' && req->path[1] == 0)
 		{
 			strcpy(pathbuf, "/index");
@@ -172,35 +172,36 @@ add_req(jd_var *dict, QUILTREQ *req)
 		{
 			strcpy(pathbuf, req->path);
 		}
-		jd_set_string(jd_get_ks(r, "document", 1), pathbuf);
+		json_object_set_new(r, "document", json_string(pathbuf));
 	}
-	if(req->ext) jd_set_string(jd_get_ks(r, "ext", 1), req->ext);
-	if(req->type) jd_set_string(jd_get_ks(r, "type", 1), req->type);
-	if(req->host) jd_set_string(jd_get_ks(r, "host", 1), req->host);
-	if(req->ident) jd_set_string(jd_get_ks(r, "ident", 1), req->ident);
-	if(req->user) jd_set_string(jd_get_ks(r, "user", 1), req->user);
-	if(req->method) jd_set_string(jd_get_ks(r, "method", 1), req->method);
-	if(req->referer) jd_set_string(jd_get_ks(r, "referer", 1), req->referer);
-	if(req->ua) jd_set_string(jd_get_ks(r, "ua", 1), req->ua);
-	jd_set_int(jd_get_ks(r, "status", 1), req->status);
+	if(req->ext) json_object_set_new(r, "ext", json_string(req->ext));
+	if(req->type) json_object_set_new(r, "type", json_string(req->type));
+	if(req->host) json_object_set_new(r, "host", json_string(req->host));
+	if(req->ident) json_object_set_new(r, "ident", json_string(req->ident));
+	if(req->user) json_object_set_new(r, "user", json_string(req->user));
+	if(req->method) json_object_set_new(r, "method", json_string(req->method));
+	if(req->referer) json_object_set_new(r, "referer", json_string(req->referer));
+	if(req->ua) json_object_set_new(r, "ua", json_string(req->ua));
+
+	json_object_set_new(r, "status", json_integer(req->status));
 	if(req->statustitle)
 	{
-		jd_set_string(jd_get_ks(r, "statustitle", 1), req->statustitle);
+		json_object_set_new(r, "statustitle", json_string(req->statustitle));
 	}
 	if(req->errordesc)
 	{
-		jd_set_string(jd_get_ks(r, "statusdesc", 1), req->errordesc);
+		json_object_set_new(r, "statusdesc", json_string(req->errordesc));
 	}
-	jd_assign(jd_get_ks(dict, "request", 1), r);
-	jd_set_bool(jd_get_ks(dict, "home", 1), req->home);
-	jd_set_bool(jd_get_ks(dict, "index", 1), req->index);
+	json_object_set_new(dict, "request", r);
+	json_object_set_new(dict, "home", (req->home ? json_true() : json_false()));
+	json_object_set_new(dict, "index", (req->index ? json_true() : json_false()));
 	if(req->indextitle)
 	{
-		jd_set_string(jd_get_ks(dict, "title", 1), req->indextitle);
+		json_object_set_new(dict, "title", json_string(req->indextitle));
 	}
 	if(pathbuf)
 	{
-		a = jd_nav(8);
+		a = json_array();
 		t = strchr(pathbuf, 0);
 		*t = '.';
 		t++;
@@ -229,18 +230,18 @@ add_req(jd_var *dict, QUILTREQ *req)
 			}			
 			strncpy(t, type->extensions, l);
 			t[l] = 0;
-			r = jd_nhv(3);			
-			jd_set_string(jd_get_ks(r, "type", 1), type->mimetype);
+			r = json_object();
+			json_object_set_new(r, "type", json_string(type->mimetype));
 			if(type->desc)
 			{
-				jd_set_string(jd_get_ks(r, "title", 1), type->desc);
+				json_object_set_new(r, "title", json_string(type->desc));
 			}
-			jd_set_string(jd_get_ks(r, "uri", 1), pathbuf);
-			jd_set_string(jd_get_ks(r, "ext", 1), t);
-			jd_assign(jd_push(a, 1), r);
+			json_object_set_new(r, "uri", json_string(pathbuf));
+			json_object_set_new(r, "ext", json_string(t));
+			json_array_append_new(a, r);
 			quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": linking to %s as %s (%s)\n", pathbuf, type->mimetype, type->desc);
 		}
-		jd_assign(jd_get_ks(dict, "links", 1), a);
+		json_object_set_new(dict, "links", a);
 		free(pathbuf);
 	}
 	return 0;
@@ -250,9 +251,9 @@ add_req(jd_var *dict, QUILTREQ *req)
  * member of the dictionary.
  */
 static int
-add_data(jd_var *dict, QUILTREQ *req)
+add_data(json_t *dict, QUILTREQ *req)
 {
-	jd_var *items, *item, *k, *props, *prop, *value;
+	json_t *items, *item, *k, *props, *prop, *value;
 	librdf_world *world;
 	librdf_statement *query, *statement;
 	librdf_stream *st;
@@ -274,7 +275,7 @@ add_data(jd_var *dict, QUILTREQ *req)
 		 }
      }
 	*/
-	items = jd_nhv(25);
+	items = json_object();
 	query = librdf_new_statement(world);
 	st = librdf_model_find_statements(req->model, query);
 	while(!librdf_stream_end(st))
@@ -286,31 +287,39 @@ add_data(jd_var *dict, QUILTREQ *req)
 		if(librdf_node_is_resource(subj) && librdf_node_is_resource(pred))
 		{
 			uri = (const char *) librdf_uri_as_string(librdf_node_get_uri(subj));
-			item = jd_get_ks(items, uri, 0);			
-			if(!item)
+			item = json_object_get(items, uri);
+			if(item)
+			{
+				/* An entry for this subject URI already exists */
+				props = json_object_get(item, "props");
+			}
+			else
 			{
 				/* Populate a new item structure */
-				item = jd_nhv(8);
-				jd_set_bool(jd_get_ks(item, "me", 1), 0);
+				item = json_object();
+				json_object_set_new(items, uri, item);
+				json_object_set_new(item, "me", json_false());
 				add_subject(req, item, req->model, subj, uri);
-				k = jd_get_ks(item, "props", 1);
-				jd_assign(k, jd_nhv(8));
-				k = jd_get_ks(items, uri, 1);
-				jd_assign(k, item);
+				props = json_object();			   
+				json_object_set_new(item, "props", props);
 			}
-			props = jd_get_ks(item, "props", 0);
+
+			/* Obtain the array of values for this predicate URI */
 			uri = (const char *) librdf_uri_as_string(librdf_node_get_uri(pred));
-			prop = jd_get_ks(props, uri, 0);
+			prop = json_object_get(props, uri);
 			if(!prop)
 			{
-				prop = jd_nav(4);
-				jd_assign(jd_get_ks(props, uri, 1), prop);
+				/* This is the first instance of this predicate that we've
+				 * seen for this object; create a new array to hold the
+				 * values */
+				prop = json_array();
+				json_object_set_new(props, uri, prop);
 			}
-			value = jd_nhv(8);
+			/* Add a new 'value' structure to the array of values (prop) */
+			value = json_object();
+			json_array_append_new(prop, value);
 			add_predicate(req, value, pred, uri);
 			add_object(req, value, obj);
-			k = jd_push(prop, 1);
-			jd_assign(k, value);
 		}
 		librdf_stream_next(st);
 	}
@@ -319,32 +328,24 @@ add_data(jd_var *dict, QUILTREQ *req)
 	sbuf = (char *) calloc(1, strlen(req->subject) + 8);
 	strcpy(sbuf, req->subject);
 	strcat(sbuf, "#id");
-	k = jd_get_ks(items, sbuf, 0);
+	k = json_object_get(items, sbuf);
 	if(k)
 	{
-		jd_set_bool(jd_get_ks(k, "me", 1), 1);
-		jd_assign(jd_get_ks(dict, "object", 1), k);
+		json_object_set_new(k, "me", json_true());
+		json_object_set(dict, "object", k);
 	}
-	else
+	else if((k = json_object_get(items, req->subject)))
 	{
-		k = jd_get_ks(items, req->subject, 0);
-		if(k)
-		{
-			jd_set_bool(jd_get_ks(k, "me", 1), 1);
-			jd_assign(jd_get_ks(dict, "object", 1), k);
-		}
-		else
-		{
-			k = jd_get_ks(items, req->path, 0);
-			if(k)
-			{
-				jd_set_bool(jd_get_ks(k, "me", 1), 1);
-				jd_assign(jd_get_ks(dict, "object", 1), k);
-			}
-		}			
+		json_object_set_new(k, "me", json_true());
+		json_object_set(dict, "object", k);
+	}
+	else if((k = json_object_get(items, req->path)))
+	{
+		json_object_set_new(k, "me", json_true());
+		json_object_set(dict, "object", k);
 	}
 	free(sbuf);
-	jd_assign(jd_get_ks(dict, "data", 1), items);
+	json_object_set_new(dict, "data", items);
 	return 0;
 }
 
@@ -352,10 +353,10 @@ add_data(jd_var *dict, QUILTREQ *req)
  * passed into the template.
  */
 static int
-add_subject(QUILTREQ *req, jd_var *item, librdf_model *model, librdf_node *subject, const char *uri)
+add_subject(QUILTREQ *req, json_t *item, librdf_model *model, librdf_node *subject, const char *uri)
 {
 	double lon, lat;
-	jd_var *sub;
+	json_t *sub;
 	struct class_struct *c;
 	char *buf, *str;
 	URI *uriobj;
@@ -369,87 +370,86 @@ add_subject(QUILTREQ *req, jd_var *item, librdf_model *model, librdf_node *subje
 	}
 	info = uri_info(uriobj);
 
-	jd_set_string(jd_get_ks(item, "subject", 1), uri);	
+	json_object_set_new(item, "subject", json_string(uri));
 	if(!strncmp(uri, baseuri, baseurilen))
 	{
 		buf = (char *) malloc(strlen(uri) + 32);
 		buf[0] = '/';
 		strcpy(&(buf[1]), &(uri[baseurilen]));
-		jd_set_string(jd_get_ks(item, "link", 1), buf);
-		jd_set_string(jd_get_ks(item, "uri", 1), buf);
+		json_object_set_new(item, "link", json_string(buf));
+		json_object_set_new(item, "uri", json_string(buf));
 	}
 	else
 	{
 		buf = quilt_uri_contract(uri);
-		jd_set_string(jd_get_ks(item, "link", 1), uri);
-		jd_set_string(jd_get_ks(item, "uri", 1), buf);
+		json_object_set_new(item, "link", json_string(uri));
+		json_object_set_new(item, "uri", json_string(buf));
 	}	
 	c = html_class_match(model, subject);
 	str = get_title(req, model, subject);
 	if(str)
 	{
-		jd_set_bool(jd_get_ks(item, "hasTitle", 1), 1);
-		jd_set_string(jd_get_ks(item, "title", 1), str);
+		json_object_set_new(item, "hasTitle", json_true());
+		json_object_set_new(item, "title", json_string(str));
 		free(str);
 	}
 	else
 	{
-		jd_set_bool(jd_get_ks(item, "hasTitle", 1), 0);
-		jd_set_string(jd_get_ks(item, "title", 1), buf);
+		json_object_set_new(item, "hasTitle", json_false());
+		json_object_set_new(item, "title", json_string(buf));
 	}
 	str = get_shortdesc(req, model, subject);
 	if(str)
 	{
-		jd_set_string(jd_get_ks(item, "shortdesc", 1), str);
+		json_object_set_new(item, "shortdesc", json_string(str));
 		free(str);
 	}
 	else
 	{
-		jd_set_string(jd_get_ks(item, "shortdesc", 1), "");
+		json_object_set_new(item, "shortdesc", json_string(""));
 	}
 	str = get_longdesc(req, model, subject);
 	if(str)
 	{
-		jd_set_string(jd_get_ks(item, "description", 1), str);
+		json_object_set_new(item, "description", json_string(str));
 		free(str);
 	}
 	else
 	{
-		jd_set_string(jd_get_ks(item, "description", 1), "");
+		json_object_set_new(item, "description", json_string(""));
 	}
 	if(buf[0] == '/' || !info->host)
 	{
-		jd_set_string(jd_get_ks(item, "from", 1), "");
+		json_object_set_new(item, "from", json_string(""));
 	}
 	else
 	{
 		strcpy(buf, "from ");
 		strcpy(&(buf[5]), info->host);
-			   jd_set_string(jd_get_ks(item, "from", 1), buf);
-	}
-		
+		json_object_set_new(item, "from", json_string(buf));
+	}		
 	uri_info_destroy(info);
 	free(buf);
 	if(c)
 	{
-		jd_set_string(jd_get_ks(item, "class", 1), c->cssClass);
-		jd_set_string(jd_get_ks(item, "classLabel", 1), c->label);
-		jd_set_string(jd_get_ks(item, "classSuffix", 1), c->suffix);
-		jd_set_string(jd_get_ks(item, "classDefinite", 1), c->definite);
+		json_object_set_new(item, "class", json_string(c->cssClass));
+		json_object_set_new(item, "classLabel", json_string(c->label));
+		json_object_set_new(item, "classSuffix", json_string(c->suffix));
+		json_object_set_new(item, "classDefinite", json_string(c->definite));
 	}
 	else
 	{
-		jd_set_string(jd_get_ks(item, "class", 1), "");
-		jd_set_string(jd_get_ks(item, "classSuffix", 1), "");
+		json_object_set_new(item, "class", json_string(""));
+		json_object_set_new(item, "classSuffix", json_string(""));
 	}
 	
 	if(quilt_model_find_double(model, uri, "http://www.w3.org/2003/01/geo/wgs84_pos#long", &lon) == 1 &&
 	   quilt_model_find_double(model, uri, "http://www.w3.org/2003/01/geo/wgs84_pos#lat", &lat) == 1)
 	{
-		sub = jd_nhv(2);
-		jd_set_real(jd_get_ks(sub, "long", 1), lon);
-		jd_set_real(jd_get_ks(sub, "lat", 1), lat);
-		jd_assign(jd_get_ks(item, "geo", 1), sub);
+		sub = json_object();
+		json_object_set_new(sub, "long", json_real(lon));
+		json_object_set_new(sub, "lat", json_real(lat));
+		json_object_set_new(item, "geo", sub);
 	}
 	return 0;
 }
@@ -458,16 +458,16 @@ add_subject(QUILTREQ *req, jd_var *item, librdf_model *model, librdf_node *subje
  * passed into the template.
  */
 static int
-add_predicate(QUILTREQ *req, jd_var *value, librdf_node *predicate, const char *uri)
+add_predicate(QUILTREQ *req, json_t *value, librdf_node *predicate, const char *uri)
 {
 	char *contracted;
 
 	(void) req;
 	(void) predicate;
 
-	jd_set_string(jd_get_ks(value, "predicateUri", 1), uri);
+	json_object_set_new(value, "predicateUri", json_string(uri));
 	contracted = quilt_uri_contract(uri);
-	jd_set_string(jd_get_ks(value, "predicateUriLabel", 1), contracted);
+	json_object_set_new(value, "predicateUriLabel", json_string(contracted));
 	free(contracted);
 	return 0;
 }
@@ -476,7 +476,7 @@ add_predicate(QUILTREQ *req, jd_var *value, librdf_node *predicate, const char *
  * passed into the template
  */
 static int
-add_object(QUILTREQ *req, jd_var *value, librdf_node *object)
+add_object(QUILTREQ *req, json_t *value, librdf_node *object)
 {
 	const char *str, *dtstr, *lang;
 	char *buf;
@@ -487,22 +487,22 @@ add_object(QUILTREQ *req, jd_var *value, librdf_node *object)
 	if(librdf_node_is_resource(object))
 	{
 		str = (const char *) librdf_uri_as_string(librdf_node_get_uri(object));
-		jd_set_string(jd_get_ks(value, "type", 1), "uri");
-		jd_set_bool(jd_get_ks(value, "isUri", 1), 1);
-		jd_set_string(jd_get_ks(value, "value", 1), str);
+		json_object_set_new(value, "type", json_string("uri"));
+		json_object_set_new(value, "isUri", json_true());
+		json_object_set_new(value, "value", json_string(str));
 		if(!strncmp(str, baseuri, baseurilen))
 		{
 			buf = (char *) malloc(strlen(str) + 32);
 			buf[0] = '/';
 			strcpy(&(buf[1]), &(str[baseurilen]));
-			jd_set_string(jd_get_ks(value, "link", 1), buf);
-			jd_set_string(jd_get_ks(value, "uri", 1), buf);
+			json_object_set_new(value, "link", json_string(buf));
+			json_object_set_new(value, "uri", json_string(buf));
 		}
 		else
 		{
 			buf = quilt_uri_contract(str);
-			jd_set_string(jd_get_ks(value, "uri", 1), buf);
-			jd_set_string(jd_get_ks(value, "link", 1), str);
+			json_object_set_new(value, "uri", json_string(buf));
+			json_object_set_new(value, "link", json_string(str));
 		}
 		free(buf);
 	}
@@ -510,14 +510,14 @@ add_object(QUILTREQ *req, jd_var *value, librdf_node *object)
 	{
 		str = (const char *) librdf_node_get_literal_value(object);
 		
-		jd_set_string(jd_get_ks(value, "type", 1), "literal");
-		jd_set_bool(jd_get_ks(value, "isLiteral", 1), 1);
-		jd_set_string(jd_get_ks(value, "value", 1), str);
+		json_object_set_new(value, "type", json_string("literal"));
+		json_object_set_new(value, "isLiteral", json_true());
+		json_object_set_new(value, "value", json_string(str));
 
 		lang = librdf_node_get_literal_value_language(object);
 		if(lang)
 		{
-			jd_set_string(jd_get_ks(value, "lang", 1), lang);
+			json_object_set_new(value, "lang", json_string(lang));
 		}
 		dt = librdf_node_get_literal_value_datatype_uri(object);
 		if(dt)
@@ -525,9 +525,9 @@ add_object(QUILTREQ *req, jd_var *value, librdf_node *object)
 			dtstr = (const char *) librdf_uri_as_string(dt);
 			if(dtstr)
 			{
-				jd_set_string(jd_get_ks(value, "datatype", 1), dtstr);
+				json_object_set_new(value, "datatype", json_string(dtstr));
 				buf = quilt_uri_contract(dtstr);
-				jd_set_string(jd_get_ks(value, "datatypeUri", 1), buf);
+				json_object_set_new(value, "datatypeUri", json_string(buf));
 				free(buf);
 			}
 		}

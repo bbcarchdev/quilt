@@ -25,7 +25,7 @@
 # include <stdio.h>
 # include <stddef.h>
 # include <stdarg.h>
-# include <jsondata.h>
+# include <jansson.h>
 
 typedef struct liquify_struct LIQUIFY;
 typedef struct liquify_template_struct LIQUIFYTPL;
@@ -62,15 +62,15 @@ int liquify_dump(LIQUIFYTPL *tpl, FILE *f);
 /* Locate a loaded template by name */
 LIQUIFYTPL *liquify_locate(LIQUIFY *env, const char *name);
 /* Apply a template, returning its contents as a string */
-char *liquify_apply_name(LIQUIFY *env, const char *name, jd_var *dict);
-char *liquify_apply(LIQUIFYTPL *tpl, jd_var *dict);
+char *liquify_apply_name(LIQUIFY *env, const char *name, json_t *dict);
+char *liquify_apply(LIQUIFYTPL *tpl, json_t *dict);
 
 /* Write text to the current processing context */
 int liquify_emit(LIQUIFYCTX *ctx, const char *str, size_t len);
 /* Write a null-terminated string to the current processing context */
 int liquify_emit_str(LIQUIFYCTX *ctx, const char *str);
 /* Write a JSON value to the current context */
-int liquify_emit_json(LIQUIFYCTX *ctx, jd_var *value);
+int liquify_emit_json(LIQUIFYCTX *ctx, json_t *value);
 
 /* Begin capturing output to a buffer */
 int liquify_capture(LIQUIFYCTX *ctx);

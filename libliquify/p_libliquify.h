@@ -191,7 +191,7 @@ struct liquify_context_struct
 	LIQUIFYTPL *tpl;
 	struct liquify_capture *capture;
 	struct liquify_part *cp;
-	jd_var *dict;
+	json_t *dict;
 	char *buf;
 	size_t buflen;
 	size_t bufsize;
@@ -208,10 +208,10 @@ int liquify_token_free_(LIQUIFYTPL *template, struct liquify_token *tok);
 /* Parse an expression */
 const char *liquify_expression_(LIQUIFYTPL *tpl, struct liquify_part *part, struct liquify_expression *expr, const char *cur, int flags);
 /* Evaluate an expression */
-int liquify_eval_(struct liquify_expression *expr, jd_var *dict, jd_var *dest, int vivify);
-int liquify_eval_truth_(struct liquify_expression *expr, jd_var *dict);
+json_t *liquify_eval_(struct liquify_expression *expr, json_t *dict, json_t *newval);
+int liquify_eval_truth_(struct liquify_expression *expr, json_t *dict);
 /* Assign a value to a template variable */
-int liquify_assign_(struct liquify_expression *expr, jd_var *dict, jd_var *newval);
+int liquify_assign_(struct liquify_expression *expr, json_t *dict, json_t *newval);
 
 /* Determine whether a tag is a block */
 int liquify_is_block_(const char *name);

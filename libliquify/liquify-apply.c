@@ -127,7 +127,8 @@ main(int argc, char **argv)
 	LIQUIFY *env;
 	LIQUIFYTPL *template;
 	char *buf;
-	jd_var dict = JD_INIT;
+	json_t *dict;
+	json_error_t err;
 	
 	if(parseargs(argc, argv))
 	{
@@ -156,12 +157,15 @@ main(int argc, char **argv)
 	{
 		return 1;
 	}
-	JD_SCOPE
+	dict = json_loads(buf, 0, &err);
+	free(buf);
+	if(!dict)
 	{
-		jd_from_jsons(&dict, buf);
-		free(buf);
-		buf = liquify_apply(template, &dict);
+		fprintf(stderr, "%s:%d:%d: %s\n", dict_file, err.line, err.column, err.text);
+		return 1;
 	}
+	buf = liquify_apply(template, dict);
+	json_decref(dict);
 	if(!buf)
 	{
 		fprintf(stderr, "*** %s: processing failed\n", template_file);

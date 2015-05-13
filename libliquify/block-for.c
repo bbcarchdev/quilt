@@ -23,14 +23,15 @@
 
 struct for_data
 {
-	jd_var list;
-	jd_var keys;
+	json_t *list;
+	json_t *keys;
 	size_t idx;	
 	struct liquify_expression *self;
 };
 
-static jd_var *for_current(LIQUIFYCTX *ctx, struct for_data *data);
+static json_t *for_current(LIQUIFYCTX *ctx, struct for_data *data);
 
+/* Invoked when a new 'for' tag has been parsed */
 int
 liquify_block_for_parsed_(LIQUIFYTPL *tpl, struct liquify_part *part)
 {
@@ -62,13 +63,14 @@ liquify_block_for_parsed_(LIQUIFYTPL *tpl, struct liquify_part *part)
 	return 0;
 }
 
+/* Invoked during template application to open a for loop */
 int
 liquify_block_for_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack)
 {
 	struct for_data *data;
 	struct liquify_param *param;
-	jd_var empty = JD_INIT;
-	jd_var *v;
+	void *iter;
+	json_t *v;
 
 	if(stack->data)
 	{
@@ -83,11 +85,6 @@ liquify_block_for_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liqu
 		}		
 		/* This is the first pass through the loop */
 		param = part->d.tag.pfirst;
-		if(liquify_assign_(&(param->expr), ctx->dict, &empty))
-		{
-			PARTERRS(ctx->tpl, part, "expected: lvalue as iterator\n");
-			return -1;
-		}
 		data->self = &(param->expr);
 		param = param->next;
 		if(!param || !EXPR_IS(&(param->expr), TOK_IDENT) || strcmp(EXPR_IDENT(&(param->expr)), "in"))
@@ -96,14 +93,18 @@ liquify_block_for_begin_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liqu
 			return -1;
 		}
 		param = param->next;
-		if(liquify_eval_(&(param->expr), ctx->dict, &(data->list), 0))
+		if(!(data->list = liquify_eval_(&(param->expr), ctx->dict, NULL)))
 		{
 			PARTERRS(ctx->tpl, part, "expected: identifier\n");
 			return -1;
 		}
-		if(data->list.type == HASH)
+		if(json_typeof(data->list) == JSON_OBJECT)
 		{
-			jd_keys(&(data->keys), &(data->list));
+			data->keys = json_array();
+			for(iter = json_object_iter(data->list); iter; iter = json_object_iter_next(data->list, iter))
+			{
+				json_array_append_new(data->keys, json_string(json_object_iter_key(iter)));
+			}
 		}
 		stack->data = (void *) data;
 	}
@@ -123,7 +124,7 @@ int
 liquify_block_for_end_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquify_stack *stack)
 {
 	struct for_data *data;
-	jd_var *v;
+	json_t *v;
 	int finished;
 
 	(void) part;
@@ -131,17 +132,14 @@ liquify_block_for_end_(LIQUIFYCTX *ctx, struct liquify_part *part, struct liquif
 	data = (struct for_data *) stack->data;
 	data->idx++;
 	finished = 1;
-	JD_SCOPE
+	v = for_current(ctx, data);
+	if(v)
 	{
-		v = for_current(ctx, data);
-		if(v)
-		{
-			finished = 0;
-		}
-		else
-		{
-			/* End of the loop */
-		}
+		finished = 0;
+	}
+	else
+	{
+		/* End of the loop */
 	}
 	if(!finished)
 	{
@@ -163,41 +161,52 @@ liquify_block_for_cleanup_(LIQUIFYCTX *ctx, struct liquify_stack *stack)
 		return 0;
 	}
 	stack->data = NULL;
-	jd_release(&(data->keys));
-	jd_release(&(data->list));
+	if(data->keys)
+	{
+		json_decref(data->keys);
+	}
+	if(data->list)		
+	{
+		json_decref(data->list);
+	}
 	free(data);
 	return 0;
 }
-	  
-static jd_var *
+
+/* Return a BORROWED reference to the current value in a for loop */	  
+static json_t *
 for_current(LIQUIFYCTX *ctx, struct for_data *data)
 {
-	jd_var *k, *v;
+	json_t *k, *v;
 	size_t count;
 
 	(void) ctx;
 
-	if(data->keys.type == ARRAY)
+	if(data->keys && json_typeof(data->keys) == JSON_ARRAY)
 	{
-		count = jd_count(&(data->keys));
+		count = json_array_size(data->keys);
 		if(count <= data->idx)
 		{
 			return NULL;
 		}
-		k = jd_get_idx(&(data->keys), count - data->idx - 1);
+		k = json_array_get(data->keys, count - data->idx - 1);
 		if(!k)
 		{
 			return NULL;
 		}
-		v = jd_get_key(&(data->list), k, 0);
-	}
-	else if(data->list.type == ARRAY)
-	{
-		if(jd_count(&(data->list)) <= data->idx)
+		if(json_typeof(k) != JSON_STRING)
 		{
 			return NULL;
 		}
-		v = jd_get_idx(&(data->list), data->idx);
+		v = json_object_get(data->list, json_string_value(k));
+	}
+	else if(json_typeof(data->list) == JSON_ARRAY)
+	{
+		if(json_array_size(data->list) <= data->idx)
+		{
+			return NULL;
+		}
+		v = json_array_get(data->list, data->idx);
 	}
 	else
 	{
