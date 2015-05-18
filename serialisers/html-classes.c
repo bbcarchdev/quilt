@@ -60,13 +60,6 @@ struct class_struct html_classes[] = {
 		"a physical thing",
 	},
 	{
-		"http://www.w3.org/2004/02/skos/core#Concept",
-		"concept",
-		"Concept",
-		"(Concept)",
-		"a concept",
-	},
-	{
 		"http://purl.org/dc/dcmitype/Collection",
 		"collection",
 		"Collection",
@@ -102,6 +95,13 @@ struct class_struct html_classes[] = {
 		"a dataset",
 	},
 	{
+		"http://www.w3.org/2004/02/skos/core#Concept",
+		"concept",
+		"Concept",
+		"(Concept)",
+		"a concept",
+	},
+	{
 		NULL,
 		NULL,
 		NULL,
@@ -113,13 +113,16 @@ struct class_struct html_classes[] = {
 struct class_struct *
 html_class_match(librdf_model *model, librdf_node *subject)
 {   
-	size_t c;
+	size_t c, score;
 	librdf_world *world;
 	librdf_stream *st;
 	librdf_statement *query, *statement;
 	librdf_node *obj;
 	const char *uri;
+	struct class_struct *match;
 
+	match = NULL;
+	score = 100;
 	world = quilt_librdf_world();	
 	query = librdf_new_statement(world);
 	librdf_statement_set_subject(query, librdf_new_node_from_node(subject));
@@ -137,9 +140,14 @@ html_class_match(librdf_model *model, librdf_node *subject)
 			{
 				for(c = 0; html_classes[c].uri; c++)
 				{
+					if(c > score)
+					{
+						break;
+					}
 					if(!strcmp(html_classes[c].uri, uri))
 					{
-						return &(html_classes[c]);
+						match = &(html_classes[c]);
+						score = c;
 					}
 				}
 			}
@@ -148,5 +156,5 @@ html_class_match(librdf_model *model, librdf_node *subject)
 	}
 	librdf_free_stream(st);
 	librdf_free_statement(query);
-	return NULL;
+	return match;
 }
