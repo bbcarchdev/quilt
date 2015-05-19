@@ -152,6 +152,10 @@ liquify_eval_truth_(struct liquify_expression *expr, json_t *dict)
 				r = 1;
 			}
 			break;
+		case JSON_ARRAY:
+		case JSON_OBJECT:
+			r = 1;
+			break;
 		default:
 			break;
 		}
