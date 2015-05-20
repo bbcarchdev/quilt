@@ -301,6 +301,10 @@ fcgi_runloop_(void)
 		free(data->qbuf);
 		data->qbuf = NULL;
 		data->query = NULL;
+		if(r >= 500 && r <= 599)
+		{
+			exit(EXIT_FAILURE);
+		}
 	}
 	return 0;
 }
