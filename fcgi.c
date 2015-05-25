@@ -414,7 +414,7 @@ fcgi_preprocess_(QUILTIMPLDATA *data)
 		return 0;
 	}
 	data->qbuf = (char *) calloc(1, strlen(qs) + 1);
-	n = 0;
+	n = 1;
 	s = qs;
 	while(s)
 	{
