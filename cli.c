@@ -283,12 +283,17 @@ cli_preprocess_(QUILTIMPLDATA *data)
 			s++;
 		}
 		*p = 0;
+		p++;
 		if(t)
 		{
 			t++;
 		}
 		s = t;
-	}		
+	}
+	for(n = 0; data->query[n]; n++)
+	{
+		quilt_logf(LOG_DEBUG, "Query: [%s]\n", data->query[n]);
+	}
 	return 0;
 }
 
@@ -318,7 +323,7 @@ cli_getparam(QUILTREQ *request, const char *name)
 	l = strlen(name);
 	for(c = 0; request->data->query[c]; c++)
 	{
-		if(!strncmp(request->data->query[c], name, l) && request->data->query[c][l] == '-')
+		if(!strncmp(request->data->query[c], name, l) && request->data->query[c][l] == '=')
 		{
 			return &(request->data->query[c][l + 1]);
 		}
