@@ -189,11 +189,11 @@ quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data)
 	p->limit = DEFAULT_LIMIT;
 	p->deflimit = DEFAULT_LIMIT;
 	p->offset = 0;
-	if((t = impl->getparam(p, "offset")))
+	if((t = impl->getparam(p, "offset")) && t[0])
 	{
 		p->offset = strtol(t, NULL, 10);
 	}
-	if((t = impl->getparam(p, "limit")))
+	if((t = impl->getparam(p, "limit")) && t[0])
 	{
 		p->limit = strtol(t, NULL, 10);
 	}
