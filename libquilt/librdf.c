@@ -50,7 +50,7 @@ static struct override_struct overrides[] = {
 	{ "application/rdf+xml", "RDF/XML", "rdf xml", -1.0f, 0.75f, 1, NULL },
 	{ "application/n-triples", "N-Triples", "nt", -1.0f, 0.75f, 1, NULL },
 	{ "text/turtle", "Turtle", "ttl", 0.9f, -1.0f, 1, NULL },
-	{ "text/x-nquads", "N-Quads", "nq", -1.0f, -1.0f, 1, "application/nquads" },
+	{ "text/x-nquads", "N-Quads", "nq", -1.0f, -1.0f, 1, "application/n-quads" },
 	{ "application/json", "RDF/JSON", "rj json", -1.0f, -1.0f, 1, NULL },
 	{ NULL, NULL, NULL, -1.0f, -1.0f, 0, NULL }
 };
@@ -249,7 +249,7 @@ quilt_model_serialize(librdf_model *model, const char *mime)
 	{
 		name = "trig";
 	}
-	else if(!strcmp(mime, "application/nquads") || !strcmp(mime, "application/x-nquads") || !strcmp(mime, "text/x-nquads"))
+	else if(!strcmp(mime, "application/nquads") || !strcmp(mime, "application/x-nquads") || !strcmp(mime, "text/x-nquads") || !strcmp(mime, "application/n-quads"))
 	{
 		name = "nquads";
 	}
