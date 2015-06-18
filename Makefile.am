@@ -24,6 +24,14 @@ DIST_SUBDIRS = m4 libsupport libnegotiate \
 SUBDIRS = libsupport @subdirs@ libnegotiate libliquify libs3client \
 	templates public libquilt engines serialisers .
 
+EXTRA_DIST = libquilt.pc.in libquilt-uninstalled.pc.in
+
+pkgconfigdir = $(libdir)/pkgconfig
+
+pkgconfig_DATA = libquilt.pc
+
+noinst_DATA = libquilt-uninstalled.pc.in
+
 doc_DATA = apache2-example.conf
 
 dist_doc_DATA = quilt.conf
