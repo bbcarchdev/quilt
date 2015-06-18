@@ -9,7 +9,7 @@ moduledir=@libdir@/quilt
 Name: libquilt
 Description: Quilt engine API (uninstalled)
 Version: @PACKAGE_VERSION@
-Libs: -L@abs_builddir@ -lquilt
-Cflags: -I@abs_builddir@ -I@abs_srcdir@
+Libs: -L@abs_top_builddir@/libquilt -lquilt
+Cflags: -I@abs_top_builddir@/libquilt -I@abs_top_srcdir@/libquilt
 Requires.private: libsparqlclient, liburi, raptor2
 Libs.private: @LIBDL_LDFLAGS@ @LIBDL_LIBS@

@@ -71,6 +71,8 @@ BT_DEFINE_PREFIX
 
 AC_CONFIG_FILES([
 Makefile
+libquilt-uninstalled.pc
+libquilt.pc
 libsupport/Makefile
 m4/Makefile
 libnegotiate/Makefile
@@ -79,8 +81,6 @@ libs3client/Makefile
 templates/Makefile
 public/Makefile
 libquilt/Makefile
-libquilt/libquilt-uninstalled.pc
-libquilt/libquilt.pc
 engines/Makefile
 serialisers/Makefile
 apache2-example.conf
