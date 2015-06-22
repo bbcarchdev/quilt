@@ -35,6 +35,7 @@ QUILTCANON *
 quilt_canon_create(QUILTCANON *source)
 {
 	QUILTCANON *p;
+	size_t c;
 
 	p = (QUILTCANON *) calloc(1, sizeof(QUILTCANON));
 	if(!p)
@@ -42,8 +43,49 @@ quilt_canon_create(QUILTCANON *source)
 		quilt_logf(LOG_CRIT, "failed to allocate memory for canonical URI object\n");
 		return NULL;
 	}
+#define DUPSTR(p, dest, source, name)									\
+	if(source)															\
+	{																	\
+		if(!(dest = strdup(source)))									\
+		{																\
+				quilt_logf(LOG_CRIT, "failed to duplicate " name " in canonical URI object\n"); \
+				quilt_canon_destroy(p);									\
+				return NULL;											\
+		}																\
+	}
+
 	if(source)
-	{		
+	{
+		DUPSTR(p, p->base, source->base, "base URL");
+		DUPSTR(p, p->path, source->path, "local path");
+		DUPSTR(p, p->name, source->name, "object name");
+		DUPSTR(p, p->ext, source->ext, "default extension");
+		DUPSTR(p, p->explicitext, source->explicitext, "explicit extension");
+		DUPSTR(p, p->fragment, source->fragment, "fragment");
+		if(source->nparams)
+		{
+			p->params = (struct quilt_canon_param_struct *) calloc(source->nparams, sizeof(struct quilt_canon_param_struct));
+			if(!p->params)
+			{
+				quilt_logf(LOG_CRIT, "failed to allocate memory for parameters in canonical URI object\n");
+				quilt_canon_destroy(p);
+				return NULL;
+			}
+			for(c = 0; c < source->nparams; c++)
+			{
+				p->params[c].name = strdup(source->params[c].name);
+				p->params[c].value = strdup(source->params[c].value);
+				if(!p->params[c].name || !p->params[c].value)
+				{
+					quilt_logf(LOG_CRIT, "failed to duplicate query parameter in canonical URI object\n");
+					free(p->params[c].name);
+					free(p->params[c].value);
+					quilt_canon_destroy(p);
+					return NULL;
+				}
+				p->nparams++;
+			}
+		}
 	}
 	return p;
 }
@@ -215,6 +257,15 @@ quilt_canon_set_name(QUILTCANON *canon, const char *name)
 	return 0;
 }
 
+/* Reset the path components in a canonical request */
+int
+quilt_canon_reset_path(QUILTCANON *canon)
+{
+	free(canon->path);
+	canon->path = NULL;
+	return 0;
+}
+
 /* Append one or more path components to a canonical request */
 int
 quilt_canon_add_path(QUILTCANON *canon, const char *path)
@@ -258,6 +309,24 @@ quilt_canon_add_path(QUILTCANON *canon, const char *path)
 	}
 	return 0;
 }
+
+/* Reset the query parameters of a canonical resource */
+int
+quilt_canon_reset_params(QUILTCANON *canon)
+{
+	size_t c;
+
+	for(c = 0; c < canon->nparams; c++)
+	{
+		free(canon->params[c].name);
+		free(canon->params[c].value);
+	}
+	free(canon->params);
+	canon->params = NULL;
+	canon->nparams = 0;
+	return 0;
+}
+	
 
 /* Set a query parameter of a canonical resource, removing any with the
  * same name which might exist
@@ -521,7 +590,7 @@ quilt_canon_sort_params_compare_(const void *ptra, const void *ptrb)
  *
  * Specifically:
  *   '%' is only encoded if it is not followed by two hex chars
- *   '&', '#', '?' and '=' are always encoded
+ *   '&', '#', and '=' are always encoded
  *   ' ' is encoded to '+'
  */
 static char *
@@ -541,7 +610,7 @@ quilt_canon_urlencode_maybe_(const char *src)
 	{
 		ch = (int) ((unsigned char) (*t));
 		l++;
-		if(ch == '&' || ch == '?' || ch == '#' || ch == ' ')
+		if(ch == '&' || ch == '#' || ch == ' ')
 		{
 			continue;
 		}
@@ -581,7 +650,7 @@ quilt_canon_urlencode_maybe_(const char *src)
 			p++;
 			continue;
 		}
-		if(ch != '&' && ch != '?' && ch != '#' && ch != ' ' &&
+		if(ch != '&' && ch != '#' && ch != ' ' &&
 		   isprint(ch) && ch <= 127)
 		{
 			*p = ch;
