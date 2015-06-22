@@ -136,7 +136,7 @@ static
 int quilt_librdf_serialize_(QUILTREQ *request)
 {
 	const char *tsuffix;
-	char *buf;
+	char *buf, *loc;
 	
 	buf = quilt_model_serialize(request->model, request->type);
 	if(!buf)
@@ -152,12 +152,15 @@ int quilt_librdf_serialize_(QUILTREQ *request)
 	{
 		tsuffix = "";
 	}
+	loc = quilt_canon_str(request->canonical, QCO_CONCRETE|QCO_NOABSOLUTE);
 	quilt_request_printf(request, "Status: %d %s\n"
-						 "Content-type: %s%s\n"
+						 "Content-Type: %s%s\n"
+						 "Content-Location: %s\n"
 						 "Vary: Accept\n"
 						 "Server: Quilt/" PACKAGE_VERSION "\n"
 						 "\n",
-						 request->status, request->statustitle, request->type, tsuffix);
+						 request->status, request->statustitle, request->type, tsuffix, loc);
+	free(loc);
 	quilt_request_puts(request, buf);
 	free(buf);
 	return 0;	

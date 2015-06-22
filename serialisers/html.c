@@ -92,7 +92,7 @@ html_serialize(QUILTREQ *req)
 {
 	LIQUIFYTPL *tpl;
 	json_t *dict;
-	char *buf;
+	char *buf, *loc;
 	int status;
 
 	status = 500;
@@ -107,11 +107,14 @@ html_serialize(QUILTREQ *req)
 		/* Set status to zero to suppress output */
 		status = 0;
 		buf = liquify_apply(tpl, dict);
+		loc = quilt_canon_str(req->canonical, QCO_CONCRETE|QCO_NOABSOLUTE);
 		quilt_request_printf(req, "Status: %d %s\n"
-							 "Content-type: %s; charset=utf-8\n"
+							 "Content-Type: %s; charset=utf-8\n"
+							 "Content-Location: %s\n"
 							 "Vary: Accept\n"
 							 "Server: Quilt/" PACKAGE_VERSION "\n"
-							 "\n", req->status, req->statustitle, req->type);
+							 "\n", req->status, req->statustitle, req->type, loc);
+		free(loc);
 		quilt_request_puts(req, buf);
 		free(buf);
 	}

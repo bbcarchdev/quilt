@@ -99,6 +99,31 @@ struct quilt_callback_struct
 	} cb;
 };
 
+struct quilt_canon_param_struct
+{
+	char *name;
+	char *value;
+};
+
+struct quilt_canonical_struct
+{
+	/* The absolute base - scheme, auth, port, host */
+	char *base;
+	/* The site-relative path (i.e., begins with '/') */
+	char *path;
+	/* The local resource name if not included in the path */
+	char *name;
+	/* The default file extension for this type */
+	char *ext;
+	/* The explicitly-specified file extension for this type */
+	char *explicitext;
+	/* The fragment for this resource */
+	char *fragment;
+	/* Sorted list of parameters */
+	struct quilt_canon_param_struct *params;
+	size_t nparams;
+};
+
 /* Content negotiation */
 extern NEGOTIATE *quilt_types_;
 extern NEGOTIATE *quilt_charsets_;

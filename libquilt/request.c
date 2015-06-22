@@ -60,7 +60,7 @@ quilt_request_init_(void)
 		free(p);
 		return -1;
 	}
-	quilt_logf(LOG_DEBUG, "base URI is <%s>\n", p);
+	quilt_logf(LOG_DEBUG, "base URI is <%s>\n", p);	
 	free(p);
 	return 0;
 }
@@ -208,6 +208,19 @@ quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data)
 	if(p->limit > MAX_LIMIT)
 	{
 		p->limit = MAX_LIMIT;
+	}
+	p->canonical = quilt_canon_create(NULL);
+	if(!p)
+	{
+		p->status = 500;
+		return p;
+	}
+	quilt_canon_set_base(p->canonical, p->base);
+	quilt_canon_set_ext(p->canonical, p->canonext);
+	quilt_canon_set_explicitext(p->canonical, p->ext);
+	if(p->home)
+	{
+		quilt_canon_set_name(p->canonical, "index");
 	}
 	return p;
 }

@@ -31,6 +31,7 @@
 typedef struct quilt_request_struct QUILTREQ;
 typedef struct quilt_impl_struct QUILTIMPL;
 typedef struct quilt_type_struct QUILTTYPE;
+typedef struct quilt_canonical_struct QUILTCANON;
 
 # ifndef QUILTIMPL_DATA_DEFINED
 typedef struct quilt_impldata_struct QUILTIMPLDATA;
@@ -83,6 +84,8 @@ struct quilt_request_struct
 	int deflimit;
 	/* The canonical extension for the MIME type */
 	const char *canonext;
+	/* A helper object used to generate canonical URIs */
+	QUILTCANON *canonical;
 };
 
 /* A typemap structure, filled in by a serialising plug-in for registration */
@@ -108,6 +111,37 @@ struct quilt_type_struct
 	/* Used internally by libquilt */
 	void *data;
 };
+
+typedef enum
+{
+	/* The default form matches that of a request-URI */
+	QCO_DEFAULT = 0,
+	/* The generated URI will not be absolute */
+	QCO_NOABSOLUTE = (1<<0),
+	/* The generated URI will not include the path */
+	QCO_NOPATH = (1<<1),
+	/* The generated URI will include the resource name */
+	QCO_NAME = (1<<2),
+	/* The generated URI will not include an extension, even if specified in
+	 * the request.
+	 */
+	QCO_NOEXT = (1<<3),
+	/* The generated URI will always include an extension (takes precedence
+	 * over QCO_NOEXT.
+	 */
+	QCO_FORCEEXT = (1<<4),
+	/* The generated URI will not include any query parameters */
+	QCO_NOPARAMS = (1<<5),
+	/* The generated URI will include the fragment */
+	QCO_FRAGMENT = (1<<6),
+
+	/* A subject URI */
+	QCO_SUBJECT = (QCO_NOEXT|QCO_NOPARAMS|QCO_FRAGMENT),
+	/* An abstract document URI */
+	QCO_ABSTRACT = (QCO_NOEXT),
+	/* A concrete document URI (i.e., Content-Location) */
+	QCO_CONCRETE = (QCO_FORCEEXT|QCO_NAME)
+} QUILTCANOPTS;
 
 /* Plug-in initialisation function */
 typedef int (*quilt_plugin_init_fn)(void);
@@ -145,6 +179,21 @@ int quilt_request_put(QUILTREQ *req, const unsigned char *bytes, size_t len);
 int quilt_request_printf(QUILTREQ *req, const char *format, ...);
 int quilt_request_vprintf(QUILTREQ *req, const char *format, va_list ap);
 char *quilt_request_base(void);
+
+/* Canonical URI handling */
+QUILTCANON *quilt_canon_create(QUILTCANON *source);
+int quilt_canon_destroy(QUILTCANON *canon);
+int quilt_canon_set_base(QUILTCANON *canon, const char *base);
+int quilt_canon_set_fragment(QUILTCANON *canon, const char *path);
+int quilt_canon_set_ext(QUILTCANON *canon, const char *ext);
+int quilt_canon_set_explicitext(QUILTCANON *canon, const char *ext);
+int quilt_canon_set_name(QUILTCANON *canon, const char *name);
+int quilt_canon_add_path(QUILTCANON *canon, const char *path);
+int quilt_canon_set_param(QUILTCANON *canon, const char *name, const char *value);
+int quilt_canon_set_param_int(QUILTCANON *canon, const char *name, long value);
+int quilt_canon_add_param(QUILTCANON *canon, const char *name, const char *value);
+int quilt_canon_add_param_int(QUILTCANON *canon, const char *name, long value);
+char *quilt_canon_str(QUILTCANON *canon, QUILTCANOPTS opts);
 
 /* SPARQL queries */
 SPARQL *quilt_sparql(void);

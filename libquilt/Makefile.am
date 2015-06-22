@@ -1,6 +1,6 @@
 ## Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 ##
-## Copyright (c) 2014 BBC
+## Copyright (c) 2014-2015 BBC
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ lib_LTLIBRARIES = libquilt.la
 
 libquilt_la_SOURCES = p_libquilt.h \
 	init.c log.c config.c error.c librdf.c request.c sparql.c urlencode.c \
-	plugin.c
+	plugin.c canon.c
 
 libquilt_la_LDFLAGS = -avoid-version -no-undefined
 
