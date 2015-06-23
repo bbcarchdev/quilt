@@ -1,5 +1,7 @@
 usr/share/quilt/templates/*.liquid
 usr/share/quilt/public/README
+usr/share/quilt/sample/README.md
+usr/share/quilt/sample/*.ttl
 usr/share/doc/quilt/quilt.conf
 usr/share/doc/quilt/apache2-example.conf
 etc/quilt.conf
