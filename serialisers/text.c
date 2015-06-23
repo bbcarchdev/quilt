@@ -60,18 +60,27 @@ text_serialize(QUILTREQ *req)
 						 "\n", req->status, req->statustitle, req->type);
 
 	iter = librdf_model_get_contexts(req->model);
-	while(!librdf_iterator_end(iter))
+	if(librdf_iterator_end(iter))
 	{
-		context = librdf_iterator_get_object(iter);
-		quilt_request_puts(req, "According to ");
-		text_serialize_node(req, context);
-		quilt_request_puts(req, ":\n\n");
-		stream = librdf_model_context_as_stream(req->model, context);
-		text_serialize_stream(req, context, stream);
-		librdf_free_stream(stream);
-		librdf_iterator_next(iter);
+		librdf_free_iterator(iter);
+		stream = librdf_model_as_stream(req->model);
+		text_serialize_stream(req, NULL, stream);
 	}
-	librdf_free_iterator(iter);
+	else
+	{
+		while(!librdf_iterator_end(iter))
+		{
+			context = librdf_iterator_get_object(iter);
+			quilt_request_puts(req, "According to ");
+			text_serialize_node(req, context);
+			quilt_request_puts(req, ":\n\n");
+			stream = librdf_model_context_as_stream(req->model, context);
+			text_serialize_stream(req, context, stream);
+			librdf_free_stream(stream);
+			librdf_iterator_next(iter);
+		}
+		librdf_free_iterator(iter);
+	}
 	return 0;
 }
 
@@ -155,7 +164,14 @@ int text_serialize_subject(QUILTREQ *req, librdf_node *context, librdf_node *sub
 	query = librdf_new_statement(world);
 	librdf_statement_set_subject(query, librdf_new_node_from_node(subject));
 	librdf_statement_set_predicate(query, quilt_node_create_uri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"));
-	stream = librdf_model_find_statements_with_options(req->model, query, context, NULL);
+	if(context)
+	{
+		stream = librdf_model_find_statements_with_options(req->model, query, context, NULL);
+	}
+	else
+	{
+		stream = librdf_model_find_statements(req->model, query);
+	}
 	c = 0;
 	while(!librdf_stream_end(stream))
 	{
