@@ -83,6 +83,7 @@ public/Makefile
 libquilt/Makefile
 engines/Makefile
 serialisers/Makefile
+sample-data/Makefile
 apache2-example.conf
 ])
 

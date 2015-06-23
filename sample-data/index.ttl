@@ -1,0 +1,8 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix void: <http://rdfs.org/ns/void#> .
+
+</>
+	a void:Dataset ;
+	rdfs:label "Quilt sample data"@en ;
+	rdfs:comment "This is a sample data-set provided as part of the Quilt Linked Open Data server. This resource has been loaded from ${prefix}/share/quilt/sample/index.ttl."@en .

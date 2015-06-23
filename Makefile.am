@@ -19,10 +19,11 @@
 ACLOCAL_AMFLAGS = -I m4
 
 DIST_SUBDIRS = m4 libsupport libnegotiate \
-	libs3client templates public libquilt engines serialisers
+	libs3client templates public libquilt engines serialisers \
+	sample-data
 
 SUBDIRS = libsupport @subdirs@ libnegotiate libliquify libs3client \
-	templates public libquilt engines serialisers .
+	templates public libquilt engines serialisers sample-data .
 
 EXTRA_DIST = libquilt.pc.in libquilt-uninstalled.pc.in
 

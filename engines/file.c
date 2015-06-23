@@ -3,7 +3,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ quilt_plugin_init(void)
 		quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to register engine\n");
 		return -1;
 	}
-	basepath = quilt_config_geta("file:root", DATAROOTDIR "/quilt/data");
+	basepath = quilt_config_geta("file:root", DATAROOTDIR "/" PACKAGE_TARNAME "/sample");
 	return 0;
 }
 
