@@ -18,5 +18,6 @@
 
 datadir = @datarootdir@/@PACKAGE_TARNAME@/sample
 
-dist_data_DATA = README.md index.ttl
+dist_data_DATA = README.md index.ttl \
+	5216804.ttl 27358.ttl 21387608.ttl Q1045.ttl
 

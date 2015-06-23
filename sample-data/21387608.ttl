@@ -1,0 +1,44 @@
+@prefix cc: <http://creativecommons.org/ns#> .
+@prefix dc: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <http://schema.org/> .
+@prefix wikibase: <http://www.wikidata.org/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix void: <http://rdfs.org/ns/void#> .
+
+</21387608.ttl> a foaf:Document;
+   dc:title "dbpedia lite thing - Skye";
+   cc:license <http://creativecommons.org/licenses/by-sa/3.0/>,
+     <http://gnu.org/licenses/fdl-1.3.html>;
+   dc:modified "2015-06-23T06:11:50Z"^^xsd:dateTime;
+   foaf:primaryTopic </21387608#id> ;
+   void:inDataset </> .
+
+<http://en.wikipedia.org/wiki/Skye> a schema:Article;
+   schema:about </21387608#id>,
+     <http://www.wikidata.org/entity/Q107393>;
+   schema:inLanguage "en" .
+
+</21387608#id> a owl:Thing;
+   rdfs:label "Skye";
+   rdfs:comment "Skye or the Isle of Skye is the largest and most northerly large island in the Inner Hebrides of Scotland. The island's peninsulas radiate from a mountainous centre dominated by the Cuillins, the rocky slopes of which provide some of the most dramatic mountain scenery in the country. Although it has been suggested that the Gaelic Sgitheanach describes a winged shape there is no definitive agreement as to the name's origins.";
+   owl:sameAs <http://dbpedia.org/resource/Skye>,
+     <http://rdf.freebase.com/ns/guid.9202a8c04000641f800000000001f4d1>,
+     <http://rdf.freebase.com/ns/m.03y6k>,
+     <http://www.wikidata.org/entity/Q107393>;
+   geo:lat 57.307;
+   geo:long -6.23;
+   foaf:isPrimaryTopicOf <http://en.wikipedia.org/wiki/Skye>;
+   foaf:page <http://www.scottish-places.info/features/featurehistory1620.html>,
+     <http://www.scotlandpictures.net/isle-of-skye/>,
+     <http://www.plant-identification.co.uk/skye/index.htm>,
+     <http://www.skye-birds.com/> .
+
+<http://www.wikidata.org/entity/Q107393> a wikibase:Item;
+   rdfs:label "Skye"@en;
+   schema:description "largest and most northerly large island in the Inner Hebrides of Scotland"@en;
+   schema:name "Skye"@en .

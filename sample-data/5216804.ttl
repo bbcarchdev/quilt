@@ -1,0 +1,42 @@
+@prefix cc: <http://creativecommons.org/ns#> .
+@prefix dc: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <http://schema.org/> .
+@prefix wikibase: <http://www.wikidata.org/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix void: <http://rdfs.org/ns/void#> .
+
+</5216804> a foaf:Document;
+   dc:title "dbpedia lite thing - Dow Crag";
+   cc:license <http://creativecommons.org/licenses/by-sa/3.0/>,
+     <http://gnu.org/licenses/fdl-1.3.html>;
+   dc:modified "2015-03-03T14:42:20Z"^^xsd:dateTime;
+   foaf:primaryTopic </5216804#id> ;
+   void:inDataset </> .
+
+<http://en.wikipedia.org/wiki/Dow_Crag> a schema:Article;
+   schema:about </5216804#id>,
+     <http://www.wikidata.org/entity/Q5302606>;
+   schema:inLanguage "en" .
+
+</5216804#id> a owl:Thing;
+   rdfs:label "Dow Crag";
+   rdfs:comment """Dow Crag is a fell in the English Lake District near Coniston, Cumbria. The eastern face is one of the many rock faces in the Lake District used for rock climbing.
+The name Dow Crag originally applied specifically to the eastern face which looks down upon the tarn of Goat's Water, the fell itself having no need for a name before the inception of hill walking in the 19th century. As with many fells the name of a prominent feature was then applied to the whole mass. Dow was originally named Doe and still locally pronounced as "Doe".""";
+   owl:sameAs <http://dbpedia.org/resource/Dow_Crag>,
+     <http://rdf.freebase.com/ns/guid.9202a8c04000641f8000000000c428cb>,
+     <http://rdf.freebase.com/ns/m.0d8b6c>,
+     <http://www.wikidata.org/entity/Q5302606>;
+   geo:lat 54.36944;
+   geo:long -3.13744;
+   foaf:isPrimaryTopicOf <http://en.wikipedia.org/wiki/Dow_Crag>;
+   foaf:page <http://www.ukclimbing.com/databases/crags/craginfo.html?id=355> .
+
+<http://www.wikidata.org/entity/Q5302606> a wikibase:Item;
+   rdfs:label "Dow Crag"@en;
+   schema:name "Dow Crag"@en .
+

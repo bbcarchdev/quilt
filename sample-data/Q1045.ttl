@@ -1,0 +1,1045 @@
+@prefix schema: <http://schema.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix entity: <http://www.wikidata.org/entity/> .
+@prefix cc: <http://creativecommons.org/ns#> .
+@prefix wikibase: <http://www.wikidata.org/ontology#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix void: <http://rdfs.org/ns/void#> .
+
+</Q1045>
+  schema:version 200059659 ;
+  schema:dateModified "2015-02-28T23:46:19Z"^^xsd:dateTime ;
+  a schema:Dataset ;
+  schema:about </Q1045#id> ;
+  cc:license <http://creativecommons.org/publicdomain/zero/1.0/> ;
+  void:inDataset </> .
+
+</Q1045#id>
+  a wikibase:Item ;
+  rdfs:label "Somalia"@en, "Somalie"@fr, "Сомали"@ru, "Somalia"@de, "Somalia o Somalía"@es, "Somalia"@en-ca, "Somalia"@en-gb, "Somalië"@nl, "Somalia"@de-ch, "Somalia"@sw, "Somalia"@ace, "Somalië"@af, "ሶማሊያ"@am, "Somalia"@an, "Sōmalia"@ang, "الصومال"@ar, "الصومال"@arz, "Somalia"@ast, "Somali"@az, "Somalya"@bcl, "Самалі"@be, "Сомалия"@bg, "Somalia"@bjn, "সোমালিয়া"@bn, "སོ་མ་ལི།"@bo, "সোমালিয়া"@bpy, "Somalia"@br, "Somalija"@bs, "Somàlia"@ca, "Сомали"@ce, "Somalia"@ceb, "سۆماڵیا"@ckb, "Somálsko"@cs, "Somalia"@cy, "Somalia"@da, "Somalya"@diq, "Somalija"@dsb, "ސޯމާލިއާ"@dv, "Somalia"@ee, "Σομαλία"@el, "Somalio"@eo, "Somaalia"@et, "Somalia"@eu, "Somália"@ext, "سومالی"@fa, "Somalia"@fi, "Somalia"@fo, "Somalie"@frp, "Somaalje"@fy, "An tSomáil"@ga, "Somali"@gag, "Somàilia"@gd, "Somalia - Soomaaliya"@gl, "Yn Tomaal"@gv, "סומליה"@he, "सोमालिया"@hi, "Somalia"@hif, "Somalija"@hr, "Somalija"@hsb, "Somali"@ht, "Szomália"@hu, "Սոմալի"@hy, "Somalia"@ia, "Somalia"@id, "Somalia"@ie, "Somalia"@ilo, "Somalia"@io, "Sómalía"@is, "Somalia"@it, "ソマリア"@ja, "somalias"@jbo, "Somalia"@jv, "სომალი"@ka, "Somalia"@kg, "Somalia"@ki, "Сомали"@kk, "ಸೊಮಾಲಿಯ"@kn, "소말리아"@ko, "Somalya"@ku, "Somali"@kw, "Somalia"@la, "Somalia"@lb, "Somalië"@li, "Somalia"@lij, "Sumalia"@lmo, "Somalia"@ln, "Somalis"@lt, "Somālija"@lv, "Somalia"@mg, "Сомали"@mhr, "Сомалија"@mk, "സൊമാലിയ"@ml, "Сомали"@mn, "सोमालिया"@mr, "Somalia"@ms, "Somalja"@mt, "ဆိုမာလီယာနိုင်ငံ"@my, "Tomariya"@na, "Somalia"@nah, "Somalia"@nds, "सोमालिया"@new, "Somalia"@nn, "Somalia"@nov, "Somalia"@nso, "Soomáálii Bikéyah"@nv, "Somalia"@oc, "ସୋମାଲିଆ"@or, "Сомали"@os, "ਸੋਮਾਲੀਆ"@pa, "Somalia"@pam, "Somalia"@pap, "Somaali"@pdc, "Somalia"@pl, "Somalia"@pms, "صومالیہ"@pnb, "سومالیا"@ps, "Somália"@pt, "Somália"@pt-br, "Sumalya"@qu, "Somalia"@rm, "Somalia"@ro, "Somaliya"@rw, "सोमालिया"@sa, "Сомалия"@sah, "Somàlia"@sc, "Somalia"@scn, "Somalie"@sco, "Somália"@se, "Somalïi"@sg, "Somalija"@sh, "සෝමාලියාව"@si, "Somálsko"@sk, "Somalija"@sl, "Somalia"@sm, "Somalia"@sn, "Soomaaliya"@so, "Somalia"@sq, "Сомалија"@sr, "ISomaliya"@ss, "Somalia"@st, "Somalia"@stq, "Somalia"@su, "Somalia"@sv, "Sůmalijo"@szl, "சோமாலியா"@ta, "సొమాలియా"@te, "Сумолӣ"@tg, "ประเทศโซมาเลีย"@th, "ሶማሊያ"@ti, "Somalya"@tl, "Somali"@tr, "Somalia"@ts, "Сомали"@tt, "سومالى"@ug, "Сомалі"@uk, "صومالیہ"@ur, "Somali"@uz, "Somałia"@vec, "Somalia"@vi, "Somalän"@vo, "Somalia"@war, "Somali"@wo, "索马里"@wuu, "Сомалмудин Орн"@xal, "סאמאליע"@yi, "Sòmálíà"@yo, "索马里"@zh, "索马里"@zh-cn, "索马里"@zh-tw, "索马里"@zh-sg, "索马里"@zh-mo, "索马里"@zh-hans, "索马里"@zh-hant, "索马里"@zh-hk, "索马里"@zh-my, "索馬里"@yue, "ISomalia"@zu, "Somali"@tk, "Somalia"@nb, "Сомали"@ba, "Сомалија"@sr-ec, "Somalija"@sr-el, "Somaaliyaa"@om, "Сомали"@bxr, "Somaliya"@crh-latn, "Somalia"@gsw, "Suomalis"@sgs, "Somalia"@nan, "索馬里"@lzh, "Самалі"@be-tarask, "Somaalia"@vro, "Somaaliya"@ff, "Ṣumal"@kab, "Somali"@bm, "सोमालिया"@ne, "सोमालिया"@bh, "ma Somalija"@tokipona, "Somalia"@cdo ;
+  skos:prefLabel "Somalia"@en, "Somalie"@fr, "Сомали"@ru, "Somalia"@de, "Somalia o Somalía"@es, "Somalia"@en-ca, "Somalia"@en-gb, "Somalië"@nl, "Somalia"@de-ch, "Somalia"@sw, "Somalia"@ace, "Somalië"@af, "ሶማሊያ"@am, "Somalia"@an, "Sōmalia"@ang, "الصومال"@ar, "الصومال"@arz, "Somalia"@ast, "Somali"@az, "Somalya"@bcl, "Самалі"@be, "Сомалия"@bg, "Somalia"@bjn, "সোমালিয়া"@bn, "སོ་མ་ལི།"@bo, "সোমালিয়া"@bpy, "Somalia"@br, "Somalija"@bs, "Somàlia"@ca, "Сомали"@ce, "Somalia"@ceb, "سۆماڵیا"@ckb, "Somálsko"@cs, "Somalia"@cy, "Somalia"@da, "Somalya"@diq, "Somalija"@dsb, "ސޯމާލިއާ"@dv, "Somalia"@ee, "Σομαλία"@el, "Somalio"@eo, "Somaalia"@et, "Somalia"@eu, "Somália"@ext, "سومالی"@fa, "Somalia"@fi, "Somalia"@fo, "Somalie"@frp, "Somaalje"@fy, "An tSomáil"@ga, "Somali"@gag, "Somàilia"@gd, "Somalia - Soomaaliya"@gl, "Yn Tomaal"@gv, "סומליה"@he, "सोमालिया"@hi, "Somalia"@hif, "Somalija"@hr, "Somalija"@hsb, "Somali"@ht, "Szomália"@hu, "Սոմալի"@hy, "Somalia"@ia, "Somalia"@id, "Somalia"@ie, "Somalia"@ilo, "Somalia"@io, "Sómalía"@is, "Somalia"@it, "ソマリア"@ja, "somalias"@jbo, "Somalia"@jv, "სომალი"@ka, "Somalia"@kg, "Somalia"@ki, "Сомали"@kk, "ಸೊಮಾಲಿಯ"@kn, "소말리아"@ko, "Somalya"@ku, "Somali"@kw, "Somalia"@la, "Somalia"@lb, "Somalië"@li, "Somalia"@lij, "Sumalia"@lmo, "Somalia"@ln, "Somalis"@lt, "Somālija"@lv, "Somalia"@mg, "Сомали"@mhr, "Сомалија"@mk, "സൊമാലിയ"@ml, "Сомали"@mn, "सोमालिया"@mr, "Somalia"@ms, "Somalja"@mt, "ဆိုမာလီယာနိုင်ငံ"@my, "Tomariya"@na, "Somalia"@nah, "Somalia"@nds, "सोमालिया"@new, "Somalia"@nn, "Somalia"@nov, "Somalia"@nso, "Soomáálii Bikéyah"@nv, "Somalia"@oc, "ସୋମାଲିଆ"@or, "Сомали"@os, "ਸੋਮਾਲੀਆ"@pa, "Somalia"@pam, "Somalia"@pap, "Somaali"@pdc, "Somalia"@pl, "Somalia"@pms, "صومالیہ"@pnb, "سومالیا"@ps, "Somália"@pt, "Somália"@pt-br, "Sumalya"@qu, "Somalia"@rm, "Somalia"@ro, "Somaliya"@rw, "सोमालिया"@sa, "Сомалия"@sah, "Somàlia"@sc, "Somalia"@scn, "Somalie"@sco, "Somália"@se, "Somalïi"@sg, "Somalija"@sh, "සෝමාලියාව"@si, "Somálsko"@sk, "Somalija"@sl, "Somalia"@sm, "Somalia"@sn, "Soomaaliya"@so, "Somalia"@sq, "Сомалија"@sr, "ISomaliya"@ss, "Somalia"@st, "Somalia"@stq, "Somalia"@su, "Somalia"@sv, "Sůmalijo"@szl, "சோமாலியா"@ta, "సొమాలియా"@te, "Сумолӣ"@tg, "ประเทศโซมาเลีย"@th, "ሶማሊያ"@ti, "Somalya"@tl, "Somali"@tr, "Somalia"@ts, "Сомали"@tt, "سومالى"@ug, "Сомалі"@uk, "صومالیہ"@ur, "Somali"@uz, "Somałia"@vec, "Somalia"@vi, "Somalän"@vo, "Somalia"@war, "Somali"@wo, "索马里"@wuu, "Сомалмудин Орн"@xal, "סאמאליע"@yi, "Sòmálíà"@yo, "索马里"@zh, "索马里"@zh-cn, "索马里"@zh-tw, "索马里"@zh-sg, "索马里"@zh-mo, "索马里"@zh-hans, "索马里"@zh-hant, "索马里"@zh-hk, "索马里"@zh-my, "索馬里"@yue, "ISomalia"@zu, "Somali"@tk, "Somalia"@nb, "Сомали"@ba, "Сомалија"@sr-ec, "Somalija"@sr-el, "Somaaliyaa"@om, "Сомали"@bxr, "Somaliya"@crh-latn, "Somalia"@gsw, "Suomalis"@sgs, "Somalia"@nan, "索馬里"@lzh, "Самалі"@be-tarask, "Somaalia"@vro, "Somaaliya"@ff, "Ṣumal"@kab, "Somali"@bm, "सोमालिया"@ne, "सोमालिया"@bh, "ma Somalija"@tokipona, "Somalia"@cdo ;
+  schema:name "Somalia"@en, "Somalie"@fr, "Сомали"@ru, "Somalia"@de, "Somalia o Somalía"@es, "Somalia"@en-ca, "Somalia"@en-gb, "Somalië"@nl, "Somalia"@de-ch, "Somalia"@sw, "Somalia"@ace, "Somalië"@af, "ሶማሊያ"@am, "Somalia"@an, "Sōmalia"@ang, "الصومال"@ar, "الصومال"@arz, "Somalia"@ast, "Somali"@az, "Somalya"@bcl, "Самалі"@be, "Сомалия"@bg, "Somalia"@bjn, "সোমালিয়া"@bn, "སོ་མ་ལི།"@bo, "সোমালিয়া"@bpy, "Somalia"@br, "Somalija"@bs, "Somàlia"@ca, "Сомали"@ce, "Somalia"@ceb, "سۆماڵیا"@ckb, "Somálsko"@cs, "Somalia"@cy, "Somalia"@da, "Somalya"@diq, "Somalija"@dsb, "ސޯމާލިއާ"@dv, "Somalia"@ee, "Σομαλία"@el, "Somalio"@eo, "Somaalia"@et, "Somalia"@eu, "Somália"@ext, "سومالی"@fa, "Somalia"@fi, "Somalia"@fo, "Somalie"@frp, "Somaalje"@fy, "An tSomáil"@ga, "Somali"@gag, "Somàilia"@gd, "Somalia - Soomaaliya"@gl, "Yn Tomaal"@gv, "סומליה"@he, "सोमालिया"@hi, "Somalia"@hif, "Somalija"@hr, "Somalija"@hsb, "Somali"@ht, "Szomália"@hu, "Սոմալի"@hy, "Somalia"@ia, "Somalia"@id, "Somalia"@ie, "Somalia"@ilo, "Somalia"@io, "Sómalía"@is, "Somalia"@it, "ソマリア"@ja, "somalias"@jbo, "Somalia"@jv, "სომალი"@ka, "Somalia"@kg, "Somalia"@ki, "Сомали"@kk, "ಸೊಮಾಲಿಯ"@kn, "소말리아"@ko, "Somalya"@ku, "Somali"@kw, "Somalia"@la, "Somalia"@lb, "Somalië"@li, "Somalia"@lij, "Sumalia"@lmo, "Somalia"@ln, "Somalis"@lt, "Somālija"@lv, "Somalia"@mg, "Сомали"@mhr, "Сомалија"@mk, "സൊമാലിയ"@ml, "Сомали"@mn, "सोमालिया"@mr, "Somalia"@ms, "Somalja"@mt, "ဆိုမာလီယာနိုင်ငံ"@my, "Tomariya"@na, "Somalia"@nah, "Somalia"@nds, "सोमालिया"@new, "Somalia"@nn, "Somalia"@nov, "Somalia"@nso, "Soomáálii Bikéyah"@nv, "Somalia"@oc, "ସୋମାଲିଆ"@or, "Сомали"@os, "ਸੋਮਾਲੀਆ"@pa, "Somalia"@pam, "Somalia"@pap, "Somaali"@pdc, "Somalia"@pl, "Somalia"@pms, "صومالیہ"@pnb, "سومالیا"@ps, "Somália"@pt, "Somália"@pt-br, "Sumalya"@qu, "Somalia"@rm, "Somalia"@ro, "Somaliya"@rw, "सोमालिया"@sa, "Сомалия"@sah, "Somàlia"@sc, "Somalia"@scn, "Somalie"@sco, "Somália"@se, "Somalïi"@sg, "Somalija"@sh, "සෝමාලියාව"@si, "Somálsko"@sk, "Somalija"@sl, "Somalia"@sm, "Somalia"@sn, "Soomaaliya"@so, "Somalia"@sq, "Сомалија"@sr, "ISomaliya"@ss, "Somalia"@st, "Somalia"@stq, "Somalia"@su, "Somalia"@sv, "Sůmalijo"@szl, "சோமாலியா"@ta, "సొమాలియా"@te, "Сумолӣ"@tg, "ประเทศโซมาเลีย"@th, "ሶማሊያ"@ti, "Somalya"@tl, "Somali"@tr, "Somalia"@ts, "Сомали"@tt, "سومالى"@ug, "Сомалі"@uk, "صومالیہ"@ur, "Somali"@uz, "Somałia"@vec, "Somalia"@vi, "Somalän"@vo, "Somalia"@war, "Somali"@wo, "索马里"@wuu, "Сомалмудин Орн"@xal, "סאמאליע"@yi, "Sòmálíà"@yo, "索马里"@zh, "索马里"@zh-cn, "索马里"@zh-tw, "索马里"@zh-sg, "索马里"@zh-mo, "索马里"@zh-hans, "索马里"@zh-hant, "索马里"@zh-hk, "索马里"@zh-my, "索馬里"@yue, "ISomalia"@zu, "Somali"@tk, "Somalia"@nb, "Сомали"@ba, "Сомалија"@sr-ec, "Somalija"@sr-el, "Somaaliyaa"@om, "Сомали"@bxr, "Somaliya"@crh-latn, "Somalia"@gsw, "Suomalis"@sgs, "Somalia"@nan, "索馬里"@lzh, "Самалі"@be-tarask, "Somaalia"@vro, "Somaaliya"@ff, "Ṣumal"@kab, "Somali"@bm, "सोमालिया"@ne, "सोमालिया"@bh, "ma Somalija"@tokipona, "Somalia"@cdo ;
+  schema:description "country in Africa"@en, "Pays d'Afrique de l'Est"@fr, "Staat in Ostafrika"@de, "país de África"@es, "stato dell'Africa Orientale"@it, "страна в Африке"@ru, "pagilian idiay Aprika"@ilo, "land på Afrikas horn"@nb, "کشوری در خاور آفریقا"@fa, "country in Africa"@en-gb, "アフリカの国"@ja, "држава у источној Африци"@sr, "држава у источној Африци"@sr-ec, "država u istočnoj Africi"@sr-el, "非洲国家"@zh-hans, "állam Kelet-Afrikában"@hu, "χώρα της Αφρικής"@el ;
+  skos:altLabel "Federal Republic of Somalia"@en, "aṣ-Ṣūmāl"@en, "Soomaaliya"@en, "Somalia"@es, "República Federal de Somalia"@es, "Somalía"@es, "Forbundsstaten Somalia"@nb, "ソマリア民主共和国"@ja, "ソマリア連邦共和国"@ja, "Федеративная Республика Сомали"@ru, "Szomáli Szövetségi Köztársaság"@hu, "Somalie"@nl, "Somalia"@nl, "Republiek Somalië"@nl, "Republiek Somalie"@nl, "Federale Republiek Somalië"@nl, "Federale Republiek Somalie"@nl .
+
+<http://en.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "en" .
+
+<http://nl.wikipedia.org/wiki/Somali%C3%AB>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "nl" .
+
+<http://de.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "de" .
+
+<http://fr.wikipedia.org/wiki/Somalie>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "fr" .
+
+<http://es.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "es" .
+
+<http://sw.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "sw" .
+
+<https://ru.wikipedia.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D0%B8>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ru" .
+
+<http://ace.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ace" .
+
+<http://af.wikipedia.org/wiki/Somali%C3%AB>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "af" .
+
+<http://als.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "als" .
+
+<http://am.wikipedia.org/wiki/%E1%88%B6%E1%88%9B%E1%88%8A%E1%8B%AB>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "am" .
+
+<http://an.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "an" .
+
+<http://ang.wikipedia.org/wiki/S%C5%8Dmalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ang" .
+
+<http://arz.wikipedia.org/wiki/%D8%A7%D9%84%D8%B5%D9%88%D9%85%D8%A7%D9%84>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "arz" .
+
+<http://ast.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ast" .
+
+<http://az.wikipedia.org/wiki/Somali>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "az" .
+
+<http://bat-smg.wikipedia.org/wiki/Suomalis>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "bat-smg" .
+
+<http://bcl.wikipedia.org/wiki/Somalya>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "bcl" .
+
+<http://be.wikipedia.org/wiki/%D0%A1%D0%B0%D0%BC%D0%B0%D0%BB%D1%96>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "be" .
+
+<http://bg.wikipedia.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D0%B8%D1%8F>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "bg" .
+
+<http://bjn.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "bjn" .
+
+<http://bn.wikipedia.org/wiki/%E0%A6%B8%E0%A7%8B%E0%A6%AE%E0%A6%BE%E0%A6%B2%E0%A6%BF%E0%A6%AF%E0%A6%BC%E0%A6%BE>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "bn" .
+
+<http://bo.wikipedia.org/wiki/%E0%BD%A6%E0%BD%BC%E0%BC%8B%E0%BD%98%E0%BC%8B%E0%BD%A3%E0%BD%B2%E0%BC%8D>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "bo" .
+
+<http://bpy.wikipedia.org/wiki/%E0%A6%B8%E0%A7%8B%E0%A6%AE%E0%A6%BE%E0%A6%B2%E0%A6%BF%E0%A6%AF%E0%A6%BC%E0%A6%BE>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "bpy" .
+
+<http://br.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "br" .
+
+<http://bs.wikipedia.org/wiki/Somalija>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "bs" .
+
+<http://ca.wikipedia.org/wiki/Som%C3%A0lia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ca" .
+
+<http://ce.wikipedia.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D0%B8>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ce" .
+
+<http://ceb.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ceb" .
+
+<http://ckb.wikipedia.org/wiki/%D8%B3%DB%86%D9%85%D8%A7%DA%B5%DB%8C%D8%A7>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ckb" .
+
+<http://crh.wikipedia.org/wiki/Somaliya>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "crh" .
+
+<http://cs.wikipedia.org/wiki/Som%C3%A1lsko>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "cs" .
+
+<http://cy.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "cy" .
+
+<http://da.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "da" .
+
+<http://diq.wikipedia.org/wiki/Somalya>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "diq" .
+
+<http://dsb.wikipedia.org/wiki/Somalija>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "dsb" .
+
+<http://dv.wikipedia.org/wiki/%DE%90%DE%AF%DE%89%DE%A7%DE%8D%DE%A8%DE%87%DE%A7>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "dv" .
+
+<http://ee.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ee" .
+
+<http://el.wikipedia.org/wiki/%CE%A3%CE%BF%CE%BC%CE%B1%CE%BB%CE%AF%CE%B1>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "el" .
+
+<http://eo.wikipedia.org/wiki/Somalio>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "eo" .
+
+<http://et.wikipedia.org/wiki/Somaalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "et" .
+
+<http://eu.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "eu" .
+
+<http://ext.wikipedia.org/wiki/Som%C3%A1lia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ext" .
+
+<http://fa.wikipedia.org/wiki/%D8%B3%D9%88%D9%85%D8%A7%D9%84%DB%8C>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "fa" .
+
+<http://fiu-vro.wikipedia.org/wiki/Somaalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "fiu-vro" .
+
+<http://fo.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "fo" .
+
+<http://frp.wikipedia.org/wiki/Somalie>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "frp" .
+
+<http://fy.wikipedia.org/wiki/Somaalje>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "fy" .
+
+<http://ga.wikipedia.org/wiki/An_tSom%C3%A1il>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ga" .
+
+<http://gag.wikipedia.org/wiki/Somali>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "gag" .
+
+<http://gd.wikipedia.org/wiki/Som%C3%A0ilia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "gd" .
+
+<http://gl.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "gl" .
+
+<http://gv.wikipedia.org/wiki/Yn_Tomaal>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "gv" .
+
+<http://he.wikipedia.org/wiki/%D7%A1%D7%95%D7%9E%D7%9C%D7%99%D7%94>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "he" .
+
+<http://hi.wikipedia.org/wiki/%E0%A4%B8%E0%A5%8B%E0%A4%AE%E0%A4%BE%E0%A4%B2%E0%A4%BF%E0%A4%AF%E0%A4%BE>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "hi" .
+
+<http://hif.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "hif" .
+
+<http://hr.wikipedia.org/wiki/Somalija>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "hr" .
+
+<http://hsb.wikipedia.org/wiki/Somalija>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "hsb" .
+
+<http://ht.wikipedia.org/wiki/Somali>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ht" .
+
+<http://hu.wikipedia.org/wiki/Szom%C3%A1lia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "hu" .
+
+<http://hy.wikipedia.org/wiki/%D5%8D%D5%B8%D5%B4%D5%A1%D5%AC%D5%AB>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "hy" .
+
+<http://ia.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ia" .
+
+<http://id.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "id" .
+
+<http://ie.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ie" .
+
+<http://ilo.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ilo" .
+
+<http://io.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "io" .
+
+<http://is.wikipedia.org/wiki/S%C3%B3mal%C3%ADa>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "is" .
+
+<http://it.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "it" .
+
+<http://ja.wikipedia.org/wiki/%E3%82%BD%E3%83%9E%E3%83%AA%E3%82%A2>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ja" .
+
+<http://jbo.wikipedia.org/wiki/somalias>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "jbo" .
+
+<http://jv.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "jv" .
+
+<http://ka.wikipedia.org/wiki/%E1%83%A1%E1%83%9D%E1%83%9B%E1%83%90%E1%83%9A%E1%83%98>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ka" .
+
+<http://kg.wikipedia.org/wiki/S%C3%B4m%C3%A2lia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "kg" .
+
+<http://ki.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ki" .
+
+<http://kk.wikipedia.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D0%B8>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "kk" .
+
+<http://kn.wikipedia.org/wiki/%E0%B2%B8%E0%B3%8A%E0%B2%AE%E0%B2%BE%E0%B2%B2%E0%B2%BF%E0%B2%AF>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "kn" .
+
+<http://ko.wikipedia.org/wiki/%EC%86%8C%EB%A7%90%EB%A6%AC%EC%95%84>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ko" .
+
+<http://ku.wikipedia.org/wiki/Somalya>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ku" .
+
+<http://kw.wikipedia.org/wiki/Somali>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "kw" .
+
+<http://la.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "la" .
+
+<http://lb.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "lb" .
+
+<http://li.wikipedia.org/wiki/Somali%C3%AB>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "li" .
+
+<http://lij.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "lij" .
+
+<http://lmo.wikipedia.org/wiki/Sumalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "lmo" .
+
+<http://ln.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ln" .
+
+<http://lt.wikipedia.org/wiki/Somalis>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "lt" .
+
+<http://lv.wikipedia.org/wiki/Som%C4%81lija>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "lv" .
+
+<http://mg.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "mg" .
+
+<http://mhr.wikipedia.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D0%B8>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "mhr" .
+
+<http://mk.wikipedia.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D0%B8%D1%98%D0%B0>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "mk" .
+
+<http://ml.wikipedia.org/wiki/%E0%B4%B8%E0%B5%8A%E0%B4%AE%E0%B4%BE%E0%B4%B2%E0%B4%BF%E0%B4%AF>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ml" .
+
+<http://mn.wikipedia.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D0%B8>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "mn" .
+
+<http://mr.wikipedia.org/wiki/%E0%A4%B8%E0%A5%8B%E0%A4%AE%E0%A4%BE%E0%A4%B2%E0%A4%BF%E0%A4%AF%E0%A4%BE_%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%9C%E0%A4%BE%E0%A4%B8%E0%A4%A4%E0%A5%8D%E0%A4%A4%E0%A4%BE%E0%A4%95>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "mr" .
+
+<http://ms.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ms" .
+
+<http://mt.wikipedia.org/wiki/Somalja>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "mt" .
+
+<http://my.wikipedia.org/wiki/%E1%80%86%E1%80%AD%E1%80%AF%E1%80%99%E1%80%AC%E1%80%9C%E1%80%AE%E1%80%9A%E1%80%AC%E1%80%94%E1%80%AD%E1%80%AF%E1%80%84%E1%80%BA%E1%80%84%E1%80%B6>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "my" .
+
+<http://na.wikipedia.org/wiki/Tomariya>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "na" .
+
+<http://nah.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "nah" .
+
+<http://nds.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "nds" .
+
+<http://new.wikipedia.org/wiki/%E0%A4%B8%E0%A5%8B%E0%A4%AE%E0%A4%BE%E0%A4%B2%E0%A4%BF%E0%A4%AF%E0%A4%BE>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "new" .
+
+<http://nn.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "nn" .
+
+<http://no.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "no" .
+
+<http://nov.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "nov" .
+
+<http://nso.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "nso" .
+
+<http://nv.wikipedia.org/wiki/Soom%C3%A1%C3%A1lii_Bik%C3%A9yah>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "nv" .
+
+<http://oc.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "oc" .
+
+<http://or.wikipedia.org/wiki/%E0%AC%B8%E0%AD%8B%E0%AC%AE%E0%AC%BE%E0%AC%B2%E0%AC%BF%E0%AC%86>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "or" .
+
+<http://os.wikipedia.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D0%B8>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "os" .
+
+<http://pa.wikipedia.org/wiki/%E0%A8%B8%E0%A9%8B%E0%A8%AE%E0%A8%BE%E0%A8%B2%E0%A9%80%E0%A8%86>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "pa" .
+
+<http://pam.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "pam" .
+
+<http://pap.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "pap" .
+
+<http://pdc.wikipedia.org/wiki/Somaali>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "pdc" .
+
+<http://pl.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "pl" .
+
+<http://pms.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "pms" .
+
+<http://pnb.wikipedia.org/wiki/%D8%B5%D9%88%D9%85%D8%A7%D9%84%DB%8C%DB%81>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "pnb" .
+
+<http://ps.wikipedia.org/wiki/%D8%B3%D9%88%D9%85%D8%A7%D9%84%DB%8C%D8%A7>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ps" .
+
+<http://pt.wikipedia.org/wiki/Som%C3%A1lia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "pt" .
+
+<http://qu.wikipedia.org/wiki/Sumalya>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "qu" .
+
+<http://rm.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "rm" .
+
+<http://ro.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ro" .
+
+<http://rw.wikipedia.org/wiki/Somaliya>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "rw" .
+
+<http://sa.wikipedia.org/wiki/%E0%A4%B8%E0%A5%8B%E0%A4%AE%E0%A4%BE%E0%A4%B2%E0%A4%BF%E0%A4%AF%E0%A4%BE>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "sa" .
+
+<http://sah.wikipedia.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D0%B8%D1%8F>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "sah" .
+
+<http://sc.wikipedia.org/wiki/Som%C3%A0lia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "sc" .
+
+<http://scn.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "scn" .
+
+<http://sco.wikipedia.org/wiki/Somalie>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "sco" .
+
+<http://se.wikipedia.org/wiki/Som%C3%A1lia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "se" .
+
+<http://sg.wikipedia.org/wiki/Somal%C3%AFi>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "sg" .
+
+<http://sh.wikipedia.org/wiki/Somalija>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "sh" .
+
+<http://si.wikipedia.org/wiki/%E0%B7%83%E0%B7%9D%E0%B6%B8%E0%B7%8F%E0%B6%BD%E0%B7%92%E0%B6%BA%E0%B7%8F%E0%B7%80>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "si" .
+
+<http://simple.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "simple" .
+
+<http://sk.wikipedia.org/wiki/Som%C3%A1lsko>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "sk" .
+
+<http://sl.wikipedia.org/wiki/Somalija>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "sl" .
+
+<http://sm.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "sm" .
+
+<http://sn.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "sn" .
+
+<http://so.wikipedia.org/wiki/Soomaaliya>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "so" .
+
+<http://sq.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "sq" .
+
+<http://sr.wikipedia.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D0%B8%D1%98%D0%B0>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "sr" .
+
+<http://ss.wikipedia.org/wiki/ISomaliya>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ss" .
+
+<http://st.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "st" .
+
+<http://stq.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "stq" .
+
+<http://su.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "su" .
+
+<http://sv.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "sv" .
+
+<http://szl.wikipedia.org/wiki/S%C5%AFmalijo>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "szl" .
+
+<http://ta.wikipedia.org/wiki/%E0%AE%9A%E0%AF%8B%E0%AE%AE%E0%AE%BE%E0%AE%B2%E0%AE%BF%E0%AE%AF%E0%AE%BE>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ta" .
+
+<http://te.wikipedia.org/wiki/%E0%B0%B8%E0%B1%8A%E0%B0%AE%E0%B0%BE%E0%B0%B2%E0%B0%BF%E0%B0%AF%E0%B0%BE>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "te" .
+
+<http://tg.wikipedia.org/wiki/%D0%A1%D1%83%D0%BC%D0%BE%D0%BB%D3%A3>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "tg" .
+
+<http://th.wikipedia.org/wiki/%E0%B8%9B%E0%B8%A3%E0%B8%B0%E0%B9%80%E0%B8%97%E0%B8%A8%E0%B9%82%E0%B8%8B%E0%B8%A1%E0%B8%B2%E0%B9%80%E0%B8%A5%E0%B8%B5%E0%B8%A2>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "th" .
+
+<http://ti.wikipedia.org/wiki/%E1%88%B6%E1%88%9B%E1%88%8A%E1%8B%AB>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ti" .
+
+<http://tr.wikipedia.org/wiki/Somali>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "tr" .
+
+<http://ts.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ts" .
+
+<http://tt.wikipedia.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D0%B8>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "tt" .
+
+<http://ug.wikipedia.org/wiki/%D8%B3%D9%88%D9%85%D8%A7%D9%84%D9%89>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ug" .
+
+<http://uk.wikipedia.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D1%96>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "uk" .
+
+<http://ur.wikipedia.org/wiki/%D8%B5%D9%88%D9%85%D8%A7%D9%84%DB%8C%DB%81>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ur" .
+
+<http://uz.wikipedia.org/wiki/Somali>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "uz" .
+
+<http://vec.wikipedia.org/wiki/Soma%C5%82ia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "vec" .
+
+<http://vi.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "vi" .
+
+<http://vo.wikipedia.org/wiki/Somal%C3%A4n>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "vo" .
+
+<http://war.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "war" .
+
+<http://wo.wikipedia.org/wiki/Somali>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "wo" .
+
+<http://wuu.wikipedia.org/wiki/%E7%B4%A2%E9%A9%AC%E9%87%8C>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "wuu" .
+
+<http://xal.wikipedia.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D0%BC%D1%83%D0%B4%D0%B8%D0%BD_%D0%9E%D1%80%D0%BD>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "xal" .
+
+<http://yi.wikipedia.org/wiki/%D7%A1%D7%90%D7%9E%D7%90%D7%9C%D7%99%D7%A2>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "yi" .
+
+<http://yo.wikipedia.org/wiki/S%C3%B2m%C3%A1l%C3%AD%C3%A0>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "yo" .
+
+<http://zh.wikipedia.org/wiki/%E7%B4%A2%E9%A9%AC%E9%87%8C>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "zh" .
+
+<http://zh-classical.wikipedia.org/wiki/%E7%B4%A2%E9%A6%AC%E9%87%8C>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "zh-classical" .
+
+<http://zh-yue.wikipedia.org/wiki/%E7%B4%A2%E9%A6%AC%E9%87%8C>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "zh-yue" .
+
+<http://zu.wikipedia.org/wiki/ISomalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "zu" .
+
+<http://tk.wikipedia.org/wiki/Somali>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "tk" .
+
+<http://zh-min-nan.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "zh-min-nan" .
+
+<http://be-x-old.wikipedia.org/wiki/%D0%A1%D0%B0%D0%BC%D0%B0%D0%BB%D1%96>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "be-x-old" .
+
+<http://ba.wikipedia.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D0%B8>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ba" .
+
+<http://om.wikipedia.org/wiki/Somaaliyaa>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "om" .
+
+<http://bxr.wikipedia.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D0%B8>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "bxr" .
+
+<http://sv.wikivoyage.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "sv" .
+
+<http://pl.wikivoyage.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "pl" .
+
+<https://ru.wikivoyage.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D0%B8>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ru" .
+
+<http://nl.wikivoyage.org/wiki/Somali%C3%AB>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "nl" .
+
+<http://pt.wikivoyage.org/wiki/Som%C3%A1lia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "pt" .
+
+<http://en.wikivoyage.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "en" .
+
+<http://it.wikivoyage.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "it" .
+
+<http://de.wikivoyage.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "de" .
+
+<http://fr.wikivoyage.org/wiki/Somalie>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "fr" .
+
+<http://uk.wikivoyage.org/wiki/%D0%A1%D0%BE%D0%BC%D0%B0%D0%BB%D1%96>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "uk" .
+
+<http://he.wikivoyage.org/wiki/%D7%A1%D7%95%D7%9E%D7%9C%D7%99%D7%94>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "he" .
+
+<http://vi.wikivoyage.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "vi" .
+
+<http://ff.wikipedia.org/wiki/Somaaliya>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ff" .
+
+<http://commons.wikimedia.org/wiki/Soomaaliya>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "en" .
+
+<http://zh.wikivoyage.org/wiki/%E7%B4%A2%E9%A9%AC%E9%87%8C>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "zh" .
+
+<http://es.wikivoyage.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "es" .
+
+<http://en.wikiquote.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "en" .
+
+<http://it.wikiquote.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "it" .
+
+<http://kab.wikipedia.org/wiki/%E1%B9%A2umal>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "kab" .
+
+<http://pl.wikiquote.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "pl" .
+
+<http://bm.wikipedia.org/wiki/Somali>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "bm" .
+
+<http://ne.wikipedia.org/wiki/%E0%A4%B8%E0%A5%8B%E0%A4%AE%E0%A4%BE%E0%A4%B2%E0%A4%BF%E0%A4%AF%E0%A4%BE>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ne" .
+
+<http://tl.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "tl" .
+
+<http://ar.wikipedia.org/wiki/%D8%A7%D9%84%D8%B5%D9%88%D9%85%D8%A7%D9%84>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "ar" .
+
+<http://sv.wikinews.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "sv" .
+
+<http://bh.wikipedia.org/wiki/%E0%A4%B8%E0%A5%8B%E0%A4%AE%E0%A4%BE%E0%A4%B2%E0%A4%BF%E0%A4%AF%E0%A4%BE>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "bh" .
+
+<http://fa.wikivoyage.org/wiki/%D8%B3%D9%88%D9%85%D8%A7%D9%84%DB%8C>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "fa" .
+
+<http://fi.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "fi" .
+
+<http://cdo.wikipedia.org/wiki/Somalia>
+  a schema:Article ;
+  schema:about </Q1045#id> ;
+  schema:inLanguage "cdo" .
+

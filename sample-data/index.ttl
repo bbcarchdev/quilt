@@ -5,4 +5,10 @@
 </>
 	a void:Dataset ;
 	rdfs:label "Quilt sample data"@en ;
-	rdfs:comment "This is a sample data-set provided as part of the Quilt Linked Open Data server. This resource has been loaded from ${prefix}/share/quilt/sample/index.ttl."@en .
+	rdfs:comment "This is a sample data-set provided as part of the Quilt Linked Open Data server. This resource has been loaded from ${prefix}/share/quilt/sample/index.ttl."@en ;
+	rdfs:seeAlso </5216804#id>, </27358#id>, </21387608#id>, </Q1045#id> .
+
+</5216804#id> rdfs:label "Dow Crag (from dbpedialite.org)"@en .
+</27358#id> rdfs:label "Somalia (from dbpedialite.org)"@en .
+</21387608#id> rdfs:label "Skye (from dbpedialite.org)"@en .
+</Q1045#id> rdfs:label "Somalia (from wikidata.org)"@en .

@@ -1,0 +1,44 @@
+@prefix cc: <http://creativecommons.org/ns#> .
+@prefix dc: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <http://schema.org/> .
+@prefix wikibase: <http://www.wikidata.org/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix void: <http://rdfs.org/ns/void#> .
+
+</27358> a foaf:Document;
+   dc:title "dbpedia lite thing - Somalia";
+   cc:license <http://creativecommons.org/licenses/by-sa/3.0/>,
+     <http://gnu.org/licenses/fdl-1.3.html>;
+   dc:modified "2015-02-28T23:47:48Z"^^xsd:dateTime;
+   foaf:primaryTopic </27358#id> ;
+   void:inDataset </> .
+
+<http://en.wikipedia.org/wiki/Somalia> a schema:Article;
+   schema:about </27358#id>,
+     <http://www.wikidata.org/entity/Q1045>;
+   schema:inLanguage "en" .
+
+</27358#id> a owl:Thing;
+   rdfs:label "Somalia";
+   rdfs:comment "Somalia, officially the Federal Republic of Somalia (Somali: Jamhuuriyadda Federaalka Soomaaliya, Arabic: جمهورية الصومال الفدرالية‎ Jumhūrīyat aṣ-Ṣūmāl al-Fidirālīyah), is a country located in the Horn of Africa. It is bordered by Ethiopia to the west, Djibouti to the northwest, the Gulf of Aden to the north, the Indian Ocean to the east, and Kenya to the southwest. Somalia has the longest coastline on the continent's mainland, and its terrain consists mainly of plateaus, plains and highlands. Climatically, hot conditions prevail year-round, with periodic monsoon winds and irregular rainfall.";
+   owl:sameAs <http://dbpedia.org/resource/Somalia>,
+     <http://rdf.freebase.com/ns/guid.9202a8c04000641f80000000000365db>,
+     <http://rdf.freebase.com/ns/m.06tgw>,
+     <http://www.wikidata.org/entity/Q1045>;
+   foaf:isPrimaryTopicOf <http://en.wikipedia.org/wiki/Somalia>;
+   foaf:page <http://ssrn.com/abstract=958442>,
+     <http://www.somaligov.net/>,
+     <https://www.cia.gov/library/publications/the-world-factbook/geos/so.html>,
+     <http://ucblibraries.colorado.edu/govpubs/for/somalia.htm>,
+     <https://www.dmoz.org/Regional/Africa/Somalia>,
+     <http://www.bbc.co.uk/news/world-africa-14094503> .
+
+<http://www.wikidata.org/entity/Q1045> a wikibase:Item;
+   rdfs:label "Somalia"@en;
+   schema:description "country in Africa"@en;
+   schema:name "Somalia"@en .
+
