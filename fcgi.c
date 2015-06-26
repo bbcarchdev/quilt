@@ -105,6 +105,11 @@ process_args(int argc, char **argv)
 	const char *t;
 	int c;
 
+	t = getenv("QUILT_CONFIG");
+	if(t)
+	{
+		config_set("global:configFile", t);
+	}
 	if(argc > 0 && argv[0])
 	{
 		t = strrchr(argv[0], '/');
