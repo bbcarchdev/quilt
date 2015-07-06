@@ -122,14 +122,14 @@ process_args(int argc, char **argv)
 	config_set_default("log:ident", quilt_progname);
 	setenv("HTTP_ACCEPT", "text/turtle", 1);
 	setenv("REQUEST_METHOD", "GET", 1);
-	while((c = getopt(argc, argv, "hDc:t:bL:O:")) != -1)
+	while((c = getopt(argc, argv, "hdc:t:bL:O:")) != -1)
 	{
 		switch(c)
 		{
 		case 'h':
 			usage();
 			exit(0);
-		case 'D':
+		case 'd':
 			config_set("log:level", "debug");
 			config_set("log:stderr", "1");
 			break;
@@ -185,7 +185,7 @@ usage(void)
 			"\n"
 			"OPTIONS is one or more of:\n"
 			"  -h                   Print this notice and exit\n"
-			"  -D                   Enable debug output\n"
+			"  -d                   Enable debug output\n"
 			"  -c FILE              Specify path to configuration file\n"
 			"  -t TYPE              Specify MIME type to serialise as\n"
 			"  -b                   Bulk-generate output\n"
