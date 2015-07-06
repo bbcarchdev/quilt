@@ -399,6 +399,10 @@ cli_put(QUILTREQ *request, const unsigned char *str, size_t len)
 	}
 	if(bulk)
 	{
+		if(!bulk_file)
+		{
+			return -1;
+		}
 		fwrite((void *) str, len, 1, bulk_file);
 	}
 	else
@@ -428,6 +432,10 @@ cli_vprintf(QUILTREQ *request, const char *format, va_list ap)
 	}
 	if(bulk)
 	{
+		if(!bulk_file)
+		{
+			return -1;
+		}
 		vfprintf(bulk_file, format, ap);
 	}
 	else
