@@ -516,8 +516,8 @@ cli_bulk_init_(QUILTREQ *request)
 	bulk_file = fopen(&(path[1]), "wb");
 	if(!bulk_file)
 	{
-		free(path);
 		quilt_logf(LOG_CRIT, "failed to open %s for writing: %s\n", &(path[1]), strerror(errno));
+		free(path);
 		return -1;
 	}
 	free(path);
@@ -527,8 +527,7 @@ cli_bulk_init_(QUILTREQ *request)
 static int
 cli_begin(QUILTREQ *request)
 {
-	(void) request;
-
+	request->data->headers_sent = 0;
 	return 0;
 }
 
