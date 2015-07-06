@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ typedef struct quilt_request_struct QUILTREQ;
 typedef struct quilt_impl_struct QUILTIMPL;
 typedef struct quilt_type_struct QUILTTYPE;
 typedef struct quilt_canonical_struct QUILTCANON;
+typedef struct quilt_bulk_struct QUILTBULK;
 
 # ifndef QUILTIMPL_DATA_DEFINED
 typedef struct quilt_impldata_struct QUILTIMPLDATA;
@@ -149,6 +150,8 @@ typedef int (*quilt_plugin_init_fn)(void);
 typedef int (*quilt_serialize_fn)(QUILTREQ *request);
 /* Engine call-back function */
 typedef int (*quilt_engine_fn)(QUILTREQ *request);
+/* Bulk generation call-back function */
+typedef int (*quilt_bulk_fn)(QUILTBULK *context, size_t offset, size_t limit);
 
 /* Plug-in entry-point (implemented by each plug-in) */
 int quilt_plugin_init(void);
@@ -156,6 +159,7 @@ int quilt_plugin_init(void);
 /* Plug-in handling */
 int quilt_plugin_register_serializer(const QUILTTYPE *type, quilt_serialize_fn fn);
 int quilt_plugin_register_engine(const char *name, quilt_engine_fn fn);
+int quilt_plugin_register_bulk(const char *name, quilt_bulk_fn fn);
 QUILTTYPE *quilt_plugin_serializer_first(QUILTTYPE *buf);
 QUILTTYPE *quilt_plugin_next(QUILTTYPE *current);
 QUILTTYPE *quilt_plugin_serializer_match_ext(const char *ext, QUILTTYPE *dest);
@@ -178,7 +182,10 @@ int quilt_request_puts(QUILTREQ *req, const char *str);
 int quilt_request_put(QUILTREQ *req, const unsigned char *bytes, size_t len);
 int quilt_request_printf(QUILTREQ *req, const char *format, ...);
 int quilt_request_vprintf(QUILTREQ *req, const char *format, va_list ap);
+int quilt_request_headers(QUILTREQ *req, const char *str);
+int quilt_request_headerf(QUILTREQ *req, const char *format, ...);
 char *quilt_request_base(void);
+int quilt_request_bulk_item(QUILTBULK *context, const char *uri);
 
 /* Canonical URI handling */
 QUILTCANON *quilt_canon_create(QUILTCANON *source);

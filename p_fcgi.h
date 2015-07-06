@@ -37,6 +37,7 @@ typedef struct
 	FCGX_Request req;
 	char *qbuf;
 	char **query;
+	int headers_sent;
 } QUILTIMPLDATA;
 
 # include "libquilt-sapi.h"

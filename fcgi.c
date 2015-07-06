@@ -49,6 +49,10 @@ static const char *fcgi_getenv(QUILTREQ *request, const char *name);
 static const char *fcgi_getparam(QUILTREQ *request, const char *name);
 static int fcgi_put(QUILTREQ *request, const unsigned char *str, size_t len);
 static int fcgi_vprintf(QUILTREQ *request, const char *format, va_list ap);
+static int fcgi_header(QUILTREQ *request, const unsigned char *str, size_t len);
+static int fcgi_headerf(QUILTREQ *request, const char *format, va_list ap);
+static int fcgi_begin(QUILTREQ *request);
+static int fcgi_end(QUILTREQ *request);
 
 static QUILTIMPL fcgi_impl = {
 	NULL, NULL, NULL,
@@ -56,6 +60,10 @@ static QUILTIMPL fcgi_impl = {
 	fcgi_getparam,
 	fcgi_put,
 	fcgi_vprintf,
+	fcgi_header,
+	fcgi_headerf,
+	fcgi_begin,
+	fcgi_end
 };
 
 int
@@ -411,6 +419,7 @@ fcgi_preprocess_(QUILTIMPLDATA *data)
 	char cbuf[3];
 	size_t n;
 
+	data->headers_sent = 0;
 	qs = FCGX_GetParam("QUERY_STRING", data->req.envp);
 	if(!qs)
 	{
@@ -508,11 +517,60 @@ fcgi_getparam(QUILTREQ *request, const char *name)
 static int
 fcgi_put(QUILTREQ *request, const unsigned char *str, size_t len)
 {
+	if(!request->data->headers_sent)
+	{
+		request->data->headers_sent = 1;
+		FCGX_PutChar('\n', request->data->req.out);
+	}
 	return FCGX_PutStr((const char *) str, len, request->data->req.out);
 }
 
 static int
 fcgi_vprintf(QUILTREQ *request, const char *format, va_list ap)
 {
+	if(!request->data->headers_sent)
+	{
+		request->data->headers_sent = 1;
+		FCGX_PutChar('\n', request->data->req.out);
+	}
 	return FCGX_VFPrintF(request->data->req.out, format, ap);
 }
+
+static int
+fcgi_header(QUILTREQ *request, const unsigned char *str, size_t len)
+{
+	if(request->data->headers_sent)
+	{
+		quilt_logf(LOG_WARNING, "cannot send headers; payload has already begun\n");
+		return -1;
+	}
+	return FCGX_PutStr((const char *) str, len, request->data->req.out);
+}
+
+static int
+fcgi_headerf(QUILTREQ *request, const char *format, va_list ap)
+{
+	if(request->data->headers_sent)
+	{
+		quilt_logf(LOG_WARNING, "cannot send headers; payload has already begun\n");
+		return -1;
+	}
+	return FCGX_VFPrintF(request->data->req.out, format, ap);
+}
+
+static int
+fcgi_begin(QUILTREQ *request)
+{
+	(void) request;
+	
+	return 0;
+}
+
+static int
+fcgi_end(QUILTREQ *request)
+{
+	(void) request;
+
+	return 0;
+}
+

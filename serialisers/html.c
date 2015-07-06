@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -108,12 +108,11 @@ html_serialize(QUILTREQ *req)
 		status = 0;
 		buf = liquify_apply(tpl, dict);
 		loc = quilt_canon_str(req->canonical, QCO_CONCRETE|QCO_NOABSOLUTE);
-		quilt_request_printf(req, "Status: %d %s\n"
-							 "Content-Type: %s; charset=utf-8\n"
-							 "Content-Location: %s\n"
-							 "Vary: Accept\n"
-							 "Server: Quilt/" PACKAGE_VERSION "\n"
-							 "\n", req->status, req->statustitle, req->type, loc);
+		quilt_request_headerf(req, "Status: %d %s\n", req->status, req->statustitle);
+		quilt_request_headerf(req, "Content-Type: %s; charset=utf-8\n", req->type);
+		quilt_request_headerf(req, "Content-Location: %s\n", loc);
+		quilt_request_headers(req, "Vary: Accept\n");
+		quilt_request_headers(req, "Server: Quilt/" PACKAGE_VERSION "\n");
 		free(loc);
 		quilt_request_puts(req, buf);
 		free(buf);

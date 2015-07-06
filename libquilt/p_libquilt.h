@@ -57,7 +57,8 @@ typedef enum
 {
 	/* 0 */ QCB_NONE,
 	/* 1 */ QCB_SERIALIZE,
-	/* 2 */ QCB_ENGINE
+	/* 2 */ QCB_ENGINE,
+	/* 3 */ QCB_BULK
 } QUILTCBTYPE;
 
 /* This structure is dynamically-allocated, and represents a MIME type that
@@ -96,6 +97,7 @@ struct quilt_callback_struct
 	union {
 		quilt_serialize_fn serialize;
 		quilt_engine_fn engine;
+		quilt_bulk_fn bulk;
 	} cb;
 };
 
@@ -124,6 +126,16 @@ struct quilt_canonical_struct
 	size_t nparams;
 };
 
+/* Bulk-generation context */
+struct quilt_bulk_struct
+{
+	QUILTIMPL *impl;
+	QUILTIMPLDATA *data;
+	QUILTCB *callback;
+	size_t limit;
+	size_t offset;
+};
+
 /* Content negotiation */
 extern NEGOTIATE *quilt_types_;
 extern NEGOTIATE *quilt_charsets_;
@@ -137,6 +149,7 @@ int quilt_config_init_(struct quilt_configfn_struct *fns);
 /* Request processing */
 int quilt_request_init_(void);
 int quilt_request_sanity_(void);
+QUILTREQ *quilt_request_create_uri_(QUILTIMPL *impl, QUILTIMPLDATA *data, const char *uri);
 
 /* librdf wrapper */
 int quilt_librdf_init_(void);
@@ -153,5 +166,6 @@ QUILTCB *quilt_plugin_cb_find_mime_(QUILTCBTYPE type, const char *mimetype);
 QUILTCB *quilt_plugin_cb_find_name_(QUILTCBTYPE type, const char *name);
 int quilt_plugin_invoke_engine_(QUILTCB *cb, QUILTREQ *req);
 int quilt_plugin_invoke_serialize_(QUILTCB *cb, QUILTREQ *req);
+int quilt_plugin_invoke_bulk_(QUILTCB *cb, QUILTBULK *bulk);
 
 #endif /*!P_LIBQUILT_H_ */

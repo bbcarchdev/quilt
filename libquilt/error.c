@@ -108,6 +108,7 @@ quilt_error(QUILTREQ *request, int code)
 	{
 		request->errordesc = "No description of this error is available";
 	}
+	quilt_logf(LOG_ERR, "Status %d: %s\n", request->status, request->errordesc);
 	if(!request->serialized)
 	{
 		/* Express the error condition as RDF */
@@ -157,10 +158,10 @@ quilt_error(QUILTREQ *request, int code)
 			return 0;
 		}
 	}
-	quilt_request_printf(request, "Status: %d %s\n"
-				 "Content-type: text/html; charset=utf-8\n"
-						  "Server: Quilt/" PACKAGE_VERSION "\n"
-						  "\n", code, request->statustitle);
+	quilt_request_headerf(request, "Status: %d %s\n", code, request->statustitle);
+	quilt_request_headers(request, "Content-Type: text/html; charset=utf-8\n");
+	quilt_request_headers(request, "Vary: accept\n");
+	quilt_request_headers(request, "Server: Quilt/" PACKAGE_VERSION "\n");
 	quilt_request_printf(request, "<!DOCTYPE html>\n"
 						  "<html>\n"
 						  "\t<head>\n"

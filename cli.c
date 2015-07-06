@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -17,12 +17,6 @@
  *  limitations under the License.
  */
 
-/* This is the FastCGI interface for Quilt; it can be used with any
- * FastCGI-compatible server, either in standalone or on-demand modes
- * (i.e., it can be launched as a daemon which opens a FastCGI socket,
- * or it can be invoked by a web server as needed).
- */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -31,6 +25,9 @@
 
 const char *quilt_progname = "quilt-cli";
 
+static int bulk, bulk_limit, bulk_offset;
+static FILE *bulk_file;
+
 /* Utilities */
 static int process_args(int argc, char **argv);
 static void usage(void);
@@ -38,12 +35,17 @@ static int config_defaults(void);
 static int cli_process_(void);
 static int cli_preprocess_(QUILTIMPLDATA *data);
 static int cli_fallback_error_(QUILTIMPLDATA *data, int code);
+static int cli_bulk_init_(QUILTREQ *request);
 
 /* QUILTIMPL methods */
 static const char *cli_getenv(QUILTREQ *request, const char *name);
 static const char *cli_getparam(QUILTREQ *request, const char *name);
 static int cli_put(QUILTREQ *request, const unsigned char *str, size_t len);
 static int cli_vprintf(QUILTREQ *request, const char *format, va_list ap);
+static int cli_header(QUILTREQ *request, const unsigned char *str, size_t len);
+static int cli_headerf(QUILTREQ *request, const char *format, va_list ap);
+static int cli_begin(QUILTREQ *request);
+static int cli_end(QUILTREQ *request);
 
 static QUILTIMPL cli_impl = {
 	NULL, NULL, NULL,
@@ -51,6 +53,10 @@ static QUILTIMPL cli_impl = {
 	cli_getparam,
 	cli_put,
 	cli_vprintf,
+	cli_header,
+	cli_headerf,
+	cli_begin,
+	cli_end
 };
 
 int
@@ -116,7 +122,7 @@ process_args(int argc, char **argv)
 	config_set_default("log:ident", quilt_progname);
 	setenv("HTTP_ACCEPT", "text/turtle", 1);
 	setenv("REQUEST_METHOD", "GET", 1);
-	while((c = getopt(argc, argv, "hDc:t:")) != -1)
+	while((c = getopt(argc, argv, "hDc:t:bL:O:")) != -1)
 	{
 		switch(c)
 		{
@@ -133,6 +139,27 @@ process_args(int argc, char **argv)
 		case 't':
 			setenv("HTTP_ACCEPT", optarg, 1);
 			break;
+		case 'b':
+			bulk = 1;
+			break;
+		case 'L':
+			bulk_limit = atoi(optarg);
+			if(bulk_limit <= 0)
+			{
+				fprintf(stderr, "%s: '%s' is not a positive integer\n",
+						quilt_progname, optarg);
+				return -1;
+			}
+			break;
+		case 'O':
+			bulk_offset = atoi(optarg);
+			if(bulk_offset <= 0)
+			{
+				fprintf(stderr, "%s: '%s' is not a positive integer\n",
+						quilt_progname, optarg);
+				return -1;
+			}
+			break;
 		default:
 			usage();
 			return -1;
@@ -140,7 +167,7 @@ process_args(int argc, char **argv)
 	}
 	argc -= optind;
 	argv += optind;
-	if(argc != 1)
+	if((bulk && argc) || (!bulk && argc != 1))
 	{
 		usage();
 		return -1;
@@ -152,14 +179,19 @@ process_args(int argc, char **argv)
 static void
 usage(void)
 {
-	fprintf(stderr, "Usage: %s [OPTIONS] REQUEST-URI\n"
+	fprintf(stderr, "Usage:\n"
+			"  %s [OPTIONS] REQUEST-URI\n"
+			"  %s -b [OPTIONS]\n"
 			"\n"
 			"OPTIONS is one or more of:\n"
 			"  -h                   Print this notice and exit\n"
 			"  -D                   Enable debug output\n"
 			"  -c FILE              Specify path to configuration file\n"
-			"  -t TYPE              Specify MIME type to serialise as\n",
-			quilt_progname);
+			"  -t TYPE              Specify MIME type to serialise as\n"
+			"  -b                   Bulk-generate output\n"
+			"  -L LIMIT             ... limiting to LIMIT items\n"
+			"  -O OFFSET            ... starting from offset OFFSET\n", 
+			quilt_progname, quilt_progname);
 }
 
 static int
@@ -195,18 +227,26 @@ cli_process_(void)
 	}
 	else
 	{
-		req = quilt_request_create(&cli_impl, data);
-		if(!req)
+		if(bulk)
 		{
-			r = -1;
-		}
-		else if(req->status)
-		{
-			r = req->status;
+			r = quilt_request_bulk(&cli_impl, data, bulk_offset, bulk_limit);
+			req = NULL;
 		}
 		else
 		{
-			r = quilt_request_process(req);
+			req = quilt_request_create(&cli_impl, data);
+			if(!req)
+			{
+				r = -1;
+			}
+			else if(req->status)
+			{
+				r = req->status;
+			}
+			else
+			{
+				r = quilt_request_process(req);
+			}
 		}
 	}
 	if(r < 0)
@@ -224,7 +264,10 @@ cli_process_(void)
 			cli_fallback_error_(data, r);
 		}
 	}
-	quilt_request_free(req);
+	if(req)
+	{
+		quilt_request_free(req);
+	}
 	free(data->qbuf);
 	data->qbuf = NULL;
 	data->query = NULL;
@@ -339,16 +382,166 @@ cli_getparam(QUILTREQ *request, const char *name)
 static int
 cli_put(QUILTREQ *request, const unsigned char *str, size_t len)
 {
-	(void) request;
-
-	fwrite((void *) str, len, 1, stdout);
+	if(!request->data->headers_sent)
+	{
+		request->data->headers_sent = 1;
+		if(bulk)
+		{
+			if(cli_bulk_init_(request))
+			{
+				return -1;
+			}
+		}
+		else
+		{
+			fputc('\n', stdout);
+		}
+	}
+	if(bulk)
+	{
+		fwrite((void *) str, len, 1, bulk_file);
+	}
+	else
+	{
+		fwrite((void *) str, len, 1, stdout);
+	}
 	return 0;
 }
 
 static int
 cli_vprintf(QUILTREQ *request, const char *format, va_list ap)
 {
+	if(!request->data->headers_sent)
+	{
+		request->data->headers_sent = 1;
+		if(bulk)
+		{
+			if(cli_bulk_init_(request))
+			{
+				return -1;
+			}
+		}
+		else
+		{
+			fputc('\n', stdout);
+		}
+	}
+	if(bulk)
+	{
+		vfprintf(bulk_file, format, ap);
+	}
+	else
+	{
+		vprintf(format, ap);
+	}
+	return 0;
+}
+
+static int
+cli_header(QUILTREQ *request, const unsigned char *str, size_t len)
+{
 	(void) request;
 
-	return vprintf(format, ap);
+	if(!bulk)
+	{
+		if(request->data->headers_sent)
+		{
+			quilt_logf(LOG_WARNING, "cannot send headers; payload has already begun\n");
+			return -1;
+		}
+		fwrite((void *) str, len, 1, stdout);
+	}
+	return 0;
 }
+
+static int
+cli_headerf(QUILTREQ *request, const char *format, va_list ap)
+{
+	(void) request;
+
+	if(!bulk)
+	{
+		if(request->data->headers_sent)
+		{
+			quilt_logf(LOG_WARNING, "cannot send headers; payload has already begun\n");
+			return -1;
+		}
+		vprintf(format, ap);
+	}
+	return 0;
+}
+
+static int
+cli_bulk_init_(QUILTREQ *request)
+{
+	char *path, *t, *p;
+	int r;
+
+	if(!bulk)
+	{
+		return 0;
+	}
+	path = quilt_canon_str(request->canonical, QCO_CONCRETE|QCO_NOABSOLUTE);
+	t = path + 1;
+	while(*t)
+	{
+		p = strchr(t, '/');
+		if(!p)
+		{
+			break;
+		}
+		*p = 0;
+		if(!path[1])
+		{
+			break;
+		}
+		do
+		{
+			r = mkdir(&(path[1]), 0777);
+		}
+		while(r == -1 && errno == EINTR);
+		if(r == -1 && errno == EEXIST)
+		{
+			r = 0;
+		}
+		if(r)
+		{
+			quilt_logf(LOG_CRIT, "failed to create %s: %s\n", &(path[1]), strerror(errno));
+			free(path);
+			return -1;
+		}
+		*p = '/';
+		t = p + 1;
+	}
+	bulk_file = fopen(&(path[1]), "wb");
+	if(!bulk_file)
+	{
+		free(path);
+		quilt_logf(LOG_CRIT, "failed to open %s for writing: %s\n", &(path[1]), strerror(errno));
+		return -1;
+	}
+	free(path);
+	return 0;
+}
+
+static int
+cli_begin(QUILTREQ *request)
+{
+	(void) request;
+
+	return 0;
+}
+
+static int
+cli_end(QUILTREQ *request)
+{
+	(void) request;
+
+	if(bulk_file)
+	{
+		fclose(bulk_file);
+		bulk_file = NULL;
+	}
+	return 0;
+}
+

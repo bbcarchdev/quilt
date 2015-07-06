@@ -272,6 +272,36 @@ quilt_plugin_register_engine(const char *name, quilt_engine_fn fn)
 }
 
 int
+quilt_plugin_register_bulk(const char *name, quilt_bulk_fn fn)
+{
+	QUILTCB *cb;
+	char *namebuf;
+
+	cb = quilt_plugin_cb_find_name_(QCB_BULK, name);
+	if(cb)
+	{
+		quilt_logf(LOG_ERR, "bulk-generation engine '%s' has already been registered\n", name);
+		return -1;
+	}
+	namebuf = strdup(name);
+	if(!namebuf)
+	{
+		return -1;
+	}
+	cb = quilt_plugin_cb_add_(current, NULL);
+	if(!cb)
+	{
+		free(namebuf);
+		return -1;
+	}
+	cb->name = namebuf;
+	cb->cb.bulk = fn;
+	cb->type = QCB_BULK;
+	quilt_logf(LOG_DEBUG, "registered bulk-generation engine '%s'\n", name);
+	return 0;
+}
+
+int
 quilt_plugin_invoke_engine_(QUILTCB *cb, QUILTREQ *req)
 {
 	int r;
@@ -286,6 +316,25 @@ quilt_plugin_invoke_engine_(QUILTCB *cb, QUILTREQ *req)
 	old = current;
 	current = cb->handle;
 	r = cb->cb.engine(req);
+	current = old;
+	return r;
+}
+
+int
+quilt_plugin_invoke_bulk_(QUILTCB *cb, QUILTBULK *bulk)
+{
+	int r;
+	void *old;
+
+	if(cb->type != QCB_BULK)
+	{
+		quilt_logf(LOG_CRIT, "internal error: attempt to invoke a %d callback as a bulk generator\n", cb->type);
+		errno = EINVAL;
+		return -1;
+	}
+	old = current;
+	current = cb->handle;
+	r = cb->cb.bulk(bulk, bulk->offset, bulk->limit);
 	current = old;
 	return r;
 }

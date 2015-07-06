@@ -23,6 +23,7 @@
 # include <stdlib.h>
 # include <string.h>
 # include <ctype.h>
+# include <sys/stat.h>
 # include <sys/types.h>
 # include <unistd.h>
 
@@ -34,6 +35,7 @@ typedef struct
 {
 	char *qbuf;
 	char **query;
+	int headers_sent;
 } QUILTIMPLDATA;
 
 # include "libquilt-sapi.h"

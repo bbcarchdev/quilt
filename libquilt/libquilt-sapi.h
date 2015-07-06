@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -36,6 +36,10 @@ struct quilt_impl_struct
 	const char *(*getparam)(QUILTREQ *request, const char *name);
 	int (*put)(QUILTREQ *request, const unsigned char *str, size_t len);
 	int (*vprintf)(QUILTREQ *request, const char *format, va_list ap);
+	int (*header)(QUILTREQ *request, const unsigned char *str, size_t len);
+	int (*headerf)(QUILTREQ *request, const char *format, va_list ap);
+	int (*begin)(QUILTREQ *request);
+	int (*end)(QUILTREQ *request);
 };
 
 struct quilt_configfn_struct
@@ -52,6 +56,7 @@ int quilt_init(quilt_log_fn logger, struct quilt_configfn_struct *fns);
 /* Request processing */
 
 QUILTREQ *quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data);
+int quilt_request_bulk(QUILTIMPL *impl, QUILTIMPLDATA *data, size_t offset, size_t limit);
 int quilt_request_free(QUILTREQ *req);
 int quilt_request_process(QUILTREQ *request);
 int quilt_request_serialize(QUILTREQ *request);

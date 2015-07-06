@@ -49,15 +49,18 @@ quilt_plugin_init(void)
 static int
 text_serialize(QUILTREQ *req)
 {
+	char *loc;
 	librdf_iterator *iter;
 	librdf_node *context;
 	librdf_stream *stream;
-
-	quilt_request_printf(req, "Status: %d %s\n"
-						 "Content-type: text/plain; charset=utf-8\n"
-						 "Vary: Accept\n"
-						 "Server: Quilt/" PACKAGE_VERSION "\n"
-						 "\n", req->status, req->statustitle, req->type);
+	
+	loc = quilt_canon_str(req->canonical, QCO_CONCRETE|QCO_NOABSOLUTE);
+	quilt_request_headerf(req, "Status: %d %s\n", req->status, req->statustitle);
+	quilt_request_headers(req, "Content-Type: text/plain; charset=utf-8\n");
+	quilt_request_headerf(req, "Content-Location: %s\n", loc);
+	quilt_request_headers(req, "Vary: Accept\n");
+	quilt_request_headers(req, "Server: Quilt/" PACKAGE_VERSION "\n");
+	free(loc);
 
 	iter = librdf_model_get_contexts(req->model);
 	if(librdf_iterator_end(iter))

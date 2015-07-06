@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -153,13 +153,11 @@ int quilt_librdf_serialize_(QUILTREQ *request)
 		tsuffix = "";
 	}
 	loc = quilt_canon_str(request->canonical, QCO_CONCRETE|QCO_NOABSOLUTE);
-	quilt_request_printf(request, "Status: %d %s\n"
-						 "Content-Type: %s%s\n"
-						 "Content-Location: %s\n"
-						 "Vary: Accept\n"
-						 "Server: Quilt/" PACKAGE_VERSION "\n"
-						 "\n",
-						 request->status, request->statustitle, request->type, tsuffix, loc);
+	quilt_request_headerf(request, "Status: %d %s\n", request->status, request->statustitle);
+	quilt_request_headerf(request, "Content-Type: %s%s\n", request->type, tsuffix);
+	quilt_request_headerf(request, "Content-Location: %s\n", loc);
+	quilt_request_headers(request, "Vary: Accept\n");
+	quilt_request_headers(request, "Server: Quilt/" PACKAGE_VERSION "\n");
 	free(loc);
 	quilt_request_puts(request, buf);
 	free(buf);

@@ -25,6 +25,7 @@
 
 static URI *quilt_base_uri;
 static QUILTCB *quilt_engine_cb;
+static QUILTCB *quilt_bulk_cb;
 
 static int quilt_request_process_path_(QUILTREQ *req, const char *uri);
 static const char *quilt_request_match_ext_(QUILTREQ *req);
@@ -86,16 +87,19 @@ quilt_request_sanity_(void)
 		free(engine);
 		return -1;
 	}
+	quilt_bulk_cb = quilt_plugin_cb_find_name_(QCB_BULK, engine);	
 	free(engine);
 	return 0;
 }
 
-/* SAPI: Invoked by the server to create a new request object */
+/* Internal: Create a request with a given request-URI; if URI is NULL, it
+ * will be requested from the SAPI
+ */
 QUILTREQ *
-quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data)
+quilt_request_create_uri_(QUILTIMPL *impl, QUILTIMPLDATA *data, const char *uri)
 {
 	QUILTREQ *p;
-	const char *accept, *uri, *t;
+	const char *accept, *t;
 	char date[32];
 	struct tm now;
 	librdf_world *world;
@@ -122,11 +126,14 @@ quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data)
 	gmtime_r(&(p->received), &now);
 	strftime(date, sizeof(date), "%d/%b/%Y:%H:%M:%S +0000", &now);
 
-	uri = impl->getenv(p, "REQUEST_URI");
-
 	quilt_logf(LOG_DEBUG, "%s %s %s [%s] \"%s %s\" - - \"%s\" \"%s\"\n",
 			   p->host, (p->ident ? p->ident : "-"), (p->user ? p->user : "-"),
 			   date, p->method, uri, p->referer, p->ua);
+
+	if(!uri)
+	{
+		uri = impl->getenv(p, "REQUEST_URI");
+	}
    
 	if(quilt_request_process_path_(p, uri))
 	{
@@ -222,7 +229,59 @@ quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data)
 	{
 		quilt_canon_set_name(p->canonical, "index");
 	}
-	return p;
+	return p;	
+}
+
+/* SAPI: Invoked by the server to create a new request object */
+QUILTREQ *
+quilt_request_create(QUILTIMPL *impl, QUILTIMPLDATA *data)
+{
+	return quilt_request_create_uri_(impl, data, NULL);
+}
+
+int
+quilt_request_bulk_item(QUILTBULK *bulk, const char *path)
+{
+	QUILTREQ *req;
+	int r;
+
+	req = quilt_request_create_uri_(bulk->impl, bulk->data, path);
+	if(!req)
+	{
+		return -1;
+	}
+	if(req->status)
+	{
+		r = req->status;
+		quilt_request_free(req);
+		return r;
+	}
+	r = quilt_request_process(req);
+	if(r < 0)
+	{
+		r = 500;
+	}
+	quilt_request_free(req);
+	return r;
+}
+
+/* SAPI: Perform a bulk-generation request */
+int
+quilt_request_bulk(QUILTIMPL *impl, QUILTIMPLDATA *data, size_t offset, size_t limit)
+{
+	QUILTBULK bulk;
+
+	if(!quilt_bulk_cb)
+	{
+		quilt_logf(LOG_CRIT, "the current engine does not support bulk-generation\n");
+		return -1;
+	}
+	memset(&bulk, 0, sizeof(QUILTBULK));
+	bulk.impl = impl;
+	bulk.data = data;
+	bulk.limit = limit;
+	bulk.offset = offset;
+	return quilt_plugin_invoke_bulk_(quilt_bulk_cb, &bulk);
 }
 
 /* Public: Obtain a request environment variable */
@@ -269,6 +328,22 @@ quilt_request_vprintf(QUILTREQ *req, const char *format, va_list ap)
 	return req->impl->vprintf(req, format, ap);
 }
 
+/* Write a header string to a request's output stream */
+int
+quilt_request_headers(QUILTREQ *req, const char *str)
+{
+	return req->impl->header(req, (const unsigned char *) str, strlen(str));
+}
+
+int
+quilt_request_headerf(QUILTREQ *req, const char *format, ...)
+{
+	va_list ap;
+
+	va_start(ap, format);
+	return req->impl->headerf(req, format, ap);
+}
+
 /* Return the base URI for all requests */
 char *
 quilt_request_base(void)
@@ -305,10 +380,16 @@ quilt_request_process(QUILTREQ *request)
 {
 	int r;
 
+	r = request->impl->begin(request);
+	if(r)
+	{
+		return r;
+	}
 	request->subject = uri_stralloc(request->uri);
 	if(!request->subject)
 	{
 		quilt_logf(LOG_CRIT, "failed to unparse subject URI\n");
+		request->impl->end(request);
 		return 500;
 	}
 	quilt_logf(LOG_DEBUG, "query subject URI is <%s>\n", request->subject);	
@@ -319,8 +400,9 @@ quilt_request_process(QUILTREQ *request)
 	 */
 	if(r == 200)
 	{
-		return quilt_request_serialize(request);
-	}	
+		r = quilt_request_serialize(request);
+	}
+	request->impl->end(request);
 	return r;
 }
 
