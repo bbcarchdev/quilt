@@ -41,7 +41,11 @@ static void quilt_copy_quilttype_(QUILTTYPE *dest, QUILTCB *src);
 int
 quilt_plugin_init_(void)
 {
-	quilt_config_get_all("quilt", "module", quilt_plugin_load_cb_, NULL);
+	if(quilt_config_get_all("quilt", "module", quilt_plugin_load_cb_, NULL))
+	{
+		quilt_logf(LOG_CRIT, "failed to load plug-ins\n");
+		return -1;
+	}
 	return 0;
 }
 
@@ -52,7 +56,10 @@ quilt_plugin_load_cb_(const char *key, const char *value, void *data)
 	(void) key;
 	(void) data;
 
-	quilt_plugin_load_(value);
+	if(quilt_plugin_load_(value))
+	{
+		return -1;
+	}
 	return 0;
 }
 
