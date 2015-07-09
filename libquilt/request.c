@@ -402,10 +402,6 @@ quilt_request_process(QUILTREQ *request)
 	{
 		r = quilt_request_serialize(request);
 	}
-	if(!request->headers_sent)
-	{
-		quilt_request_puts(request, "");
-	}
 	request->impl->end(request);
 	return r;
 }
