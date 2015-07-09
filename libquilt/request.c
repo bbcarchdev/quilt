@@ -397,10 +397,14 @@ quilt_request_process(QUILTREQ *request)
 	/* A zero return means the engine performed output itself; any other
 	 * status indicates that output should be generated. If the status is 200,
 	 * pass the request to the serializer.
-	 */
+	 */	
 	if(r == 200)
 	{
 		r = quilt_request_serialize(request);
+	}
+	if(!request->headers_sent)
+	{
+		quilt_request_puts(request, "");
 	}
 	request->impl->end(request);
 	return r;
