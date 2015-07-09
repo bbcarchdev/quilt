@@ -569,7 +569,7 @@ fcgi_begin(QUILTREQ *request)
 static int
 fcgi_end(QUILTREQ *request)
 {
-	if(!request->headers_sent)
+	if(!request->data->headers_sent)
 	{
 		request->data->headers_sent = 1;
 		FCGX_PutChar('\n', request->data->req.out);
