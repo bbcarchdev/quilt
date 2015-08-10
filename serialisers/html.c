@@ -39,6 +39,7 @@ static int html_serialize(QUILTREQ *req);
 static LIQUIFYTPL *quilt_html_parse_(LIQUIFY *liquify, const char *pathname, void *data);
 static LIQUIFYTPL *quilt_html_template_(QUILTREQ *req);
 static int add_req(json_t *dict, QUILTREQ *req);
+static int add_common(json_t *dict, QUILTREQ *req);
 static int add_data(json_t *dict, QUILTREQ *req);
 static int add_subject(QUILTREQ *req, json_t *item, librdf_model *model, librdf_node *subject, const char *uri);
 static int add_predicate(QUILTREQ *req, json_t *value, librdf_node *predicate, const char *uri);
@@ -97,6 +98,7 @@ html_serialize(QUILTREQ *req)
 
 	status = 500;
 	dict = json_object();
+	add_common(dict, req);
 	add_req(dict, req);
 	add_data(dict, req);
 	/*	json_dumpf(dict, stderr, JSON_INDENT(4)); 
@@ -112,7 +114,7 @@ html_serialize(QUILTREQ *req)
 		quilt_request_headerf(req, "Content-Type: %s; charset=utf-8\n", req->type);
 		quilt_request_headerf(req, "Content-Location: %s\n", loc);
 		quilt_request_headers(req, "Vary: Accept\n");
-		quilt_request_headers(req, "Server: Quilt/" PACKAGE_VERSION "\n");
+		quilt_request_headers(req, "Server: " PACKAGE_SIGNATURE "\n");
 		free(loc);
 		quilt_request_puts(req, buf);
 		free(buf);
@@ -148,6 +150,24 @@ quilt_html_template_(QUILTREQ *req)
 		return tpl_index;
 	}
 	return tpl_home;
+}
+
+/* Add common information to the dictionary */
+static int
+add_common(json_t *dict, QUILTREQ *req)
+{
+	json_t *r;
+
+	(void) req;
+
+	r = json_object();
+	json_object_set_new(r, "title", json_string(PACKAGE_TITLE));
+	json_object_set_new(r, "name", json_string(PACKAGE_NAME));
+	json_object_set_new(r, "version", json_string(PACKAGE_VERSION));
+	json_object_set_new(r, "url", json_string(PACKAGE_URL));
+	json_object_set_new(r, "signature", json_string(PACKAGE_SIGNATURE));
+	json_object_set_new(dict, "package", r);
+	return 0;
 }
 
 /* Add the details of req to a 'request' member of the dictionary */

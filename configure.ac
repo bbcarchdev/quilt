@@ -31,6 +31,9 @@ AC_PROG_CC_C99
 
 LT_INIT
 
+AC_DEFINE_UNQUOTED([PACKAGE_TITLE], ["Quilt"], [The human-friendly package name])
+AC_DEFINE_UNQUOTED([PACKAGE_SIGNATURE], ["Quilt/" PACKAGE_VERSION], [The server signature, included in the Server: response header])
+
 BT_ENABLE_XSI
 BT_ENABLE_POSIX
 
