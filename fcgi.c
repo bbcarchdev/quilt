@@ -511,7 +511,14 @@ fcgi_getenv(QUILTREQ *request, const char *name)
 static const char *
 fcgi_getparam(QUILTREQ *request, const char *name)
 {
-	return FCGX_GetParam(name, request->data->query);
+	const char *t;
+
+	t = FCGX_GetParam(name, request->data->query);
+	if(t && *t)
+	{
+		return t;
+	}
+	return NULL;
 }
 
 static int

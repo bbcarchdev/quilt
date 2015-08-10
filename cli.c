@@ -385,7 +385,11 @@ cli_getparam(QUILTREQ *request, const char *name)
 	{
 		if(!strncmp(request->data->query[c], name, l) && request->data->query[c][l] == '=')
 		{
-			return &(request->data->query[c][l + 1]);
+			if(request->data->query[c][l + 1])
+			{
+				return &(request->data->query[c][l + 1]);
+			}
+			return NULL;
 		}
 	}
 	return NULL;
