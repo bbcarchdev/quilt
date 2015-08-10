@@ -59,7 +59,7 @@ text_serialize(QUILTREQ *req)
 	quilt_request_headers(req, "Content-Type: text/plain; charset=utf-8\n");
 	quilt_request_headerf(req, "Content-Location: %s\n", loc);
 	quilt_request_headers(req, "Vary: Accept\n");
-	quilt_request_headers(req, "Server: Quilt/" PACKAGE_VERSION "\n");
+	quilt_request_headers(req, "Server: " PACKAGE_SIGNATURE "\n");
 	free(loc);
 
 	iter = librdf_model_get_contexts(req->model);

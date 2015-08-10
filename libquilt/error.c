@@ -161,7 +161,7 @@ quilt_error(QUILTREQ *request, int code)
 	quilt_request_headerf(request, "Status: %d %s\n", code, request->statustitle);
 	quilt_request_headers(request, "Content-Type: text/html; charset=utf-8\n");
 	quilt_request_headers(request, "Vary: accept\n");
-	quilt_request_headers(request, "Server: Quilt/" PACKAGE_VERSION "\n");
+	quilt_request_headers(request, "Server: " PACKAGE_SIGNATURE "\n");
 	quilt_request_printf(request, "<!DOCTYPE html>\n"
 						  "<html>\n"
 						  "\t<head>\n"

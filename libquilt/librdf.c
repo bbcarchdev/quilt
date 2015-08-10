@@ -157,7 +157,7 @@ int quilt_librdf_serialize_(QUILTREQ *request)
 	quilt_request_headerf(request, "Content-Type: %s%s\n", request->type, tsuffix);
 	quilt_request_headerf(request, "Content-Location: %s\n", loc);
 	quilt_request_headers(request, "Vary: Accept\n");
-	quilt_request_headers(request, "Server: Quilt/" PACKAGE_VERSION "\n");
+	quilt_request_headers(request, "Server: " PACKAGE_SIGNATURE "\n");
 	free(loc);
 	quilt_request_puts(request, buf);
 	free(buf);
