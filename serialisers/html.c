@@ -261,7 +261,8 @@ add_data(json_t *dict, QUILTREQ *req)
 	librdf_stream *st;
 	librdf_node *subj, *pred, *obj;
 	const char *uri;
-	char *sbuf;
+	char *canon;
+	int n;
 
 	world = quilt_librdf_world();
 	/*
@@ -327,26 +328,54 @@ add_data(json_t *dict, QUILTREQ *req)
 	}
 	librdf_free_stream(st);
 	librdf_free_statement(query);
-	sbuf = (char *) calloc(1, strlen(req->subject) + 8);
-	strcpy(sbuf, req->subject);
-	strcat(sbuf, "#id");
-	k = json_object_get(items, sbuf);
-	if(k)
+	n = 0;
+	canon = quilt_canon_str(req->canonical, QCO_SUBJECT);
+	if(strchr(canon, '#'))
 	{
-		json_object_set_new(k, "me", json_true());
-		json_object_set(dict, "object", k);
+		item = json_object_get(items, canon);
+		if(item)
+		{
+			json_object_set_new(item, "me", json_true());
+			json_object_set(dict, "object", item);
+			if((k = json_object_get(item, "title")))
+			{
+				json_object_set(dict, "title", k);
+			}
+			n = 1;
+		}
 	}
-	else if((k = json_object_get(items, req->subject)))
+	free(canon);
+	if(!n)
 	{
-		json_object_set_new(k, "me", json_true());
-		json_object_set(dict, "object", k);
+		canon = quilt_canon_str(req->canonical, QCO_ABSTRACT);
+		item = json_object_get(items, canon);
+		if(item)
+		{
+			json_object_set_new(item, "me", json_true());
+			json_object_set(dict, "object", item);
+			if((k = json_object_get(item, "title")))
+			{
+				json_object_set(dict, "title", k);
+			}
+			n = 1;
+		}
+		free(canon);
 	}
-	else if((k = json_object_get(items, req->path)))
+	if(!n)
 	{
-		json_object_set_new(k, "me", json_true());
-		json_object_set(dict, "object", k);
+		canon = quilt_canon_str(req->canonical, QCO_CONCRETE);
+		item = json_object_get(items, req->path);
+		if(item)
+		{
+			json_object_set_new(item, "me", json_true());
+			json_object_set(dict, "object", item);
+			if((k = json_object_get(item, "title")))
+			{
+				json_object_set(dict, "title", k);
+			}
+		}
+		free(canon);
 	}
-	free(sbuf);
 	json_object_set_new(dict, "data", items);
 	return 0;
 }
