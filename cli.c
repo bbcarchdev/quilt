@@ -24,6 +24,7 @@
 #include "p_cli.h"
 
 const char *quilt_progname = "quilt-cli";
+static const char *query_string;
 
 static int bulk, bulk_limit, bulk_offset;
 static FILE *bulk_file;
@@ -122,7 +123,7 @@ process_args(int argc, char **argv)
 	config_set_default("log:ident", quilt_progname);
 	setenv("HTTP_ACCEPT", "text/turtle", 1);
 	setenv("REQUEST_METHOD", "GET", 1);
-	while((c = getopt(argc, argv, "hdc:t:bL:O:")) != -1)
+	while((c = getopt(argc, argv, "hdc:t:bL:O:q:")) != -1)
 	{
 		switch(c)
 		{
@@ -160,6 +161,9 @@ process_args(int argc, char **argv)
 				return -1;
 			}
 			break;
+		case 'q':
+			query_string = optarg;
+			break;
 		default:
 			usage();
 			return -1;
@@ -190,7 +194,8 @@ usage(void)
 			"  -t TYPE              Specify MIME type to serialise as\n"
 			"  -b                   Bulk-generate output\n"
 			"  -L LIMIT             ... limiting to LIMIT items\n"
-			"  -O OFFSET            ... starting from offset OFFSET\n", 
+			"  -O OFFSET            ... starting from offset OFFSET\n"
+			"  -q QUERY             Specify query parameters (key=value&key=value...)\n",
 			quilt_progname, quilt_progname);
 }
 
@@ -282,7 +287,14 @@ cli_preprocess_(QUILTIMPLDATA *data)
 	char cbuf[3];
 	size_t n;
 
-	qs = getenv("QUERY_STRING");
+	if(query_string)
+	{
+		qs = query_string;
+	}
+	else
+	{
+		qs = getenv("QUERY_STRING");
+	}
 	if(!qs)
 	{
 		data->qbuf = strdup("");
