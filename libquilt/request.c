@@ -355,6 +355,10 @@ quilt_request_base(void)
 int
 quilt_request_free(QUILTREQ *req)
 {
+	if(req->impl)
+	{
+		req->impl->end(req);
+	}
 	if(req->uri)
 	{
 		uri_destroy(req->uri);
@@ -389,7 +393,6 @@ quilt_request_process(QUILTREQ *request)
 	if(!request->subject)
 	{
 		quilt_logf(LOG_CRIT, "failed to unparse subject URI\n");
-		request->impl->end(request);
 		return 500;
 	}
 	quilt_logf(LOG_DEBUG, "query subject URI is <%s>\n", request->subject);	
@@ -402,7 +405,6 @@ quilt_request_process(QUILTREQ *request)
 	{
 		r = quilt_request_serialize(request);
 	}
-	request->impl->end(request);
 	return r;
 }
 
