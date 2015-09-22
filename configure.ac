@@ -37,18 +37,10 @@ AC_DEFINE_UNQUOTED([PACKAGE_SIGNATURE], ["Quilt/" PACKAGE_VERSION], [The server 
 BT_ENABLE_POSIX_FULL
 AC_SYS_LARGEFILE
 
-have_commoncrypto=no
-AC_CHECK_HEADER([CommonCrypto/CommonDigest.h],[
-AC_CHECK_FUNC([CC_SHA256_Init],[
-have_commoncrypto=yes
-AC_DEFINE_UNQUOTED([WITH_COMMONCRYPTO],[1],[Define if Apple's Common Crypto APIs are available])
-])
-])
-
 BT_REQUIRE_LIBDL
-if test x"$have_commoncrypto" = x"no" ; then
+BT_CHECK_COMMONCRYPTO(,[
 	BT_REQUIRE_OPENSSL
-fi
+])
 BT_REQUIRE_LIBCURL
 BT_REQUIRE_LIBRDF
 BT_REQUIRE_LIBXML2
