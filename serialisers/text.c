@@ -28,6 +28,7 @@ static int text_serialize_stream(QUILTREQ *req, librdf_node *context, librdf_str
 static int text_serialize_subject(QUILTREQ *req, librdf_node *context, librdf_node *subject);
 static int text_serialize_uri(QUILTREQ *req, librdf_uri *uri);
 static int text_serialize_node(QUILTREQ *req, librdf_node *node);
+static char *text_node_string(QUILTREQ *req, librdf_node *node);
 
 static QUILTTYPE text_types[] = {
 	{ "text/plain", "text txt", "Plain text", 0.95f, 1, NULL },
@@ -90,11 +91,15 @@ text_serialize(QUILTREQ *req)
 static int
 text_serialize_node(QUILTREQ *req, librdf_node *node)
 {
+	char *p;
+	
 	if(librdf_node_is_resource(node))
 	{
 		return text_serialize_uri(req, librdf_node_get_uri(node));
 	}
-	quilt_request_puts(req, (const char *) librdf_node_to_string(node));
+	p = text_node_string(req, node);
+	quilt_request_puts(req, p);
+	free(p);
 	return 0;
 }
 
@@ -123,7 +128,7 @@ text_serialize_uri(QUILTREQ *req, librdf_uri *uri)
 static int
 text_serialize_stream(QUILTREQ *req, librdf_node *context, librdf_stream *stream)
 {
-	const char *s;
+	char *s;
 	librdf_world *world;
 	librdf_node *subject;
 	librdf_statement *statement;
@@ -135,7 +140,7 @@ text_serialize_stream(QUILTREQ *req, librdf_node *context, librdf_stream *stream
 	{
 		statement = librdf_stream_get_object(stream);
 		subject = librdf_statement_get_subject(statement);
-		s = (const char *) librdf_node_to_string(subject);
+		s = text_node_string(req, subject);
 		if(librdf_hash_get_as_boolean(hash, s) < 1)
 		{
 			librdf_hash_put_strings(hash, s, "yes");
@@ -143,6 +148,7 @@ text_serialize_stream(QUILTREQ *req, librdf_node *context, librdf_stream *stream
 			text_serialize_node(req, subject);
 			text_serialize_subject(req, context, subject);
 		}
+		free(s);
 		librdf_stream_next(stream);
 	}
 	librdf_free_hash(hash);
@@ -150,8 +156,8 @@ text_serialize_stream(QUILTREQ *req, librdf_node *context, librdf_stream *stream
 	return 0;
 }
 
-static
-int text_serialize_subject(QUILTREQ *req, librdf_node *context, librdf_node *subject)
+static int
+text_serialize_subject(QUILTREQ *req, librdf_node *context, librdf_node *subject)
 {
 	librdf_world *world;
 	librdf_hash *hash;
@@ -205,4 +211,29 @@ int text_serialize_subject(QUILTREQ *req, librdf_node *context, librdf_node *sub
 	librdf_free_hash(hash);
 	quilt_request_puts(req, "\n");
 	return 0;
+}
+
+static char *
+text_node_string(QUILTREQ *req, librdf_node *node)
+{
+	raptor_world *world;
+	raptor_iostream *stream;
+	char *buf;
+	int r;
+
+	world = librdf_world_get_raptor(librdf_storage_get_world(req->storage));
+	buf = NULL;
+	stream = raptor_new_iostream_to_string(world, (void **) &buf, NULL, malloc);
+	if(!stream)
+	{
+		return NULL;
+	}
+	r = librdf_node_write(node, stream);
+	raptor_free_iostream(stream);
+	if(r)
+	{
+		free(buf);
+		return NULL;
+	}
+	return buf;
 }
