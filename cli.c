@@ -229,6 +229,7 @@ cli_process_(void)
 	if(cli_preprocess_(data))
 	{
 		r = -1;
+		req = NULL;
 	}
 	else
 	{
