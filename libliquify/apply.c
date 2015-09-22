@@ -290,6 +290,7 @@ liquify_emit_json(LIQUIFYCTX *ctx, json_t *value)
 		return -1;
 	}
 	len = strlen(p);
+	r = 0;
 	if(len)
 	{
 		r = liquify_emit(ctx, p, len);
