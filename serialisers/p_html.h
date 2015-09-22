@@ -1,7 +1,5 @@
 #ifndef P_HTML_H_
-# define P_HTML_H_                      1
-
-# define _BSD_SOURCE                    1
+# define P_HTML_H_                     1
 
 # include <stdlib.h>
 # include <string.h>
