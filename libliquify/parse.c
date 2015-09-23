@@ -30,6 +30,10 @@ static const char *parse_filter(LIQUIFYTPL *tpl, struct liquify_part *part, stru
 static const char *parse_var(LIQUIFYTPL *tpl, const char *cur);
 static const char *parse_tag(LIQUIFYTPL *tpl, const char *start);
 
+static int liquify_tpl_free_part_(LIQUIFY *env, struct liquify_part *part);
+static int liquify_tpl_free_expr_contents_(LIQUIFY *env, struct liquify_expression *expr);
+static int liquify_tpl_free_token_(LIQUIFY *env, struct liquify_token *token);
+
 /* Parse a named template (consisting of len bytes beginning at doc), and
  * add it to the provided environment. If a template of the same name
  * exists in the environment already, it will be replaced.
@@ -191,6 +195,79 @@ liquify_parse(LIQUIFY *env, const char *name, const char *doc, size_t len)
 int
 liquify_tpl_free_(LIQUIFYTPL *template)
 {
+	struct liquify_part *part, *nextpart;
+	LIQUIFY *env;
+	
+	env = template->env;
+	for(part = template->first; part; part = nextpart)
+	{
+		nextpart = part->next;
+		liquify_tpl_free_part_(env, part);
+	}
+	liquify_free(env, template->name);
+	liquify_free(env, template);
+	return 0;
+}
+
+static int
+liquify_tpl_free_part_(LIQUIFY *env, struct liquify_part *part)
+{
+	struct liquify_param *param, *nextparam;
+	struct liquify_filter *filter, *nextfilter;
+	
+	switch(part->type)
+	{
+	case LPT_TEXT:
+		liquify_free(env, part->d.text.text);
+		break;
+	case LPT_VAR:
+		liquify_tpl_free_expr_contents_(env, &(part->d.var.expr));
+		for(filter = part->d.var.ffirst; filter; filter = nextfilter)
+		{
+			nextfilter = filter->next;
+			liquify_tpl_free_expr_contents_(env, &(filter->expr));
+			for(param = filter->pfirst; param; param = nextparam)
+			{
+				nextparam = param->next;
+				liquify_tpl_free_expr_contents_(env, &(param->expr));
+				liquify_free(env, param);
+			}
+			liquify_free(env, filter);
+		}
+		break;
+	case LPT_TAG:
+		liquify_tpl_free_expr_contents_(env, &(part->d.tag.expr));
+		for(param = part->d.tag.pfirst; param; param = nextparam)
+		{
+			nextparam = param->next;
+			liquify_tpl_free_expr_contents_(env, &(param->expr));
+			liquify_free(env, param);
+		}
+		break;
+	}
+	liquify_free(env, part);
+	return 0;
+}
+
+static int
+liquify_tpl_free_expr_contents_(LIQUIFY *env, struct liquify_expression *expr)
+{
+	liquify_tpl_free_token_(env, expr->root.left);
+	liquify_tpl_free_token_(env, expr->root.right);
+	return 0;
+}
+
+static int
+liquify_tpl_free_token_(LIQUIFY *env, struct liquify_token *token)
+{
+	if(!token)
+	{
+		return 0;
+	}
+	liquify_tpl_free_token_(env, token->left);
+	liquify_tpl_free_token_(env, token->right);
+	liquify_free(env, token->text);
+	liquify_free(env, token);
 	return 0;
 }
 
