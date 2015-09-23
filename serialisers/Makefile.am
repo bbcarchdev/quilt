@@ -32,5 +32,6 @@ html_la_LIBADD = $(top_builddir)/libquilt/libquilt.la \
 html_la_LDFLAGS = -module -no-undefined -avoid-version
 
 text_la_SOURCES = p_text.h text.c
-text_la_LIBADD = $(top_builddir)/libquilt/libquilt.la
+text_la_LIBADD = $(top_builddir)/libquilt/libquilt.la \
+	@LIBRAPTOR2_LOCAL_LIBS@ @LIBRAPTOR2_LIBS@
 text_la_LDFLAGS = -module -no-undefined -avoid-version
