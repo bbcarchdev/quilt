@@ -54,7 +54,7 @@
 		<para>
 			Quilt is open source software, released under the terms of the
 			<cite><citetitle><link xlink:href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, 2.0</link></citetitle></cite>.
-			The public Git repository for Anansi is hosted at <link xlink:href="https://github.com/bbcarchdev/quilt">Github</link>.
+			The public Git repository for Quilt is hosted at <link xlink:href="https://github.com/bbcarchdev/quilt">Github</link>.
 		</para>
 	</refsect1>
 </refentry>
