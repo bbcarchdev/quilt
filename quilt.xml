@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<refentry xml:id="acropolis" xmlns="http://docbook.org/ns" xmlns:xlink="http://www.w3.org/1999/xlink" version="5.0" xml:lang="en">
+	<info>
+		<productname>Quilt</productname>
+		<author>
+			<personname>
+				<firstname>Mo</firstname>
+				<surname>McRoberts</surname>
+			</personname>
+			<affiliation>
+				<org>
+					<orgname>BBC</orgname>
+					<orgdiv>Archive Development</orgdiv>
+					<uri>http://www.bbc.co.uk/archive/</uri>
+				</org>
+			</affiliation>
+		</author>
+		<copyright>
+			<year>2015</year>
+			<holder>BBC</holder>
+		</copyright>
+	</info>
+	
+	<refmeta>
+		<refentrytitle>Quilt</refentrytitle>
+		<manvolnum>7</manvolnum>
+		<refmiscinfo class="source">Research &amp; Education Space</refmiscinfo>
+	</refmeta>
+
+	<refnamediv>
+		<refname>Quilt</refname>
+		<refpurpose>RDF publication as Linked Data</refpurpose>
+	</refnamediv>
+
+	<refsect1>
+		<title>Introduction</title>
+		<para>
+			Quilt is an application for publishing RDF on the Web as Linked Data.
+			It’s designed to be modular, allowing additional data source and
+			serialisation engines to be implemented. Out of the box, it’s able
+			to run as a <link xlink:href="http://www.fastcgi.com/">FastCGI</link>
+			server, translating requests into graph queries (or alternatively
+			serve a directory of Turtle files on disk), and serialising in any
+			format supported by <link xlink:href="http://librdf.org">librdf</link>
+			or as HTML using a subset of the <link xlink:href="http://liquidmarkup.org">Liquid</link>
+			templating language.
+		</para>
+		<para>
+			Within the <link xlink:href="https://bbcarchdev.github.io/res/">Research &amp; Education Space</link>,
+			the <link xlink:href="https://bbcarchdev.github.io/spindle/">Spindle</link>
+			project includes a custom data source engine for Quilt which supports
+			the query and partitioning capabilities of the platform.
+		</para>
+		<para>
+			Quilt is open source software, released under the terms of the
+			<cite><citetitle><link xlink:href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, 2.0</link></citetitle></cite>.
+			The public Git repository for Anansi is hosted at <link xlink:href="https://github.com/bbcarchdev/quilt">Github</link>.
+		</para>
+	</refsect1>
+</refentry>
