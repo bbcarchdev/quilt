@@ -72,6 +72,23 @@ AC_SUBST([fcgi_LDFLAGS])
 AC_SUBST([fcgi_SUBDIRS])
 AM_CONDITIONAL([WITH_FASTCGI],[test x"$WITH_FASTCGI" = x"1"])
 
+use_docbook_html5=yes
+BT_BUILD_DOCS
+
+XML2HTMLFLAGS="--param \"html.linksfile\" \"'file://\$(abs_top_srcdir)/docbook-html5/res-links.xml'\" \
+  --param \"html.navfile\" \"'file://\$(abs_top_srcdir)/docbook-html5/res-nav.xml'\" \
+  --param \"html.ie78css\" \"'//bbcarchdev.github.io/painting-by-numbers/ie78.css'\""
+AC_SUBST([XML2HTMLFLAGS])
+
+LINKS='${top_srcdir}/docbook-html5/res-links.xml'
+AC_SUBST([LINKS])
+
+NAV='${top_srcdir}/docbook-html5/res-nav.xml'
+AC_SUBST([NAV])
+
+quilthtdocdir='${docdir}'
+AC_SUBST([quilthtdocdir])
+
 BT_DEFINE_PREFIX
 
 AC_CONFIG_FILES([
@@ -90,6 +107,8 @@ engines/Makefile
 serialisers/Makefile
 sample-data/Makefile
 apache2-example.conf
+docbook-html5/Makefile
+docs/Makefile
 ])
 
 AC_OUTPUT
