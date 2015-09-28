@@ -82,3 +82,17 @@ endif
 install-data-hook:
 	$(INSTALL) -m 755 -d "$(DESTDIR)$(sysconfdir)"
 	test -f "$(DESTDIR)$(sysconfdir)/quilt.conf" || $(INSTALL) -m 644 "$(srcdir)/quilt.conf" "$(DESTDIR)$(sysconfdir)"
+
+BRANCH ?= develop
+
+DEVELOP_SUBMODULES = m4 libsupport libs3client
+
+checkout:
+	@for submod in $(DEVELOP_SUBMODULES) ; do \
+		echo "+++ Checking out the latest version of $$submod on $(BRANCH)" >&2 ; \
+		cd $$submod && \
+		git checkout $(BRANCH) && \
+		git pull && \
+		$(MAKE) checkout BRANCH=$(BRANCH) || exit $? && \
+		cd .. ; \
+	done
