@@ -84,8 +84,10 @@ install-data-hook:
 	test -f "$(DESTDIR)$(sysconfdir)/quilt.conf" || $(INSTALL) -m 644 "$(srcdir)/quilt.conf" "$(DESTDIR)$(sysconfdir)"
 
 BRANCH ?= develop
+DOCS_BRANCH ?= gh-pages
 
 DEVELOP_SUBMODULES = m4 libsupport libs3client
+DOCS_SUBMODULES = docbook-html5 docs
 
 checkout:
 	@for submod in $(DEVELOP_SUBMODULES) ; do \
@@ -94,5 +96,12 @@ checkout:
 		git checkout $(BRANCH) && \
 		git pull && \
 		$(MAKE) checkout BRANCH=$(BRANCH) || exit $? && \
+		cd .. ; \
+	done
+	@for submod in $(DOCS_SUBMODULES) ; do \
+		echo "+++ Checking out the latest version of $$submod on $(DOCS_BRANCH)" >&2 ; \
+		cd $$submod && \
+		git checkout $(DOCS_BRANCH) && \
+		git pull && \
 		cd .. ; \
 	done
