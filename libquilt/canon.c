@@ -612,6 +612,7 @@ quilt_canon_urlencode_maybe_(const char *src)
 		l++;
 		if(ch == '&' || ch == '#' || ch == ' ')
 		{
+			l += 2;
 			continue;
 		}
 		if(ch == '%')
