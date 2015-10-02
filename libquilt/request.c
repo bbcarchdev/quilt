@@ -134,7 +134,7 @@ quilt_request_create_uri_(QUILTIMPL *impl, QUILTIMPLDATA *data, const char *uri)
 	{
 		uri = impl->getenv(p, "REQUEST_URI");
 	}
-   
+	
 	if(quilt_request_process_path_(p, uri))
 	{
 		p->status = 400;
@@ -453,6 +453,11 @@ quilt_request_process_path_(QUILTREQ *req, const char *uri)
 	{
 		quilt_logf(LOG_CRIT, "failed to duplicate request-URI: %s\n", strerror(errno));
 		return -1;
+	}
+	t = strchr(buf, '#');
+	if(t)
+	{
+		*t = 0;
 	}
 	req->path = buf;
 	t = strchr(buf, '?');
