@@ -17,11 +17,9 @@
 ##  limitations under the License.
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
-	-I$(top_builddir)/libquilt -I$(top_srcdir)/libquilt \
-	-I$(top_builddir)/libs3client -I$(top_srcdir)/libs3client
+	-I$(top_builddir)/libquilt -I$(top_srcdir)/libquilt
 
-LIBS = $(top_builddir)/libquilt/libquilt.la \
-	$(top_builddir)/libs3client/libs3client.la
+LIBS = $(top_builddir)/libquilt/libquilt.la
 
 moduledir = $(libdir)/quilt
 
