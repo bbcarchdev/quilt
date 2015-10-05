@@ -86,7 +86,7 @@ install-data-hook:
 BRANCH ?= develop
 DOCS_BRANCH ?= gh-pages
 
-DEVELOP_SUBMODULES = m4 libsupport libs3client
+DEVELOP_SUBMODULES = m4 libsupport
 DOCS_SUBMODULES = docbook-html5 docs
 
 checkout:
