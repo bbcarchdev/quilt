@@ -303,8 +303,7 @@ add_text(LIQUIFYTPL *tpl, int line, int col, const char *text, size_t len)
 	part->line = line;
 	part->col = col;
 	part->d.text.text = (char *) liquify_alloc(tpl->env, len + 1);
-	strncpy(part->d.text.text, text, len);
-	part->d.text.text[len] = 0;
+	strlcpy(part->d.text.text, text, len + 1);
 	part->d.text.len = len;
 	return part;
 }

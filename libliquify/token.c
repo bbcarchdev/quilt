@@ -353,8 +353,7 @@ add_token(LIQUIFYTPL *tpl, struct liquify_expression *expr, int line, int col, i
 		}
 		else
 		{
-			strncpy(p->text, text, textlen);
-			p->text[textlen] = 0;
+			strlcpy(p->text, text, textlen + 1);
 		}
 		p->len = textlen;
 	}

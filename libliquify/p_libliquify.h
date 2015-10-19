@@ -77,6 +77,34 @@
 # define PARTERRS(tpl, part, fmt)									\
 	liquify_logf((tpl)->env, LOG_ERR, "%s:%d:%d: " fmt, (tpl)->name, (part)->line, (part)->col)
 
+# ifndef HAVE_STRLCPY
+#  undef strlcpy
+#  define strlcpy(dest, src, buflen) \
+	if(buflen > 1) \
+	{ \
+	strncpy(dest, src, buflen - 1); \
+	dest[buflen - 1] = 0; \
+	} \
+	else if(buflen) \
+	{ \
+	dest[0] = 0; \
+	}
+#endif /*!HAVE_STRLCPY*/
+
+# ifndef HAVE_STRLCAT
+#  undef strlcat
+#  define strlcat(dest, src, buflen) \
+	if(buflen > 1) \
+	{ \
+	strncat(dest, src, buflen - 1); \
+	dest[buflen - 1] = 0; \
+	} \
+	else if(buflen) \
+	{ \
+	dest[0] = 0; \
+	}
+#endif /*!HAVE_STRLCAT*/
+
 struct liquify_token
 {
 	struct liquify_token *left, *right;
