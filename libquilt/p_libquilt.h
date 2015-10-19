@@ -44,9 +44,37 @@
 # include "libquilt-sapi.h"
 
 # define PLUGINDIR                      LIBDIR "/quilt/"
-# define QUILT_MIME_LEN                 63
+# define QUILT_MIME_LEN                 64
 # define DEFAULT_LIMIT                  25
 # define MAX_LIMIT                      100
+
+# ifndef HAVE_STRLCPY
+#  undef strlcpy
+#  define strlcpy(dest, src, buflen) \
+	if(buflen > 1) \
+	{ \
+	strncpy(dest, src, buflen - 1); \
+	dest[buflen - 1] = 0; \
+	} \
+	else if(buflen) \
+	{ \
+	dest[0] = 0; \
+	}
+#endif /*!HAVE_STRLCPY*/
+
+# ifndef HAVE_STRLCAT
+#  undef strlcat
+#  define strlcat(dest, src, buflen) \
+	if(buflen > 1) \
+	{ \
+	strncat(dest, src, buflen - 1); \
+	dest[buflen - 1] = 0; \
+	} \
+	else if(buflen) \
+	{ \
+	dest[0] = 0; \
+	}
+#endif /*!HAVE_STRLCAT*/
 
 typedef struct quilt_mime_struct QUILTMIME;
 typedef struct quilt_callback_struct QUILTCB;
@@ -66,7 +94,7 @@ typedef enum
 struct quilt_mime_struct
 {
 	/* The actual MIME type */
-	char mimetype[QUILT_MIME_LEN+1];
+	char mimetype[QUILT_MIME_LEN];
 	/* A list of file extensions recognised by this type. Each extension
 	 * is space-separated and without a leading period. The first listed
 	 * extension is considered preferred for the type.

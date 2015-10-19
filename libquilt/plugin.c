@@ -462,7 +462,7 @@ mime_create(const QUILTTYPE *type)
 	size_t count;
 	const char *s, *t;
 
-	if(strlen(type->mimetype) > QUILT_MIME_LEN)
+	if(strlen(type->mimetype) >= QUILT_MIME_LEN)
 	{
 		quilt_logf(LOG_ERR, "internal error: specified MIME type '%s' is too long\n", type->mimetype);
 		errno = EINVAL;
@@ -474,8 +474,7 @@ mime_create(const QUILTTYPE *type)
 		quilt_logf(LOG_CRIT, "failed to allocate %u bytes\n", (unsigned) sizeof(QUILTMIME));
 		return NULL;
 	}
-	strncpy(p->mimetype, type->mimetype, QUILT_MIME_LEN);
-	p->mimetype[QUILT_MIME_LEN] = 0;
+	strlcpy(p->mimetype, type->mimetype, QUILT_MIME_LEN);
 	p->qs = type->qs;
 	p->visible = type->visible;
 	if(type->extensions)
