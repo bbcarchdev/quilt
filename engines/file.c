@@ -50,7 +50,9 @@ file_process(QUILTREQ *request)
 	char *pathname;
 	size_t len;
 	FILE *f;
+	QUILTCANON *canonical;
 
+	canonical = request->canonical;
 	world = quilt_librdf_world();
 	if(request->home)
 	{
@@ -59,7 +61,10 @@ file_process(QUILTREQ *request)
 	else
 	{
 		s = request->path;
+		quilt_canon_add_path(canonical, request->path);
 	}
+	/* QUILT-36: this will be unnecessary once the fragment is inferred */
+	quilt_canon_set_fragment(canonical, "id");
 	while(*s == '/')
 	{
 		s++;
