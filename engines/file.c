@@ -28,6 +28,34 @@ static int file_process(QUILTREQ *request);
 
 static char *basepath;
 
+# ifndef HAVE_STRLCPY
+#  undef strlcpy
+#  define strlcpy(dest, src, buflen)			\
+	if(buflen > 1)								\
+	{											\
+		strncpy(dest, src, buflen - 1);			\
+		(dest)[buflen - 1] = 0;					\
+	}											\
+	else if(buflen)								\
+	{											\
+		(dest)[0] = 0;							\
+	}
+#endif /*!HAVE_STRLCPY*/
+
+# ifndef HAVE_STRLCAT
+#  undef strlcat
+#  define strlcat(dest, src, buflen)			\
+	if(buflen > 1)								\
+	{											\
+		strncat(dest, src, buflen - 1);			\
+		(dest)[buflen - 1] = 0;					\
+	}											\
+	else if(buflen)								\
+	{											\
+		(dest)[0] = 0;							\
+	}
+#endif /*!HAVE_STRLCAT*/
+
 int
 quilt_plugin_init(void)
 {
@@ -48,7 +76,7 @@ file_process(QUILTREQ *request)
 	librdf_uri *base;
 	const char *s;
 	char *pathname;
-	size_t len;
+	size_t buflen, len;
 	FILE *f;
 	QUILTCANON *canonical;
 
@@ -69,18 +97,20 @@ file_process(QUILTREQ *request)
 	{
 		s++;
 	}
-	len = strlen(basepath) + strlen(s) + 8;
-	pathname = (char *) malloc(len);
-	if(!len)
+	len = strlen(basepath);
+	/* basepath + '/' + s + '.ttl' */
+	buflen = strlen(basepath) + 1 + strlen(s) + 4 + 1;
+	pathname = (char *) malloc(buflen);
+	if(!pathname)
 	{
 		quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to allocate %u bytes\n", (unsigned) len);
 		return 500;
 	}
-	len = strlen(basepath);
-	strcpy(pathname, basepath);
+	strlcpy(pathname, basepath, buflen);
 	pathname[len] = '/';
-	strcpy(&(pathname[len + 1]), s);
-	strcat(pathname, ".ttl");
+	pathname[len + 1] = 0;
+	strlcat(&(pathname[len + 1]), s, buflen);
+	strlcat(pathname, ".ttl", buflen);
 	f = fopen(pathname, "rb");
 	if(!f)
 	{
