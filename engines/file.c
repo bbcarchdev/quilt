@@ -109,7 +109,7 @@ file_process(QUILTREQ *request)
 	strlcpy(pathname, basepath, buflen);
 	pathname[len] = '/';
 	pathname[len + 1] = 0;
-	strlcat(&(pathname[len + 1]), s, buflen);
+	strlcat(pathname, s, buflen);
 	strlcat(pathname, ".ttl", buflen);
 	f = fopen(pathname, "rb");
 	if(!f)
