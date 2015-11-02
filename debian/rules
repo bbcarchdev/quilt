@@ -8,4 +8,8 @@ configure config.sub config.guess aclocal.m4 ltmain.sh Makefile.in: configure.ac
 	autoreconf -i
 		
 override_dh_auto_configure: configure
-	dh_auto_configure -- --without-included-liburi --without-included-libsparqlclient --without-included-libjsondata
+	dh_auto_configure -- --without-included-liburi --without-included-libsparqlclient --without-included-libjsondata --enable-debug
+
+override_dh_strip:
+	true
+
