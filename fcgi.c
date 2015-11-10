@@ -235,17 +235,17 @@ fcgi_init_(void)
 		}
 		log_printf(LOG_DEBUG, "opening FastCGI socket %s\n", p);   
 		quilt_fcgi_socket = FCGX_OpenSocket(p, 5);
+		if(quilt_fcgi_socket < 0)
+		{
+			log_printf(LOG_ERR, "failed to open FastCGI socket: %s\n", p);
+			free(p);
+			return -1;
+		}
 		if(ispath)
 		{
 			chmod(p, 0777);
 		}
 		free(p);
-	}
-	if(quilt_fcgi_socket < 0)
-	{
-		log_printf(LOG_ERR, "failed to open FastCGI socket: %s\n", p);
-		free(p);
-		return -1;
 	}
 	return 0;
 }
