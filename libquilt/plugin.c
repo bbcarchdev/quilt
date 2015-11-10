@@ -480,7 +480,6 @@ mime_create(const QUILTTYPE *type)
 	if(type->extensions)
 	{
 		count = 0;
-		t = type->extensions;
 		for(t = type->extensions; *t; t++)
 		{
 			if(isspace(*t))
