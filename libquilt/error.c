@@ -123,6 +123,7 @@ quilt_error(QUILTREQ *request, int code)
 		node = quilt_node_create_uri("http://www.w3.org/2011/http#Response");
 		librdf_statement_set_object(st, node);
 		librdf_model_add_statement(request->model, st);
+		librdf_free_statement(st);
 
 		st = librdf_new_statement(world);
 		node = librdf_new_node_from_node(bnode);
@@ -132,6 +133,7 @@ quilt_error(QUILTREQ *request, int code)
 		node = quilt_node_create_literal(request->statustitle, "en");
 		librdf_statement_set_object(st, node);
 		librdf_model_add_statement(request->model, st);
+		librdf_free_statement(st);
 
 		st = librdf_new_statement(world);
 		node = librdf_new_node_from_node(bnode);
@@ -141,6 +143,7 @@ quilt_error(QUILTREQ *request, int code)
 		node = quilt_node_create_literal(request->errordesc, "en");
 		librdf_statement_set_object(st, node);
 		librdf_model_add_statement(request->model, st);
+		librdf_free_statement(st);
 
 		st = librdf_new_statement(world);
 		node = librdf_new_node_from_node(bnode);
@@ -150,6 +153,7 @@ quilt_error(QUILTREQ *request, int code)
 		node = quilt_node_create_int(request->status);
 		librdf_statement_set_object(st, node);
 		librdf_model_add_statement(request->model, st);
+		librdf_free_statement(st);
 
 		librdf_free_node(bnode);
 
