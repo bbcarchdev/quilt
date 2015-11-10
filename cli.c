@@ -276,7 +276,9 @@ cli_process_(void)
 	}
 	free(data->qbuf);
 	data->qbuf = NULL;
+	free(data->query);
 	data->query = NULL;
+	free(data);
 	return 0;
 }
 

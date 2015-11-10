@@ -363,6 +363,18 @@ quilt_request_free(QUILTREQ *req)
 	{
 		uri_destroy(req->uri);
 	}
+	if(req->base)
+	{
+		free(req->base);
+	}
+	if(req->basegraph)
+	{
+		librdf_free_node(req->basegraph);
+	}
+	if(req->canonical)
+	{
+		quilt_canon_destroy(req->canonical);
+	}
 	if(req->model)
 	{
 		librdf_free_model(req->model);
@@ -405,6 +417,8 @@ quilt_request_process(QUILTREQ *request)
 	{
 		r = quilt_request_serialize(request);
 	}
+	free(request->subject);
+	request->subject = NULL;
 	return r;
 }
 
