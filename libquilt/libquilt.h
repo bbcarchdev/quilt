@@ -136,12 +136,17 @@ typedef enum
 	/* The generated URI will include the fragment */
 	QCO_FRAGMENT = (1<<6),
 
+	/* Use the user-agent-supplied path and query-string if available */
+	QCO_USERSUPPLIED = (1<<7),
+
 	/* A subject URI */
 	QCO_SUBJECT = (QCO_NOEXT|QCO_NOPARAMS|QCO_FRAGMENT),
 	/* An abstract document URI */
 	QCO_ABSTRACT = (QCO_NOEXT),
 	/* A concrete document URI (i.e., Content-Location) */
-	QCO_CONCRETE = (QCO_FORCEEXT|QCO_NAME)
+	QCO_CONCRETE = (QCO_FORCEEXT|QCO_NAME),
+	/* The request-URI, or something approximating it */
+	QCO_REQUEST = (QCO_USERSUPPLIED)
 } QUILTCANOPTS;
 
 /* Plug-in initialisation function */
@@ -202,6 +207,8 @@ int quilt_canon_set_param(QUILTCANON *canon, const char *name, const char *value
 int quilt_canon_set_param_int(QUILTCANON *canon, const char *name, long value);
 int quilt_canon_add_param(QUILTCANON *canon, const char *name, const char *value);
 int quilt_canon_add_param_int(QUILTCANON *canon, const char *name, long value);
+int quilt_canon_set_user_path(QUILTCANON *canon, const char *userpath);
+int quilt_canon_set_user_query(QUILTCANON *canon, const char *userquery);
 char *quilt_canon_str(QUILTCANON *canon, QUILTCANOPTS opts);
 
 /* SPARQL queries */

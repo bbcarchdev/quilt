@@ -367,7 +367,7 @@ add_data(json_t *dict, QUILTREQ *req)
 	free(canon);
 	if(!n)
 	{
-		canon = quilt_canon_str(req->canonical, QCO_ABSTRACT);
+		canon = quilt_canon_str(req->canonical, (req->ext ? QCO_ABSTRACT : QCO_REQUEST));
 		item = json_object_get(items, canon);
 		if(item)
 		{

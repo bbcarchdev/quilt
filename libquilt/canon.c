@@ -107,6 +107,8 @@ quilt_canon_destroy(QUILTCANON *canon)
 		free(canon->params[c].value);
 	}
 	free(canon->params);
+	free(canon->user_path);
+	free(canon->user_query);
 	free(canon);
 	return 0;
 }
@@ -414,6 +416,67 @@ quilt_canon_add_param_int(QUILTCANON *canon, const char *name, long value)
 	return quilt_canon_set_param(canon, name, buf);
 }
 
+int
+quilt_canon_set_user_path(QUILTCANON *canon, const char *path)
+{
+	char *p;
+
+	if(!path)
+	{
+		free(canon->user_path);
+		canon->user_path = NULL;
+		return 0;
+	}
+	while(*path == '/')
+	{
+		path++;
+	}
+	p = strdup(path);
+	if(!p)
+	{
+		return -1;
+	}
+	free(canon->user_path);
+	canon->user_path = p;
+	p = strchr(canon->user_path, '?');
+	if(p)
+	{
+		*p = 0;
+	}
+	return 0;
+}
+
+int
+quilt_canon_set_user_query(QUILTCANON *canon, const char *query)
+{
+	char *p;
+	
+	if(!query)
+	{
+		free(canon->user_query);
+		canon->user_query = NULL;
+		return 0;
+	}
+	if(*query == '?')
+	{
+		query++;
+	}
+	if(!*query)
+	{
+		free(canon->user_query);
+		canon->user_query = NULL;
+		return 0;
+	}
+	p = strdup(query);
+	if(!p)
+	{
+		return -1;
+	}
+	free(canon->user_query);
+	canon->user_query = p;
+	return 0;
+}
+
 /* Serialise a canonical URI object to a string. The returned buffer must be
  * released with free() when no longer required by the caller.
  */
@@ -447,6 +510,12 @@ quilt_canon_str(QUILTCANON *canon, QUILTCANOPTS opts)
 	l += canon->ext ? strlen(canon->ext) + 1 : 0;
 	l += (opts & QCO_NOPARAMS) ? 0 : 0;
 	l += (opts & QCO_FRAGMENT) ? (canon->fragment ? strlen(canon->fragment) + 1 : 0) : 0;
+	/* User-agent-supplied values */
+	if(opts & QCO_USERSUPPLIED)
+	{
+		l += (canon->user_path ? strlen(canon->user_path) + 1 : 0);
+		l += (canon->user_query ? strlen(canon->user_query) + 1 : 0);
+	}
 	if(!(opts & QCO_NOPARAMS))
 	{
 		l++;
@@ -474,46 +543,61 @@ quilt_canon_str(QUILTCANON *canon, QUILTCANOPTS opts)
 	}
 	*p = '/';
 	p++;
-	if(!(opts & QCO_NOPATH) && canon->path)
+	if((opts & QCO_USERSUPPLIED) && !(opts & QCO_NOPATH) && canon->user_path)
 	{
-		strcpy(p, canon->path);
+		strcpy(p, canon->user_path);
 		p = strchr(p, 0);
 	}
-	if((opts & QCO_NAME) && canon->name)
+	else
 	{
 		if(!(opts & QCO_NOPATH) && canon->path)
 		{
-			*p = '/';
-			p++;
-		}
-		strcpy(p, canon->name);
-		p = strchr(p, 0);
-	}
-	if(opts & QCO_FORCEEXT)
-	{
-		if(canon->ext)
-		{
-			*p = '.';
-			p++;
-			strcpy(p, canon->ext);
+			strcpy(p, canon->path);
 			p = strchr(p, 0);
 		}
-		else if(canon->explicitext)
+		if((opts & QCO_NAME) && canon->name)
+		{
+			if(!(opts & QCO_NOPATH) && canon->path)
+			{
+				*p = '/';
+				p++;
+			}
+			strcpy(p, canon->name);
+			p = strchr(p, 0);
+		}
+		if(opts & QCO_FORCEEXT)
+		{
+			if(canon->ext)
+			{
+				*p = '.';
+				p++;
+				strcpy(p, canon->ext);
+				p = strchr(p, 0);
+			}
+			else if(canon->explicitext)
+			{
+				*p = '.';
+				p++;
+				strcpy(p, canon->explicitext);
+				p = strchr(p, 0);
+			}
+		}
+		else if(!(opts & QCO_NOEXT) && canon->explicitext)
 		{
 			*p = '.';
 			p++;
 			strcpy(p, canon->explicitext);
-			p = strchr(p, 0);
+			p = strchr(p, 0);		
 		}
 	}
-	else if(!(opts & QCO_NOEXT) && canon->explicitext)
+	if((opts & QCO_USERSUPPLIED) && !(opts & QCO_NOPARAMS) && canon->user_query)
 	{
-		*p = '.';
+		*p = '?';
 		p++;
-		strcpy(p, canon->explicitext);
-		p = strchr(p, 0);		
+		strcpy(p, canon->user_query);
+		p = strchr(p, 0);
 	}
-	if(!(opts & QCO_NOPARAMS) && canon->nparams)
+	else if(!(opts & QCO_NOPARAMS) && canon->nparams)
 	{
 		*p = '?';
 		p++;

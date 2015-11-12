@@ -150,6 +150,11 @@ struct quilt_canonical_struct
 	/* Sorted list of parameters */
 	struct quilt_canon_param_struct *params;
 	size_t nparams;
+	/* User-agent-supplied values, used if QCO_USERSUPPLIED is passed
+	 * to quilt_canon_str(). Discarded on duplication.
+	 */
+	char *user_path;
+	char *user_query;
 };
 
 /* Bulk-generation context */

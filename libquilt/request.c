@@ -229,6 +229,8 @@ quilt_request_create_uri_(QUILTIMPL *impl, QUILTIMPLDATA *data, const char *uri)
 	{
 		quilt_canon_set_name(p->canonical, "index");
 	}
+	quilt_canon_set_user_path(p->canonical, uri);
+	quilt_canon_set_user_query(p->canonical, impl->getenv(p, "QUERY_STRING"));
 	return p;	
 }
 
