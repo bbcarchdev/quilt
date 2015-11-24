@@ -349,7 +349,7 @@ add_data(json_t *dict, QUILTREQ *req)
 	librdf_free_stream(st);
 	librdf_free_statement(query);
 	n = 0;
-	canon = quilt_canon_str(req->canonical, QCO_SUBJECT);
+	canon = quilt_canon_str(req->canonical, QCO_NOEXT|QCO_FRAGMENT);
 	if(strchr(canon, '#'))
 	{
 		item = json_object_get(items, canon);
