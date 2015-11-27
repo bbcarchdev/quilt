@@ -540,6 +540,12 @@ quilt_request_match_mime_(QUILTREQ *req)
 
 /* Property accessors */
 
+QUILTIMPLDATA *
+quilt_request_impldata(QUILTREQ *req)
+{
+	return req->data;
+}
+
 int
 quilt_request_serialized(QUILTREQ *req)
 {
@@ -643,55 +649,55 @@ quilt_request_model(QUILTREQ *req)
 }
 
 const char *
-quilt_req_subject(QUILTREQ *req)
+quilt_request_subject(QUILTREQ *req)
 {
 	return req->subject;
 }
 
 int
-quilt_req_home(QUILTREQ *req)
+quilt_request_home(QUILTREQ *req)
 {
 	return req->home;
 }
 
 int
-quilt_req_index(QUILTREQ *req)
+quilt_request_index(QUILTREQ *req)
 {
 	return req->index;
 }
 
 const char *
-quilt_req_indextitle(QUILTREQ *req)
+quilt_request_indextitle(QUILTREQ *req)
 {
 	return req->indextitle;
 }
 
 int
-quilt_req_limit(QUILTREQ *req)
+quilt_request_limit(QUILTREQ *req)
 {
 	return req->limit;
 }
 
 int
-quilt_req_deflimit(QUILTREQ *req)
+quilt_request_deflimit(QUILTREQ *req)
 {
 	return req->deflimit;
 }
 	   
 int
-quilt_req_offset(QUILTREQ *req)
+quilt_request_offset(QUILTREQ *req)
 {
 	return req->offset;
 }
 
 const char *
-quilt_req_typeext(QUILTREQ *req)
+quilt_request_typeext(QUILTREQ *req)
 {
 	return req->canonext;
 }
 
 QUILTCANON *
-quilt_req_canonical(QUILTREQ *req)
+quilt_request_canonical(QUILTREQ *req)
 {
 	return req->canonical;
 }
