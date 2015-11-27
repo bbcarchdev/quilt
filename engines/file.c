@@ -73,23 +73,27 @@ file_process(QUILTREQ *request)
 {
 	librdf_world *world;
 	librdf_parser *parser;
+	librdf_model *model;
 	librdf_uri *base;
-	const char *s;
+	const char *s, *path, *basestr;
 	char *pathname;
 	size_t buflen, len;
 	FILE *f;
 	QUILTCANON *canonical;
-
-	canonical = request->canonical;
+	
+	canonical = quilt_request_canonical(request);
+	path = quilt_request_path(request);
 	world = quilt_librdf_world();
-	if(request->home)
+	model = quilt_request_model(request);
+
+	if(quilt_request_home(request))
 	{
 		s = "index";
 	}
 	else
 	{
-		s = request->path;
-		quilt_canon_add_path(canonical, request->path);
+		s = path;
+		quilt_canon_add_path(canonical, path);
 	}
 	/* QUILT-36: this will be unnecessary once the fragment is inferred */
 	quilt_canon_set_fragment(canonical, "id");
@@ -126,17 +130,18 @@ file_process(QUILTREQ *request)
 		free(pathname);
 		return 404;
 	}
-	base = librdf_new_uri(world, (const unsigned char *) request->base);
+	basestr = quilt_request_baseuristr(request);
+	base = librdf_new_uri(world, (const unsigned char *) basestr);
 	if(!base)
 	{
-		quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to create new RDF URI from <%s>\n", request->base);
+		quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to create new RDF URI from <%s>\n", basestr);
 		fclose(f);
 		free(pathname);
 		librdf_free_parser(parser);
 		return 500;
 	}
 	quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": parsing %s\n", pathname);
-	if(librdf_parser_parse_file_handle_into_model(parser, f, 0, base, request->model))
+	if(librdf_parser_parse_file_handle_into_model(parser, f, 0, base, model))
 	{
 		quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": failed to parse %s as Turtle\n", pathname);
 		fclose(f);
