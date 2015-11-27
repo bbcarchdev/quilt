@@ -40,16 +40,20 @@ quilt_plugin_init(void)
 static int
 resourcegraph_process(QUILTREQ *request)
 {
+	librdf_model *model;
+	const char *subject;
 	char *query;
 	
-	query = (char *) malloc(strlen(request->subject) + 64);
+	subject = quilt_request_subject(request);
+	model = quilt_request_model(request);
+	query = (char *) malloc(strlen(subject) + 64);  
 	if(!query)
 	{
-		quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to allocate %u bytes\n", (unsigned) strlen(request->subject) + 64);
+		quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to allocate %u bytes\n", (unsigned) strlen(subject) + 64);
 		return 500;
 	}
-	sprintf(query, "SELECT * WHERE { GRAPH <%s> { ?s ?p ?o } }", request->subject);	
-	if(quilt_sparql_query_rdf(query, request->model))
+	sprintf(query, "SELECT * WHERE { GRAPH <%s> { ?s ?p ?o } }", subject);	
+	if(quilt_sparql_query_rdf(query, model))
 	{
 		quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": failed to create model from query\n");
 		free(query);
@@ -57,7 +61,7 @@ resourcegraph_process(QUILTREQ *request)
 	}
 	free(query);
 	/* If the model is completely empty, consider the graph to be Not Found */
-	if(quilt_model_isempty(request->model))
+	if(quilt_model_isempty(model))
 	{
 		return 404;
 	}
