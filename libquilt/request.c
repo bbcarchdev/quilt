@@ -537,3 +537,163 @@ quilt_request_match_mime_(QUILTREQ *req)
 	}
 	return type->extensions;
 }
+
+/* Property accessors */
+
+int
+quilt_request_serialized(QUILTREQ *req)
+{
+	return req->serialized;
+}
+
+URI *
+quilt_request_uri(QUILTREQ *req)
+{
+	return req->uri;
+}
+
+URI *
+quilt_request_baseuri(QUILTREQ *req)
+{
+	return req->baseuri;
+}
+
+const char *
+quilt_request_baseuristr(QUILTREQ *req)
+{
+	return req->base;
+}
+
+const char *
+quilt_request_host(QUILTREQ *req)
+{
+	return req->host;
+}
+
+const char *
+quilt_request_ident(QUILTREQ *req)
+{
+	return req->ident;
+}
+
+const char *
+quilt_request_user(QUILTREQ *req)
+{
+	return req->user;
+}
+
+const char *
+quilt_request_method(QUILTREQ *req)
+{
+	return req->method;
+}
+
+const char *
+quilt_request_referer(QUILTREQ *req)
+{
+	return req->referer;
+}
+
+const char *
+quilt_request_ua(QUILTREQ *req)
+{
+	return req->ua;
+}
+
+const char *
+quilt_request_path(QUILTREQ *req)
+{
+	return req->path;
+}
+
+const char *
+quilt_request_ext(QUILTREQ *req)
+{
+	return req->ext;
+}
+
+time_t
+quilt_request_received(QUILTREQ *req)
+{
+	return req->received;
+}
+
+int
+quilt_request_status(QUILTREQ *req)
+{
+	return req->status;
+}
+
+librdf_node *
+quilt_request_basegraph(QUILTREQ *req)
+{
+	return req->basegraph;
+}
+
+librdf_storage *
+quilt_request_storage(QUILTREQ *req)
+{
+	return req->storage;
+}
+
+librdf_model *
+quilt_request_model(QUILTREQ *req)
+{
+	return req->model;
+}
+
+const char *
+quilt_req_subject(QUILTREQ *req)
+{
+	return req->subject;
+}
+
+int
+quilt_req_home(QUILTREQ *req)
+{
+	return req->home;
+}
+
+int
+quilt_req_index(QUILTREQ *req)
+{
+	return req->index;
+}
+
+const char *
+quilt_req_indextitle(QUILTREQ *req)
+{
+	return req->indextitle;
+}
+
+int
+quilt_req_limit(QUILTREQ *req)
+{
+	return req->limit;
+}
+
+int
+quilt_req_deflimit(QUILTREQ *req)
+{
+	return req->deflimit;
+}
+	   
+int
+quilt_req_offset(QUILTREQ *req)
+{
+	return req->offset;
+}
+
+const char *
+quilt_req_typeext(QUILTREQ *req)
+{
+	return req->canonext;
+}
+
+QUILTCANON *
+quilt_req_canonical(QUILTREQ *req)
+{
+	return req->canonical;
+}
+
+

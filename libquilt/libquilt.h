@@ -192,6 +192,35 @@ int quilt_request_headerf(QUILTREQ *req, const char *format, ...);
 char *quilt_request_base(void);
 int quilt_request_bulk_item(QUILTBULK *context, const char *uri);
 
+/* Request property accessors */
+int quilt_request_serialized(QUILTREQ *req);
+URI *quilt_request_uri(QUILTREQ *req);
+URI *quilt_request_baseuri(QUILTREQ *req);
+const char *quilt_request_baseuristr(QUILTREQ *req);
+const char *quilt_request_host(QUILTREQ *req);
+const char *quilt_request_ident(QUILTREQ *req);
+const char *quilt_request_user(QUILTREQ *req);
+const char *quilt_request_method(QUILTREQ *req);
+const char *quilt_request_referer(QUILTREQ *req);
+const char *quilt_request_ua(QUILTREQ *req);
+const char *quilt_request_path(QUILTREQ *req);
+const char *quilt_request_ext(QUILTREQ *req);
+time_t quilt_request_received(QUILTREQ *req);
+int quilt_request_status(QUILTREQ *req);
+const char *quilt_req_subject(QUILTREQ *req);
+int quilt_req_home(QUILTREQ *req);
+int quilt_req_index(QUILTREQ *req);
+const char *quilt_req_indextitle(QUILTREQ *req);
+int quilt_req_limit(QUILTREQ *req);
+int quilt_req_deflimit(QUILTREQ *req);
+int quilt_req_offset(QUILTREQ *req);
+const char *quilt_req_typeext(QUILTREQ *req);
+QUILTCANON *quilt_req_canonical(QUILTREQ *req);
+
+librdf_node *quilt_request_basegraph(QUILTREQ *req);
+librdf_storage *quilt_request_storage(QUILTREQ *req);
+librdf_model *quilt_request_model(QUILTREQ *req);
+
 /* Canonical URI handling */
 QUILTCANON *quilt_canon_create(QUILTCANON *source);
 int quilt_canon_destroy(QUILTCANON *canon);
