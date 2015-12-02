@@ -11,6 +11,7 @@
 
 # define QUILT_PLUGIN_NAME              "html"
 
+# define NS_RDF                         "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 # define NS_RDFS                        "http://www.w3.org/2000/01/rdf-schema#"
 # define NS_DCT                         "http://purl.org/dc/terms/"
 # define NS_GEO                         "http://www.w3.org/2003/01/geo/wgs84_pos#"
@@ -42,5 +43,13 @@ struct class_struct *html_class_match(librdf_model *model, librdf_node *subject)
 int html_add_common(json_t *dict, QUILTREQ *req);
 int html_add_request(json_t *dict, QUILTREQ *req);
 int html_add_model(json_t *dict, QUILTREQ *req);
+
+/* Debian Wheezy ships with libjansson 2.3, which doesn't include
+ * json_array_foreach()
+ */
+# ifndef json_array_foreach
+#  define json_array_foreach(array, index, value) \
+	for(index = 0; index < json_array_size(array) && (value = json_array_get(array, index)); index++)
+# endif
 
 #endif /*!P_HTML_H_*/

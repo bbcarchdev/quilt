@@ -27,8 +27,10 @@ static json_t *html_model_items_(QUILTREQ *req, librdf_model *model);
 static int html_model_subject_(QUILTREQ *req, json_t *item, librdf_model *model, librdf_node *subject, const char *uri);
 static int html_model_predicate_(QUILTREQ *req, json_t *value, librdf_node *predicate, const char *uri);
 static int html_model_object_(QUILTREQ *req, json_t *value, librdf_node *object);
-static char * html_model_abstract_(QUILTREQ *req, librdf_model *model, json_t *items, json_t **item);
-static char * html_model_primaryTopic_(QUILTREQ *req, librdf_model *model, json_t *items, const char *abstractUri, json_t **item);
+static char *html_model_abstract_(QUILTREQ *req, librdf_model *model, json_t *items, json_t **item);
+static char *html_model_primaryTopic_(QUILTREQ *req, librdf_model *model, json_t *items, const char *abstractUri, json_t **item);
+static json_t *html_model_results_(QUILTREQ *req, librdf_model *model, json_t *items, json_t *primaryTopic);
+static int html_model_item_is_(json_t *item, const char *classuri);
 static char *get_title(QUILTREQ *req, librdf_model *model, librdf_node *subject);
 static char *get_shortdesc(QUILTREQ *req, librdf_model *model, librdf_node *subject);
 static char *get_longdesc(QUILTREQ *req, librdf_model *model, librdf_node *subject);
@@ -51,10 +53,11 @@ static char *get_literal(QUILTREQ *req, librdf_model *model, librdf_node *subjec
 int
 html_add_model(json_t *dict, QUILTREQ *req)
 {
-	json_t *items, *item, *k;
+	json_t *items, *item, *primaryTopic, *results, *k;
 	librdf_model *model;
 	char *abstractUri, *primaryTopicUri;
 
+	primaryTopic = NULL;
 	model = quilt_request_model(req);
 	items = html_model_items_(req, model);
 	/* Locate the 'abstract document URI' and data */
@@ -78,6 +81,7 @@ html_add_model(json_t *dict, QUILTREQ *req)
 		json_object_set_new(dict, "primaryTopicUri", json_string(primaryTopicUri));
 		if(item)
 		{
+			primaryTopic = item;
 			json_object_set(dict, "primaryTopic", item);
 			json_object_set(dict, "object", item);
 			if((k = json_object_get(item, "title")))
@@ -85,6 +89,11 @@ html_add_model(json_t *dict, QUILTREQ *req)
 				json_object_set(dict, "title", k);
 			}
 		}
+	}
+	results = html_model_results_(req, model, items, primaryTopic);
+	if(results)
+	{
+		json_object_set(dict, "results", results);
 	}
 	free(abstractUri);
 	free(primaryTopicUri);
@@ -200,6 +209,9 @@ html_model_items_(QUILTREQ *req, librdf_model *model)
 				item = json_object();
 				json_object_set_new(items, uri, item);
 				json_object_set_new(item, "me", json_false());
+				json_object_set_new(item, "slot", json_false());
+				json_object_set_new(item, "result", json_false());
+				json_object_set_new(item, "abstract", json_false());
 				html_model_subject_(req, item, model, subj, uri);
 				props = json_object();			   
 				json_object_set_new(item, "props", props);
@@ -414,6 +426,76 @@ html_model_object_(QUILTREQ *req, json_t *value, librdf_node *object)
 		else
 		{
 			dtstr = NULL;
+		}
+	}
+	return 0;
+}
+
+/* Optionally generate and return 'results' array, which is an ordered list
+ * of slot entries, each of which has the form:
+ * { index: nnn, item: { ... } }
+ *
+ * For each item matched by this, their 'result' member is set to to true.
+ *
+ * This only occurs if an ordered resultset is attached to the 
+ * primaryTopic (if there is one).
+ *
+ * In either case, any objects in 'items' whose classes include olo:Slot have
+ * their 'slot' member set to true so that templates can skip them.
+ */
+static json_t *
+html_model_results_(QUILTREQ *req, librdf_model *model, json_t *items, json_t *primaryTopic)
+{
+	json_t *results, *value;
+	const char *key;
+
+	(void) req;
+	(void) model;
+	(void) primaryTopic;
+
+	results = NULL;	
+	json_object_foreach(items, key, value)
+	{
+		if(html_model_item_is_(value, NS_OLO "Slot"))
+		{
+			json_object_set_new(value, "slot", json_true());
+		}
+	}
+	return results;
+}
+
+/* Determine if the object 'item' has the RDF class 'classuri' */
+static int
+html_model_item_is_(json_t *item, const char *classuri)
+{
+	json_t *props, *prop, *value, *k;
+	size_t index;
+
+	props = json_object_get(item, "props");
+	if(!props)
+	{
+		return 0;
+	}
+	prop = json_object_get(props, NS_RDF "type");
+	if(!prop)
+	{
+		return 0;
+	}
+	json_array_foreach(prop, index, value)
+	{
+		k = json_object_get(value, "isUri");
+		if(!k || json_typeof(k) != JSON_TRUE)
+		{
+			continue;
+		}
+		k = json_object_get(value, "value");
+		if(!k || json_typeof(k) != JSON_STRING)
+		{
+			continue;
+		}
+		if(!strcmp(json_string_value(k), classuri))
+		{
+			return 1;
 		}
 	}
 	return 0;
