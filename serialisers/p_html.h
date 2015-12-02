@@ -32,5 +32,6 @@ int html_type(const char *type);
 struct class_struct *html_class_match(librdf_model *model, librdf_node *subject);
 
 int html_add_common(json_t *dict, QUILTREQ *req);
+int html_add_request(json_t *dict, QUILTREQ *req);
 
 #endif /*!P_HTML_H_*/

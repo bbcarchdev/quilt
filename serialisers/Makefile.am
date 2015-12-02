@@ -25,7 +25,7 @@ moduledir = $(libdir)/quilt
 module_LTLIBRARIES = html.la text.la
 
 html_la_SOURCES = p_html.h \
-	html.c html-types.c html-classes.c template.c common.c
+	html.c html-types.c html-classes.c template.c common.c request.c
 
 html_la_LIBADD = $(top_builddir)/libquilt/libquilt.la \
 	$(top_builddir)/libliquify/libliquify.la \

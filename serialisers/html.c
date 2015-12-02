@@ -76,7 +76,7 @@ html_serialize(QUILTREQ *req)
 	canon = quilt_request_canonical(req);
 	dict = json_object();
 	html_add_common(dict, req);
-	add_req(dict, req);
+	html_add_request(dict, req);
 	add_data(dict, req);
 	/*	json_dumpf(dict, stderr, JSON_INDENT(4)); 
 		exit(0); */
@@ -98,103 +98,6 @@ html_serialize(QUILTREQ *req)
 	}
 	json_decref(dict);
 	return status;
-}
-
-/* Add the details of req to a 'request' member of the dictionary */
-static int
-add_req(json_t *dict, QUILTREQ *req)
-{
-	json_t *r, *a;
-	char *pathbuf, *t;
-	QUILTTYPE typebuf, *type;
-	size_t l;
-	const char *s, *path, *reqtype;
-
-	r = json_object();
-	pathbuf = NULL;
-	path = quilt_request_path(req);
-	reqtype = quilt_request_type(req);
-	if(path)
-	{
-		pathbuf = (char *) malloc(strlen(path) + 32);
-		json_object_set_new(r, "path", json_string(path));
-		if(quilt_request_home(req))
-		{
-			strcpy(pathbuf, "/index");
-		}
-		else
-		{
-			strcpy(pathbuf, path);
-		}
-		json_object_set_new(r, "document", json_string(pathbuf));
-	}
-#define GETPROP(r, req, name, accessor)	\
-	if((s = accessor(req))) \
-	{ \
-		json_object_set_new(r, name, json_string(s)); \
-	}
-	GETPROP(r, req, "ext", quilt_request_ext);
-	GETPROP(r, req, "type", quilt_request_type);
-	GETPROP(r, req, "host", quilt_request_host);
-	GETPROP(r, req, "ident", quilt_request_ident);
-	GETPROP(r, req, "user", quilt_request_user);
-	GETPROP(r, req, "method", quilt_request_method);
-	GETPROP(r, req, "referer", quilt_request_referer);
-	GETPROP(r, req, "ua", quilt_request_ua);
-	json_object_set_new(r, "status", json_integer(quilt_request_status(req)));
-	GETPROP(r, req, "statustitle", quilt_request_statustitle);
-	GETPROP(r, req, "statusdesc", quilt_request_statusdesc);
-	json_object_set_new(dict, "request", r);
-	json_object_set_new(dict, "home", (quilt_request_home(req) ? json_true() : json_false()));
-	json_object_set_new(dict, "index", (quilt_request_index(req) ? json_true() : json_false()));
-	GETPROP(dict, req, "title", quilt_request_indextitle);
-#undef GETPROP
-	if(pathbuf)
-	{
-		a = json_array();
-		t = strchr(pathbuf, 0);
-		*t = '.';
-		t++;
-		for(type = quilt_plugin_serializer_first(&typebuf); type; type = quilt_plugin_next(type))
-		{
-			if(!type->visible || !type->extensions)
-			{
-				continue;
-			}
-			if(reqtype && !strcasecmp(reqtype, type->mimetype))
-			{
-				continue;
-			}
-			s = strchr(type->extensions, ' ');
-			if(s)
-			{
-				l = s - type->extensions;			   
-			}
-			else
-			{
-				l = strlen(type->extensions);
-			}
-			if(l > 6)
-			{
-				continue;
-			}			
-			strncpy(t, type->extensions, l);
-			t[l] = 0;
-			r = json_object();
-			json_object_set_new(r, "type", json_string(type->mimetype));
-			if(type->desc)
-			{
-				json_object_set_new(r, "title", json_string(type->desc));
-			}
-			json_object_set_new(r, "uri", json_string(pathbuf));
-			json_object_set_new(r, "ext", json_string(t));
-			json_array_append_new(a, r);
-			quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": linking to %s as %s (%s)\n", pathbuf, type->mimetype, type->desc);
-		}
-		json_object_set_new(dict, "links", a);
-		free(pathbuf);
-	}
-	return 0;
 }
 
 /* Add the data contained in the request's librdf model to a 'data'
