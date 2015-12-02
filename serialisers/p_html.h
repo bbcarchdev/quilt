@@ -11,6 +11,12 @@
 
 # define QUILT_PLUGIN_NAME              "html"
 
+# define NS_RDFS                        "http://www.w3.org/2000/01/rdf-schema#"
+# define NS_DCT                         "http://purl.org/dc/terms/"
+# define NS_GEO                         "http://www.w3.org/2003/01/geo/wgs84_pos#"
+# define NS_OLO                         "http://purl.org/ontology/olo/core#"
+# define NS_FOAF                        "http://xmlns.com/foaf/0.1/"
+
 struct class_struct
 {
 	const char *uri;

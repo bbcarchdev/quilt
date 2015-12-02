@@ -261,8 +261,8 @@ add_subject(QUILTREQ *req, json_t *item, librdf_model *model, librdf_node *subje
 		json_object_set_new(item, "classSuffix", json_string(""));
 	}
 	
-	if(quilt_model_find_double(model, uri, "http://www.w3.org/2003/01/geo/wgs84_pos#long", &lon) == 1 &&
-	   quilt_model_find_double(model, uri, "http://www.w3.org/2003/01/geo/wgs84_pos#lat", &lat) == 1)
+	if(quilt_model_find_double(model, uri, NS_GEO "long", &lon) == 1 &&
+	   quilt_model_find_double(model, uri, NS_GEO "lat", &lat) == 1)
 	{
 		sub = json_object();
 		json_object_set_new(sub, "long", json_real(lon));
@@ -364,7 +364,7 @@ add_object(QUILTREQ *req, json_t *value, librdf_node *object)
 static char *
 get_title(QUILTREQ *req, librdf_model *model, librdf_node *subject)
 {
-	return get_literal(req, model, subject, "http://www.w3.org/2000/01/rdf-schema#label");
+	return get_literal(req, model, subject, NS_RDFS "label");
 }
 
 /* Obtain the short description of a particular subject, suitable for
@@ -374,7 +374,7 @@ get_title(QUILTREQ *req, librdf_model *model, librdf_node *subject)
 static char *
 get_shortdesc(QUILTREQ *req, librdf_model *model, librdf_node *subject)
 {
-	return get_literal(req, model, subject, "http://www.w3.org/2000/01/rdf-schema#comment");
+	return get_literal(req, model, subject, NS_RDFS "comment");
 }
 
 /* Obtain the short description of a particular subject, suitable for
@@ -384,7 +384,7 @@ get_shortdesc(QUILTREQ *req, librdf_model *model, librdf_node *subject)
 static char *
 get_longdesc(QUILTREQ *req, librdf_model *model, librdf_node *subject)
 {
-	return get_literal(req, model, subject, "http://purl.org/dc/terms/description");
+	return get_literal(req, model, subject, NS_DCT "description");
 }
 
 static char *
