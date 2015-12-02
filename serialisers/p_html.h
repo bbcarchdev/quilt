@@ -23,6 +23,9 @@ struct class_struct
 extern QUILTTYPE html_types[];
 extern struct class_struct html_classes[];
 
+int html_template_init(void);
+LIQUIFYTPL *html_template(QUILTREQ *req);
+
 /* Check whether a MIME type is handled by this module */
 int html_type(const char *type);
 /* Attempt to determine which of the known classes the subject belongs to */

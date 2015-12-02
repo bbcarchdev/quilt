@@ -25,19 +25,8 @@
 
 static char *baseuri;
 static size_t baseurilen;
-static char *templatedir;
-static size_t templatedirlen;
-
-static LIQUIFY *liquify;
-
-static LIQUIFYTPL *tpl_home;
-static LIQUIFYTPL *tpl_index;
-static LIQUIFYTPL *tpl_item;
-static LIQUIFYTPL *tpl_error;
 
 static int html_serialize(QUILTREQ *req);
-static LIQUIFYTPL *quilt_html_parse_(LIQUIFY *liquify, const char *pathname, void *data);
-static LIQUIFYTPL *quilt_html_template_(QUILTREQ *req);
 static int add_req(json_t *dict, QUILTREQ *req);
 static int add_common(json_t *dict, QUILTREQ *req);
 static int add_data(json_t *dict, QUILTREQ *req);
@@ -62,25 +51,12 @@ quilt_plugin_init(void)
 		return -1;
 	}
 	baseurilen = strlen(baseuri);
-	templatedir = quilt_config_geta("html:templatedir", DATAROOTDIR "/" PACKAGE_TARNAME "/templates/");
-	if(!templatedir)
+	if(html_template_init())
 	{
-		quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to determine base path for templates\n");
+		free(baseuri);
+		baseuri = NULL;
 		return -1;
 	}
-	templatedirlen = strlen(templatedir);
-	liquify = liquify_create();
-	if(!liquify)
-	{
-		quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to initialise templating context\n");
-		return -1;
-	}
-	liquify_set_logger(liquify, quilt_vlogf);
-	liquify_set_loader(liquify, quilt_html_parse_, NULL);
-	tpl_home = liquify_load(liquify, "home.liquid");
-	tpl_item = liquify_load(liquify, "item.liquid");
-	tpl_index = liquify_load(liquify, "index.liquid");
-	tpl_error = liquify_load(liquify, "error.liquid");
 	for(c = 0; html_types[c].mimetype; c++)
 	{
 		quilt_plugin_register_serializer(&(html_types[c]), html_serialize);
@@ -91,27 +67,29 @@ quilt_plugin_init(void)
 static int
 html_serialize(QUILTREQ *req)
 {
+	QUILTCANON *canon;
 	LIQUIFYTPL *tpl;
 	json_t *dict;
 	char *buf, *loc;
 	int status;
 
 	status = 500;
+	canon = quilt_request_canonical(req);
 	dict = json_object();
 	add_common(dict, req);
 	add_req(dict, req);
 	add_data(dict, req);
 	/*	json_dumpf(dict, stderr, JSON_INDENT(4)); 
 		exit(0); */
-	tpl = quilt_html_template_(req);
+	tpl = html_template(req);
 	if(tpl)
 	{
 		/* Set status to zero to suppress output */
 		status = 0;
 		buf = liquify_apply(tpl, dict);
-		loc = quilt_canon_str(req->canonical, QCO_CONCRETE|QCO_NOABSOLUTE);
-		quilt_request_headerf(req, "Status: %d %s\n", req->status, req->statustitle);
-		quilt_request_headerf(req, "Content-Type: %s; charset=utf-8\n", req->type);
+		loc = quilt_canon_str(canon, QCO_CONCRETE|QCO_NOABSOLUTE);
+		quilt_request_headerf(req, "Status: %d %s\n", quilt_request_status(req), quilt_request_statustitle(req));
+		quilt_request_headerf(req, "Content-Type: %s; charset=utf-8\n", quilt_request_type(req));
 		quilt_request_headerf(req, "Content-Location: %s\n", loc);
 		quilt_request_headers(req, "Vary: Accept\n");
 		quilt_request_headers(req, "Server: " PACKAGE_SIGNATURE "\n");
@@ -121,35 +99,6 @@ html_serialize(QUILTREQ *req)
 	}
 	json_decref(dict);
 	return status;
-}
-
-static LIQUIFYTPL *
-quilt_html_template_(QUILTREQ *req)
-{
-	if(req->status != 200)
-	{
-		return tpl_error;
-	}
-	if(req->home && tpl_home)
-	{
-		return tpl_home;
-	}
-	if((req->home || req->index) && tpl_index)
-	{
-		return tpl_index;
-	}
-	if(tpl_item)
-	{
-		return tpl_item;
-	}
-	/* If all else fails, use the index or home templates (in order of
-	 * preference.
-	 */
-	if(tpl_index)
-	{
-		return tpl_index;
-	}
-	return tpl_home;
 }
 
 /* Add common information to the dictionary */
@@ -178,49 +127,47 @@ add_req(json_t *dict, QUILTREQ *req)
 	char *pathbuf, *t;
 	QUILTTYPE typebuf, *type;
 	size_t l;
-	const char *s;
+	const char *s, *path, *reqtype;
 
 	r = json_object();
 	pathbuf = NULL;
-	if(req->path)
+	path = quilt_request_path(req);
+	reqtype = quilt_request_type(req);
+	if(path)
 	{
-		pathbuf = (char *) malloc(strlen(req->path) + 32);
-		json_object_set_new(r, "path", json_string(req->path));
-		if(req->path[0] == '/' && req->path[1] == 0)
+		pathbuf = (char *) malloc(strlen(path) + 32);
+		json_object_set_new(r, "path", json_string(path));
+		if(quilt_request_home(req))
 		{
 			strcpy(pathbuf, "/index");
 		}
 		else
 		{
-			strcpy(pathbuf, req->path);
+			strcpy(pathbuf, path);
 		}
 		json_object_set_new(r, "document", json_string(pathbuf));
 	}
-	if(req->ext) json_object_set_new(r, "ext", json_string(req->ext));
-	if(req->type) json_object_set_new(r, "type", json_string(req->type));
-	if(req->host) json_object_set_new(r, "host", json_string(req->host));
-	if(req->ident) json_object_set_new(r, "ident", json_string(req->ident));
-	if(req->user) json_object_set_new(r, "user", json_string(req->user));
-	if(req->method) json_object_set_new(r, "method", json_string(req->method));
-	if(req->referer) json_object_set_new(r, "referer", json_string(req->referer));
-	if(req->ua) json_object_set_new(r, "ua", json_string(req->ua));
-
-	json_object_set_new(r, "status", json_integer(req->status));
-	if(req->statustitle)
-	{
-		json_object_set_new(r, "statustitle", json_string(req->statustitle));
+#define GETPROP(r, req, name, accessor)	\
+	if((s = accessor(req))) \
+	{ \
+		json_object_set_new(r, name, json_string(s)); \
 	}
-	if(req->errordesc)
-	{
-		json_object_set_new(r, "statusdesc", json_string(req->errordesc));
-	}
+	GETPROP(r, req, "ext", quilt_request_ext);
+	GETPROP(r, req, "type", quilt_request_type);
+	GETPROP(r, req, "host", quilt_request_host);
+	GETPROP(r, req, "ident", quilt_request_ident);
+	GETPROP(r, req, "user", quilt_request_user);
+	GETPROP(r, req, "method", quilt_request_method);
+	GETPROP(r, req, "referer", quilt_request_referer);
+	GETPROP(r, req, "ua", quilt_request_ua);
+	json_object_set_new(r, "status", json_integer(quilt_request_status(req)));
+	GETPROP(r, req, "statustitle", quilt_request_statustitle);
+	GETPROP(r, req, "statusdesc", quilt_request_statusdesc);
 	json_object_set_new(dict, "request", r);
-	json_object_set_new(dict, "home", (req->home ? json_true() : json_false()));
-	json_object_set_new(dict, "index", (req->index ? json_true() : json_false()));
-	if(req->indextitle)
-	{
-		json_object_set_new(dict, "title", json_string(req->indextitle));
-	}
+	json_object_set_new(dict, "home", (quilt_request_home(req) ? json_true() : json_false()));
+	json_object_set_new(dict, "index", (quilt_request_index(req) ? json_true() : json_false()));
+	GETPROP(dict, req, "title", quilt_request_indextitle);
+#undef GETPROP
 	if(pathbuf)
 	{
 		a = json_array();
@@ -233,7 +180,7 @@ add_req(json_t *dict, QUILTREQ *req)
 			{
 				continue;
 			}
-			if(req->type && !strcasecmp(req->type, type->mimetype))
+			if(reqtype && !strcasecmp(reqtype, type->mimetype))
 			{
 				continue;
 			}
@@ -280,11 +227,15 @@ add_data(json_t *dict, QUILTREQ *req)
 	librdf_statement *query, *statement;
 	librdf_stream *st;
 	librdf_node *subj, *pred, *obj;
+	librdf_model *model;
 	const char *uri;
+	QUILTCANON *reqcanon;
 	char *canon;
 	int n;
 
+	model = quilt_request_model(req);
 	world = quilt_librdf_world();
+	reqcanon = quilt_request_canonical(req);
 	/*
 	  data[subject] = {
 	     subject: 'http://...',
@@ -300,7 +251,7 @@ add_data(json_t *dict, QUILTREQ *req)
 	*/
 	items = json_object();
 	query = librdf_new_statement(world);
-	st = librdf_model_find_statements(req->model, query);
+	st = librdf_model_find_statements(model, query);
 	while(!librdf_stream_end(st))
 	{
 		statement = librdf_stream_get_object(st);
@@ -322,7 +273,7 @@ add_data(json_t *dict, QUILTREQ *req)
 				item = json_object();
 				json_object_set_new(items, uri, item);
 				json_object_set_new(item, "me", json_false());
-				add_subject(req, item, req->model, subj, uri);
+				add_subject(req, item, model, subj, uri);
 				props = json_object();			   
 				json_object_set_new(item, "props", props);
 			}
@@ -349,7 +300,7 @@ add_data(json_t *dict, QUILTREQ *req)
 	librdf_free_stream(st);
 	librdf_free_statement(query);
 	n = 0;
-	canon = quilt_canon_str(req->canonical, QCO_NOEXT|QCO_FRAGMENT);
+	canon = quilt_canon_str(reqcanon, QCO_NOEXT|QCO_FRAGMENT);
 	if(strchr(canon, '#'))
 	{
 		item = json_object_get(items, canon);
@@ -367,7 +318,7 @@ add_data(json_t *dict, QUILTREQ *req)
 	free(canon);
 	if(!n)
 	{
-		canon = quilt_canon_str(req->canonical, (req->ext ? QCO_ABSTRACT : QCO_REQUEST));
+		canon = quilt_canon_str(reqcanon, (quilt_request_ext(req) ? QCO_ABSTRACT : QCO_REQUEST));
 		item = json_object_get(items, canon);
 		if(item)
 		{
@@ -383,8 +334,8 @@ add_data(json_t *dict, QUILTREQ *req)
 	}
 	if(!n)
 	{
-		canon = quilt_canon_str(req->canonical, QCO_CONCRETE);
-		item = json_object_get(items, req->path);
+		canon = quilt_canon_str(reqcanon, QCO_CONCRETE);
+		item = json_object_get(items, quilt_request_path(req));
 		if(item)
 		{
 			json_object_set_new(item, "me", json_true());
@@ -714,87 +665,4 @@ get_literal(QUILTREQ *req, librdf_model *model, librdf_node *subject, const char
 		return generic;
 	}
 	return none;
-}
-
-/* Read the contents of a file into a new buffer */
-static char *
-readfile(const char *path)
-{
-	FILE *f;
-	char *buf, *p;
-	size_t len, alloc;
-	ssize_t r;
-	
-	len = alloc = 0;
-	buf = NULL;
-	quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": loading template: '%s'\n", path);
-	f = fopen(path, "rb");
-	if(!f)
-	{
-		quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": %s: (failed to open) %s\n", path, strerror(errno));
-		return NULL;
-	}
-	while(1)
-	{
-		p = (char *) realloc(buf, alloc + 512);
-		if(!p)
-		{
-			quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME ": %s: %s\n", path, strerror(errno));
-			free(buf);
-			return NULL;
-		}
-		buf = p;
-		alloc += 512;
-		r = fread(&(buf[len]), 1, 511, f);
-		if(r < 1)
-		{
-			break;
-		}
-		len += r;
-	}
-	buf[len] = 0;
-	return buf;
-}
-
-/* Callback invoked by liquify_load() in order to load a template file
- * and parse it
- */
-static LIQUIFYTPL *
-quilt_html_parse_(LIQUIFY *liquify, const char *name, void *data)
-{
-	char *buf, *pathname;
-	LIQUIFYTPL *template;   
-
-	(void) data;
-
-	pathname = (char *) malloc(strlen(name) + templatedirlen + 4);	
-	if(!pathname)
-	{
-		quilt_logf(LOG_CRIT, QUILT_PLUGIN_NAME ": failed to allocate pathname buffer\n");
-		return NULL;
-	}
-	if(name[0] == '/')
-	{
-		strcpy(pathname, name);
-	}
-	else
-	{
-		strcpy(pathname, templatedir);
-		if(!templatedirlen || templatedir[templatedirlen - 1] != '/')
-		{
-			pathname[templatedirlen] = '/';
-			pathname[templatedirlen + 1] = 0;
-		}
-		strcat(pathname, name);
-	}
-	buf = readfile(pathname);
-	if(!buf)
-	{
-		free(pathname);
-		return NULL;
-	}
-	template = liquify_parse(liquify, name, buf, strlen(buf));
-	free(pathname);
-	free(buf);
-	return template;
 }
