@@ -23,9 +23,12 @@
 
 #include "p_html.h"
 
-static int add_subject(QUILTREQ *req, json_t *item, librdf_model *model, librdf_node *subject, const char *uri);
-static int add_predicate(QUILTREQ *req, json_t *value, librdf_node *predicate, const char *uri);
-static int add_object(QUILTREQ *req, json_t *value, librdf_node *object);
+static json_t *html_model_items_(QUILTREQ *req, librdf_model *model);
+static int html_model_subject_(QUILTREQ *req, json_t *item, librdf_model *model, librdf_node *subject, const char *uri);
+static int html_model_predicate_(QUILTREQ *req, json_t *value, librdf_node *predicate, const char *uri);
+static int html_model_object_(QUILTREQ *req, json_t *value, librdf_node *object);
+static char * html_model_abstract_(QUILTREQ *req, librdf_model *model, json_t *items, json_t **item);
+static char * html_model_primaryTopic_(QUILTREQ *req, librdf_model *model, json_t *items, const char *abstractUri, json_t **item);
 static char *get_title(QUILTREQ *req, librdf_model *model, librdf_node *subject);
 static char *get_shortdesc(QUILTREQ *req, librdf_model *model, librdf_node *subject);
 static char *get_longdesc(QUILTREQ *req, librdf_model *model, librdf_node *subject);
@@ -33,7 +36,115 @@ static char *get_literal(QUILTREQ *req, librdf_model *model, librdf_node *subjec
 
 /* Populate the template data with information from the RDF model.
  *
- * A 'data' object is created with the following structure:
+ * The following dictionary members may be set:
+ *
+ * 'data': a hash (where the subject URI is the key) of all of the data in
+ *    the model.
+ * 'abstractUri': the URI of the abstract document
+ * 'abstract': copied from data[abstractUri]
+ * 'primaryTopicUri': the URI of the primary topic in the model
+ * 'primaryTopic': the primary topic of the model, copied from
+ *    data[primaryTopicUri]
+ * 'object': an alias for primaryTopic
+ * 'title': if known, the title/label of 'primaryTopic'
+ */
+int
+html_add_model(json_t *dict, QUILTREQ *req)
+{
+	json_t *items, *item, *k;
+	librdf_model *model;
+	char *abstractUri, *primaryTopicUri;
+
+	model = quilt_request_model(req);
+	items = html_model_items_(req, model);
+	/* Locate the 'abstract document URI' and data */
+	abstractUri = html_model_abstract_(req, model, items, &item);
+	if(abstractUri)
+	{
+		json_object_set_new(dict, "abstractUri", json_string(abstractUri));
+		if(item)
+		{
+			json_object_set(dict, "abstract", item);
+			if((k = json_object_get(item, "title")))
+			{
+				json_object_set(dict, "title", k);
+			}
+		}
+	}
+	/* Locate the primary topic of the document */
+	primaryTopicUri = html_model_primaryTopic_(req, model, items, abstractUri, &item);
+	if(primaryTopicUri)
+	{
+		json_object_set_new(dict, "primaryTopicUri", json_string(primaryTopicUri));
+		if(item)
+		{
+			json_object_set(dict, "primaryTopic", item);
+			json_object_set(dict, "object", item);
+			if((k = json_object_get(item, "title")))
+			{
+				json_object_set(dict, "title", k);
+			}
+		}
+	}
+	free(abstractUri);
+	free(primaryTopicUri);
+	json_object_set_new(dict, "data", items);
+	return 0;
+}
+
+/* Determine the abstract document URI, and if available return the data
+ * relating to it from the 'items' dictionary.
+ *
+ * If an item was found, the 'abstract' member of it is set to true
+ */
+static char *
+html_model_abstract_(QUILTREQ *req, librdf_model *model, json_t *items, json_t **item)
+{
+	QUILTCANON *reqcanon;
+	char *uri;
+
+	(void) model;
+
+	*item = NULL;
+	reqcanon = quilt_request_canonical(req);
+	uri = quilt_canon_str(reqcanon, (quilt_request_ext(req) ? QCO_ABSTRACT : QCO_REQUEST));
+	*item = json_object_get(items, uri);
+	if(*item)
+	{	
+		json_object_set_new(*item, "abstract", json_true());
+	}
+	return uri;
+}
+
+/* Locate the primary topic of the model and return its URI; attempt to locate
+ * the data about it in the 'items' dictionary.
+ *
+ * If located, the entry in the dictionary will the member 'me' set to true.
+ */
+static char *
+html_model_primaryTopic_(QUILTREQ *req, librdf_model *model, json_t *items, const char *abstract, json_t **item)
+{
+	QUILTCANON *reqcanon;
+	char *uri;
+
+	(void) model;
+	(void) abstract;
+
+	*item = NULL;
+	reqcanon = quilt_request_canonical(req);
+	uri = quilt_canon_str(reqcanon, QCO_NOEXT|QCO_FRAGMENT);
+	*item = json_object_get(items, uri);
+	if(*item)
+	{	
+		json_object_set_new(*item, "me", json_true());
+	}
+	return uri;	
+}
+
+/* Create an object based upon the content of the model, organised by subject.
+ *
+ * The resulting object is substituted into the template with the name 'data',
+ * and takes the following form:
 
 	  data[subject] = {
 	     subject: 'http://...',
@@ -42,28 +153,29 @@ static char *get_literal(QUILTREQ *req, librdf_model *model, librdf_node *subjec
 		 classSuffix: '(Thing)',
 		 props: {
 		   '@': [
-		     { predicate: '...', value: 'abc123', htmlValue: '<a href="...">abc123</a>', type: 'literal', datatype: null, language: null }
+		     {
+                predicate: '...',
+				value: 'abc123',
+				htmlValue: '<a href="...">abc123</a>',
+				type: 'literal',
+				datatype: null,
+				language: null
+			 }
 		   ]
 		 }
      }
- */
-int
-html_add_model(json_t *dict, QUILTREQ *req)
+*/
+static json_t *
+html_model_items_(QUILTREQ *req, librdf_model *model)
 {
-	json_t *items, *item, *k, *props, *prop, *value;
+	json_t *items, *item, *props, *prop, *value;
 	librdf_world *world;
 	librdf_statement *query, *statement;
 	librdf_stream *st;
 	librdf_node *subj, *pred, *obj;
-	librdf_model *model;
 	const char *uri;
-	QUILTCANON *reqcanon;
-	char *canon;
-	int n;
 
-	model = quilt_request_model(req);
 	world = quilt_librdf_world();
-	reqcanon = quilt_request_canonical(req);
 	items = json_object();
 	query = librdf_new_statement(world);
 	st = librdf_model_find_statements(model, query);
@@ -88,7 +200,7 @@ html_add_model(json_t *dict, QUILTREQ *req)
 				item = json_object();
 				json_object_set_new(items, uri, item);
 				json_object_set_new(item, "me", json_false());
-				add_subject(req, item, model, subj, uri);
+				html_model_subject_(req, item, model, subj, uri);
 				props = json_object();			   
 				json_object_set_new(item, "props", props);
 			}
@@ -107,71 +219,21 @@ html_add_model(json_t *dict, QUILTREQ *req)
 			/* Add a new 'value' structure to the array of values (prop) */
 			value = json_object();
 			json_array_append_new(prop, value);
-			add_predicate(req, value, pred, uri);
-			add_object(req, value, obj);
+			html_model_predicate_(req, value, pred, uri);
+			html_model_object_(req, value, obj);
 		}
 		librdf_stream_next(st);
 	}
 	librdf_free_stream(st);
 	librdf_free_statement(query);
-	n = 0;
-	canon = quilt_canon_str(reqcanon, QCO_NOEXT|QCO_FRAGMENT);
-	if(strchr(canon, '#'))
-	{
-		item = json_object_get(items, canon);
-		if(item)
-		{
-			json_object_set_new(item, "me", json_true());
-			json_object_set(dict, "object", item);
-			if((k = json_object_get(item, "title")))
-			{
-				json_object_set(dict, "title", k);
-			}
-			n = 1;
-		}
-	}
-	free(canon);
-	if(!n)
-	{
-		canon = quilt_canon_str(reqcanon, (quilt_request_ext(req) ? QCO_ABSTRACT : QCO_REQUEST));
-		item = json_object_get(items, canon);
-		if(item)
-		{
-			json_object_set_new(item, "me", json_true());
-			json_object_set(dict, "object", item);
-			if((k = json_object_get(item, "title")))
-			{
-				json_object_set(dict, "title", k);
-			}
-			n = 1;
-		}
-		free(canon);
-	}
-	if(!n)
-	{
-		canon = quilt_canon_str(reqcanon, QCO_CONCRETE);
-		item = json_object_get(items, quilt_request_path(req));
-		if(item)
-		{
-			json_object_set_new(item, "me", json_true());
-			json_object_set(dict, "object", item);
-			if((k = json_object_get(item, "title")))
-			{
-				json_object_set(dict, "title", k);
-			}
-		}
-		free(canon);
-	}
-	json_object_set_new(dict, "data", items);
-	return 0;
+	return items;
 }
-
 
 /* Add the details of a specific subject to an 'item' structure which is
  * passed into the template.
  */
 static int
-add_subject(QUILTREQ *req, json_t *item, librdf_model *model, librdf_node *subject, const char *uri)
+html_model_subject_(QUILTREQ *req, json_t *item, librdf_model *model, librdf_node *subject, const char *uri)
 {
 	double lon, lat;
 	json_t *sub;
@@ -276,7 +338,7 @@ add_subject(QUILTREQ *req, json_t *item, librdf_model *model, librdf_node *subje
  * passed into the template.
  */
 static int
-add_predicate(QUILTREQ *req, json_t *value, librdf_node *predicate, const char *uri)
+html_model_predicate_(QUILTREQ *req, json_t *value, librdf_node *predicate, const char *uri)
 {
 	char *contracted;
 
@@ -294,7 +356,7 @@ add_predicate(QUILTREQ *req, json_t *value, librdf_node *predicate, const char *
  * passed into the template
  */
 static int
-add_object(QUILTREQ *req, json_t *value, librdf_node *object)
+html_model_object_(QUILTREQ *req, json_t *value, librdf_node *object)
 {
 	const char *str, *dtstr, *lang;
 	char *buf;
