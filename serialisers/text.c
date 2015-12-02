@@ -51,23 +51,25 @@ static int
 text_serialize(QUILTREQ *req)
 {
 	char *loc;
+	librdf_model *model;
 	librdf_iterator *iter;
 	librdf_node *context;
 	librdf_stream *stream;
 	
-	loc = quilt_canon_str(req->canonical, QCO_CONCRETE|QCO_NOABSOLUTE);
-	quilt_request_headerf(req, "Status: %d %s\n", req->status, req->statustitle);
+	loc = quilt_canon_str(quilt_request_canonical(req), QCO_CONCRETE|QCO_NOABSOLUTE);
+	quilt_request_headerf(req, "Status: %d %s\n", quilt_request_status(req), quilt_request_statustitle(req));
 	quilt_request_headers(req, "Content-Type: text/plain; charset=utf-8\n");
 	quilt_request_headerf(req, "Content-Location: %s\n", loc);
 	quilt_request_headers(req, "Vary: Accept\n");
 	quilt_request_headers(req, "Server: " PACKAGE_SIGNATURE "\n");
 	free(loc);
 
-	iter = librdf_model_get_contexts(req->model);
+	model = quilt_request_model(req);
+	iter = librdf_model_get_contexts(model);
 	if(librdf_iterator_end(iter))
 	{
 		librdf_free_iterator(iter);
-		stream = librdf_model_as_stream(req->model);
+		stream = librdf_model_as_stream(model);
 		text_serialize_stream(req, NULL, stream);
 	}
 	else
@@ -78,7 +80,7 @@ text_serialize(QUILTREQ *req)
 			quilt_request_puts(req, "According to ");
 			text_serialize_node(req, context);
 			quilt_request_puts(req, ":\n\n");
-			stream = librdf_model_context_as_stream(req->model, context);
+			stream = librdf_model_context_as_stream(model, context);
 			text_serialize_stream(req, context, stream);
 			librdf_free_stream(stream);
 			librdf_iterator_next(iter);
@@ -160,6 +162,7 @@ static int
 text_serialize_subject(QUILTREQ *req, librdf_node *context, librdf_node *subject)
 {
 	librdf_world *world;
+	librdf_model *model;
 	librdf_hash *hash;
 	librdf_statement *query, *statement;
 	librdf_node *object;
@@ -167,6 +170,7 @@ text_serialize_subject(QUILTREQ *req, librdf_node *context, librdf_node *subject
 	size_t c;
 
 	world = quilt_librdf_world();
+	model = quilt_request_model(req);
 	hash = librdf_new_hash(world, NULL);
 	librdf_hash_put_strings(hash, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "yes");
 	/* Always emit rdf:type first */
@@ -175,11 +179,11 @@ text_serialize_subject(QUILTREQ *req, librdf_node *context, librdf_node *subject
 	librdf_statement_set_predicate(query, quilt_node_create_uri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"));
 	if(context)
 	{
-		stream = librdf_model_find_statements_with_options(req->model, query, context, NULL);
+		stream = librdf_model_find_statements_with_options(model, query, context, NULL);
 	}
 	else
 	{
-		stream = librdf_model_find_statements(req->model, query);
+		stream = librdf_model_find_statements(model, query);
 	}
 	c = 0;
 	while(!librdf_stream_end(stream))
@@ -221,7 +225,7 @@ text_node_string(QUILTREQ *req, librdf_node *node)
 	char *buf;
 	int r;
 
-	world = librdf_world_get_raptor(librdf_storage_get_world(req->storage));
+	world = librdf_world_get_raptor(librdf_storage_get_world(quilt_request_storage(req)));
 	buf = NULL;
 	stream = raptor_new_iostream_to_string(world, (void **) &buf, NULL, malloc);
 	if(!stream)
