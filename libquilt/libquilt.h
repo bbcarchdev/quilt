@@ -208,6 +208,8 @@ const char *quilt_request_path(QUILTREQ *req);
 const char *quilt_request_ext(QUILTREQ *req);
 time_t quilt_request_received(QUILTREQ *req);
 int quilt_request_status(QUILTREQ *req);
+const char *quilt_request_statustitle(QUILTREQ *req);
+const char *quilt_request_statusdesc(QUILTREQ *req);
 const char *quilt_request_subject(QUILTREQ *req);
 int quilt_request_home(QUILTREQ *req);
 int quilt_request_index(QUILTREQ *req);
@@ -215,6 +217,7 @@ const char *quilt_request_indextitle(QUILTREQ *req);
 int quilt_request_limit(QUILTREQ *req);
 int quilt_request_deflimit(QUILTREQ *req);
 int quilt_request_offset(QUILTREQ *req);
+const char *quilt_request_type(QUILTREQ *req);
 const char *quilt_request_typeext(QUILTREQ *req);
 QUILTCANON *quilt_request_canonical(QUILTREQ *req);
 

@@ -630,6 +630,18 @@ quilt_request_status(QUILTREQ *req)
 	return req->status;
 }
 
+const char *
+quilt_request_statustitle(QUILTREQ *req)
+{
+	return req->statustitle;
+}
+
+const char *
+quilt_request_statusdesc(QUILTREQ *req)
+{
+	return req->errordesc;
+}
+
 librdf_node *
 quilt_request_basegraph(QUILTREQ *req)
 {
@@ -688,6 +700,12 @@ int
 quilt_request_offset(QUILTREQ *req)
 {
 	return req->offset;
+}
+
+const char *
+quilt_request_type(QUILTREQ *req)
+{
+	return req->type;
 }
 
 const char *
