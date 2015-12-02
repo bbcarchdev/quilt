@@ -216,10 +216,10 @@ config_defaults(void)
 static int
 cli_process_(void)
 {
-	int r;
+	int r, status;
 	QUILTIMPLDATA *data;
 	QUILTREQ *req;
-		
+
 	data = (QUILTIMPLDATA *) calloc(1, sizeof(QUILTIMPLDATA));
 	if(!data)
 	{
@@ -245,9 +245,9 @@ cli_process_(void)
 			{
 				r = -1;
 			}
-			else if(req->status)
+			else if((status = quilt_request_status(req)))
 			{
-				r = req->status;
+				r = status;
 			}
 			else
 			{
@@ -382,15 +382,17 @@ static const char *
 cli_getparam(QUILTREQ *request, const char *name)
 {
 	size_t c, l;
-       
+    QUILTIMPLDATA *data;
+
+	data = quilt_request_impldata(request);
 	l = strlen(name);
-	for(c = 0; request->data->query[c]; c++)
+	for(c = 0; data->query[c]; c++)
 	{
-		if(!strncmp(request->data->query[c], name, l) && request->data->query[c][l] == '=')
+		if(!strncmp(data->query[c], name, l) && data->query[c][l] == '=')
 		{
-			if(request->data->query[c][l + 1])
+			if(data->query[c][l + 1])
 			{
-				return &(request->data->query[c][l + 1]);
+				return &(data->query[c][l + 1]);
 			}
 			return NULL;
 		}
@@ -401,9 +403,12 @@ cli_getparam(QUILTREQ *request, const char *name)
 static int
 cli_put(QUILTREQ *request, const unsigned char *str, size_t len)
 {
-	if(!request->data->headers_sent)
+    QUILTIMPLDATA *data;
+
+	data = quilt_request_impldata(request);
+	if(!data->headers_sent)
 	{
-		request->data->headers_sent = 1;
+		data->headers_sent = 1;
 		if(bulk)
 		{
 			if(cli_bulk_init_(request))
@@ -434,9 +439,12 @@ cli_put(QUILTREQ *request, const unsigned char *str, size_t len)
 static int
 cli_vprintf(QUILTREQ *request, const char *format, va_list ap)
 {
-	if(!request->data->headers_sent)
+    QUILTIMPLDATA *data;
+
+	data = quilt_request_impldata(request);
+	if(!data->headers_sent)
 	{
-		request->data->headers_sent = 1;
+		data->headers_sent = 1;
 		if(bulk)
 		{
 			if(cli_bulk_init_(request))
@@ -467,11 +475,12 @@ cli_vprintf(QUILTREQ *request, const char *format, va_list ap)
 static int
 cli_header(QUILTREQ *request, const unsigned char *str, size_t len)
 {
-	(void) request;
+    QUILTIMPLDATA *data;
 
+	data = quilt_request_impldata(request);
 	if(!bulk)
 	{
-		if(request->data->headers_sent)
+		if(data->headers_sent)
 		{
 			quilt_logf(LOG_WARNING, "cannot send headers; payload has already begun\n");
 			return -1;
@@ -484,11 +493,12 @@ cli_header(QUILTREQ *request, const unsigned char *str, size_t len)
 static int
 cli_headerf(QUILTREQ *request, const char *format, va_list ap)
 {
-	(void) request;
+    QUILTIMPLDATA *data;
 
+	data = quilt_request_impldata(request);
 	if(!bulk)
 	{
-		if(request->data->headers_sent)
+		if(data->headers_sent)
 		{
 			quilt_logf(LOG_WARNING, "cannot send headers; payload has already begun\n");
 			return -1;
@@ -508,7 +518,7 @@ cli_bulk_init_(QUILTREQ *request)
 	{
 		return 0;
 	}
-	path = quilt_canon_str(request->canonical, QCO_CONCRETE|QCO_NOABSOLUTE);
+	path = quilt_canon_str(quilt_request_canonical(request), QCO_CONCRETE|QCO_NOABSOLUTE);
 	t = path + 1;
 	while(*t)
 	{
@@ -554,7 +564,10 @@ cli_bulk_init_(QUILTREQ *request)
 static int
 cli_begin(QUILTREQ *request)
 {
-	request->data->headers_sent = 0;
+    QUILTIMPLDATA *data;
+
+	data = quilt_request_impldata(request);
+	data->headers_sent = 0;
 	return 0;
 }
 

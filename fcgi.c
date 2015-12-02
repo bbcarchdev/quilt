@@ -253,7 +253,7 @@ fcgi_init_(void)
 static int
 fcgi_runloop_(void)
 {
-	int r;
+	int r, status;
 	QUILTIMPLDATA *data;
 	QUILTREQ *req;
 		
@@ -285,9 +285,9 @@ fcgi_runloop_(void)
 			{
 				r = -1;
 			}
-			else if(req->status)
+			else if((status = quilt_request_status(req)))
 			{
-				r = req->status;
+				r = status;
 			}
 			else
 			{
@@ -505,15 +505,20 @@ int fcgi_fallback_error_(QUILTIMPLDATA *data, int status)
 static const char *
 fcgi_getenv(QUILTREQ *request, const char *name)
 {
-	return FCGX_GetParam(name, request->data->req.envp);
+    QUILTIMPLDATA *data;
+
+	data = quilt_request_impldata(request);
+	return FCGX_GetParam(name, data->req.envp);
 }
 
 static const char *
 fcgi_getparam(QUILTREQ *request, const char *name)
 {
 	const char *t;
+    QUILTIMPLDATA *data;
 
-	t = FCGX_GetParam(name, request->data->query);
+	data = quilt_request_impldata(request);
+	t = FCGX_GetParam(name, data->query);
 	if(t && *t)
 	{
 		return t;
@@ -524,45 +529,57 @@ fcgi_getparam(QUILTREQ *request, const char *name)
 static int
 fcgi_put(QUILTREQ *request, const unsigned char *str, size_t len)
 {
-	if(!request->data->headers_sent)
+    QUILTIMPLDATA *data;
+
+	data = quilt_request_impldata(request);
+	if(!data->headers_sent)
 	{
-		request->data->headers_sent = 1;
-		FCGX_PutChar('\n', request->data->req.out);
+		data->headers_sent = 1;
+		FCGX_PutChar('\n', data->req.out);
 	}
-	return FCGX_PutStr((const char *) str, len, request->data->req.out);
+	return FCGX_PutStr((const char *) str, len, data->req.out);
 }
 
 static int
 fcgi_vprintf(QUILTREQ *request, const char *format, va_list ap)
 {
-	if(!request->data->headers_sent)
+    QUILTIMPLDATA *data;
+
+	data = quilt_request_impldata(request);
+	if(!data->headers_sent)
 	{
-		request->data->headers_sent = 1;
-		FCGX_PutChar('\n', request->data->req.out);
+		data->headers_sent = 1;
+		FCGX_PutChar('\n', data->req.out);
 	}
-	return FCGX_VFPrintF(request->data->req.out, format, ap);
+	return FCGX_VFPrintF(data->req.out, format, ap);
 }
 
 static int
 fcgi_header(QUILTREQ *request, const unsigned char *str, size_t len)
 {
-	if(request->data->headers_sent)
+    QUILTIMPLDATA *data;
+
+	data = quilt_request_impldata(request);
+	if(data->headers_sent)
 	{
 		quilt_logf(LOG_WARNING, "cannot send headers; payload has already begun\n");
 		return -1;
 	}
-	return FCGX_PutStr((const char *) str, len, request->data->req.out);
+	return FCGX_PutStr((const char *) str, len, data->req.out);
 }
 
 static int
 fcgi_headerf(QUILTREQ *request, const char *format, va_list ap)
 {
-	if(request->data->headers_sent)
+    QUILTIMPLDATA *data;
+
+	data = quilt_request_impldata(request);
+	if(data->headers_sent)
 	{
 		quilt_logf(LOG_WARNING, "cannot send headers; payload has already begun\n");
 		return -1;
 	}
-	return FCGX_VFPrintF(request->data->req.out, format, ap);
+	return FCGX_VFPrintF(data->req.out, format, ap);
 }
 
 static int
@@ -576,10 +593,13 @@ fcgi_begin(QUILTREQ *request)
 static int
 fcgi_end(QUILTREQ *request)
 {
-	if(!request->data->headers_sent)
+    QUILTIMPLDATA *data;
+
+	data = quilt_request_impldata(request);
+	if(!data->headers_sent)
 	{
-		request->data->headers_sent = 1;
-		FCGX_PutChar('\n', request->data->req.out);
+		data->headers_sent = 1;
+		FCGX_PutChar('\n', data->req.out);
 	}
 	return 0;
 }
