@@ -22,6 +22,8 @@ struct class_struct
 
 extern QUILTTYPE html_types[];
 extern struct class_struct html_classes[];
+extern char *html_baseuri;
+extern size_t html_baseurilen;
 
 int html_template_init(void);
 LIQUIFYTPL *html_template(QUILTREQ *req);
@@ -33,5 +35,6 @@ struct class_struct *html_class_match(librdf_model *model, librdf_node *subject)
 
 int html_add_common(json_t *dict, QUILTREQ *req);
 int html_add_request(json_t *dict, QUILTREQ *req);
+int html_add_model(json_t *dict, QUILTREQ *req);
 
 #endif /*!P_HTML_H_*/
