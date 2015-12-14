@@ -130,7 +130,7 @@ file_process(QUILTREQ *request)
 		free(pathname);
 		return 404;
 	}
-	basestr = quilt_request_baseuristr(request);
+	basestr = quilt_request_subject(request);
 	base = librdf_new_uri(world, (const unsigned char *) basestr);
 	if(!base)
 	{
