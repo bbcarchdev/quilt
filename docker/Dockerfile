@@ -36,6 +36,8 @@ RUN 	cp apache2-example.conf /etc/apache2/sites-available/quilt && \
 RUN sed -i -e 's|; root=|root=|' /usr/local/etc/quilt.conf
 
 RUN a2dissite 000-default && a2ensite quilt
+RUN	ln -sf /dev/stdout /var/log/apache2/quilt.access.log && \
+	ln -sf /dev/stderr /var/log/apache2/error.log
 
 EXPOSE 80
 
