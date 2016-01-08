@@ -18,7 +18,7 @@ RUN a2enmod rewrite
 
 # Mount dir
 COPY . /usr/local/src/
-WORKDIR /usr/loca/src
+WORKDIR /usr/local/src
 
 # Compile
 RUN 	autoreconf -i && \
