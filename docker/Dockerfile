@@ -11,7 +11,7 @@ ENV APACHE_RUN_DIR	/var/run/apache2
 ENV APACHE_LOCK_DIR	/var/lock/apache2
 
 # Install Quilt-specific dependencies
-RUN apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \
 	liburi-dev libsparqlclient-dev \
 	apache2 libapache2-mod-fcgid
 RUN a2enmod rewrite
