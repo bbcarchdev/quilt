@@ -201,11 +201,11 @@ quilt_model_parse(librdf_model *model, const char *mime, const char *buf, size_t
 	/* Handle specific MIME types whether or not librdf already knows
 	 * about them
 	 */
-	if(!strcmp(mime, "application/trig"))
+	if(!strcasecmp(mime, "application/trig"))
 	{
 		name = "trig";
 	}
-	else if(!strcmp(mime, "application/nquads") || !strcmp(mime, "application/x-nquads") || !strcmp(mime, "text/x-nquads"))
+	else if(!strcasecmp(mime, "application/nquads") || !strcasecmp(mime, "application/n-quads") || !strcasecmp(mime, "application/x-nquads") || !strcasecmp(mime, "text/x-nquads"))
 	{
 		name = "nquads";
 	}
