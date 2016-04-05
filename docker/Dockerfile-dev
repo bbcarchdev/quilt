@@ -1,0 +1,67 @@
+FROM debian:wheezy
+MAINTAINER Simeon van der Steen <simeon.vandersteen@bbc.co.uk>
+
+# Add bbcarchdev apt repo
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 9E16A4D302DA096A && \
+	echo "deb [arch=amd64] http://apt.bbcarchdev.net/debian/ wheezy main ports live stage dev" \
+	>> /etc/apt/sources.list.d/bbcarchdev-wheezy.list && apt-get update
+
+# Install everything needed to compile
+RUN apt-get -y update && apt-get install -y --no-install-recommends \
+	apt-transport-https ca-certificates vim ngrep procps tcpdump \
+	build-essential libtool libltdl-dev automake \
+	autoconf pkg-config libcurl4-gnutls-dev autotools-dev \
+	libraptor2-dev librasqal3-dev librdf0-dev libfcgi-dev \
+	libjansson-dev gtk-doc-tools xsltproc libxml2-dev libssl-dev \
+	cmake flex itstool docbook-xml docbook-xsl docbook-xsl-ns \
+	gettext python-libxml2 libmysqlclient-dev \
+	uuid-dev libncurses5-dev libedit-dev raptor2-utils \
+	liburi-dev libsparqlclient-dev quilt-templates-res \
+	apache2 libapache2-mod-fcgid libtwine-dev libawsclient-dev \
+	&& rm -rf /var/lib/apt/lists/*
+
+# Take care of Quilt
+COPY src-quilt /usr/local/src-quilt
+WORKDIR /usr/local/src-quilt
+RUN autoreconf -i && \
+	./configure --prefix=/usr --enable-debug && \
+	make && \
+	make install
+	
+# Copy the config file
+COPY quilt.conf /usr/etc/quilt.conf
+RUN ln /usr/etc/quilt.conf /etc/quilt.conf
+
+# Link the FCGI script
+RUN ln -s /usr/sbin/quilt-fcgid /usr/share/quilt-templates-res/public/index.fcgi
+
+# Take care of Spindle
+COPY src-spindle /usr/local/src-spindle
+WORKDIR /usr/local/src-spindle
+RUN autoreconf -i && \
+	./configure --prefix=/usr --enable-debug && \
+	make && \
+	make install
+
+# Configure apache
+ENV APACHE_RUN_USER	 www-data
+ENV APACHE_RUN_GROUP www-data
+ENV APACHE_LOG_DIR	 /var/log/apache2
+ENV APACHE_PID_FILE	 /var/run/apache2.pid
+ENV APACHE_RUN_DIR	 /var/run/apache2
+ENV APACHE_LOCK_DIR	 /var/lock/apache2
+RUN a2enmod rewrite
+RUN mkdir /var/run/apache2
+COPY apache2.conf /etc/apache2/sites-available/quilt
+RUN a2dissite 000-default && a2ensite quilt
+RUN	ln -sf /dev/stdout /var/log/apache2/quilt.access.log && \
+	ln -sf /dev/stderr /var/log/apache2/error.log
+EXPOSE 80
+
+# Copy the run script for the configuration
+COPY run.sh /
+ENTRYPOINT [ "/run.sh" ]
+
+# Launch apache2
+CMD [ "apache2", "-DFOREGROUND" ]
