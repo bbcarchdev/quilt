@@ -3,6 +3,14 @@ set -e
 
 # TODO: Set default env vars somewhere in case they don't come with "docker run"
 
+# Wait for postgres, if we're using spindle
+if [ "${ENGINE}" = "spindle" ]; then
+        until nc -z $POSTGRES_PORT_5432_TCP_ADDR $POSTGRES_PORT_5432_TCP_PORT; do
+            echo "$(date) - waiting for postgres..."
+            sleep 2
+        done
+fi
+
 if [ ! -f /init-done ]; then
 	echo "Initialising Quilt.."
 
