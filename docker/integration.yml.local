@@ -1,0 +1,16 @@
+quilt:
+  image: quilt
+  ports:
+   - "6000:80"
+  environment:
+   - HOST_NAME=quilt
+   - ENGINE=file
+  volumes:
+   - ./cucumber:/data
+   
+cucumber:
+  image: vm-10-100-0-25.ch.bbcarchdev.net/cucumber
+  links:
+   - quilt:quilt
+  volumes:
+   - ./cucumber:/data
