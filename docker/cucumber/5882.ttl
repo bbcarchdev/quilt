@@ -1,0 +1,43 @@
+@prefix cc: <http://creativecommons.org/ns#> .
+@prefix dc: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <http://schema.org/> .
+@prefix wikibase: <http://www.wikidata.org/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://www.dbpedialite.org/things/5882.ttl> a foaf:Document;
+   dc:title "dbpedia lite thing - Cardiff";
+   cc:license <http://creativecommons.org/licenses/by-sa/3.0/>,
+     <http://gnu.org/licenses/fdl-1.3.html>;
+   foaf:primaryTopic <http://www.dbpedialite.org/things/5882#id> .
+
+<http://en.wikipedia.org/wiki/Cardiff> a schema:Article;
+   schema:about <http://www.dbpedialite.org/things/5882#id>,
+     <http://www.wikidata.org/entity/Q10690>;
+   schema:inLanguage "en" .
+
+<http://www.dbpedialite.org/things/5882#id> a owl:Thing;
+   rdfs:label "Cardiff";
+   rdfs:comment "Cardiff is the capital and largest city in Wales and the tenth largest city in the United Kingdom. The city is the country's chief commercial centre, the base for most national cultural and sporting institutions, the Welsh national media, and the seat of the National Assembly for Wales. The unitary authority area's mid-2011 population was estimated to be 346,100, while the population of the Larger Urban Zone was estimated at 861,400 in 2009. Cardiff is part of the Cardiff and south Wales valleys metropolitan area of about 1,100,000 people. Cardiff is a significant tourist centre and the most popular visitor destination in Wales with 18.3 million visitors in 2010. In 2011, Cardiff was...";
+   owl:sameAs <http://dbpedia.org/resource/Cardiff>,
+     <http://rdf.freebase.com/ns/guid.9202a8c04000641f800000000000e07a>,
+     <http://rdf.freebase.com/ns/m.01s3v>,
+     <http://www.wikidata.org/entity/Q10690>;
+   geo:lat 51.483;
+   geo:long -3.183;
+   foaf:isPrimaryTopicOf <http://en.wikipedia.org/wiki/Cardiff>;
+   foaf:page <https://www.dmoz.org/Regional/Europe/United_Kingdom/Wales/Cardiff>,
+     <http://www.cardiff.gov.uk/>,
+     <http://web.archive.org/web/20070611182621/http://www.british-history.ac.uk/catalogue.asp?gid=92>,
+     <http://www.wales.com/en/content/cms/English/About_Wales/Regions/South_East/South_East.aspx>,
+     <//www.worldcat.org/identities/containsVIAFID/44144648272961285628> .
+
+<http://www.wikidata.org/entity/Q10690> a wikibase:Item;
+   rdfs:label "Cardiff"@en;
+   schema:description "city in the United Kingdom, capital city of Wales"@en;
+   schema:name "Cardiff"@en .
+

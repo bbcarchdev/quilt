@@ -26,14 +26,13 @@ then
 	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} rm -f
 	
 	# Start project integration
-	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} up -d
+	# docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} up -d
 	
 	# Build and run integration tester
 	# docker run --rm=true --link=${PROJECT_NAME//-}_${PROJECT_NAME}_1:${PROJECT_NAME} ${PROJECT_NAME}-test
 	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} run cucumber
 	
 	# Tear down integration
-	# FIXME
-	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} stop
+	# docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} stop
 	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} rm -f
 fi
