@@ -15,9 +15,9 @@ fi
 
 if [ -f "${INTEGRATION}.default" ]
 then
-	if [ ! -f "${INTEGRATION}" ]
+	if [ ! -f "${INTEGRATION}" ] || [ "${INTEGRATION}.default" -nt "${INTEGRATION}" ]
 	then
-		cp ${INTEGRATION}.default ${INTEGRATION}
+		cp "${INTEGRATION}.default" "${INTEGRATION}"
 	fi
 
 	# Tear down integration from previous run if it was still running
@@ -33,6 +33,6 @@ then
 	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} run cucumber
 	
 	# Tear down integration
-	# docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} stop
+	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} stop
 	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} rm -f
 fi
