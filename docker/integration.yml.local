@@ -1,7 +1,5 @@
 quilt:
   image: quilt
-  ports:
-   - "80:80"
   environment:
    - HOST_NAME=quilt
    - ENGINE=file

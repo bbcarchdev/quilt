@@ -1,7 +1,5 @@
 quilt:
   image: vm-10-100-0-25.ch.bbcarchdev.net/quilt
-  ports:
-   - "80:80"
   environment:
    - HOST_NAME=quilt
    - ENGINE=file
