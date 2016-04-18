@@ -18,10 +18,10 @@ then
 	if [ ! -f "${INTEGRATION}" ] || [ "${INTEGRATION}.default" -nt "${INTEGRATION}" ]
 	then
 		cp "${INTEGRATION}.default" "${INTEGRATION}"
-                if [ ! "${JENKINS_JOB}" = '' ]
+                if [ ! "${JENKINS_HOME}" = '' ]
                 then
                         # Change "in-container" mount path to host mount path
-                        sed -i -e "s|- \./|- ${HOST_DATADIR}jobs/${JENKINS_JOB}/workspace/docker/|" "${INTEGRATION}"
+                        sed -i -e "s|- \./|- ${HOST_DATADIR}jobs/${JOB_NAME}/workspace/docker/|" "${INTEGRATION}"
                 fi
 	fi
 
