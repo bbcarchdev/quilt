@@ -2,7 +2,8 @@
 DOCKER_REGISTRY="vm-10-100-0-25.ch.bbcarchdev.net"
 PROJECT_NAME="quilt"
 INTEGRATION="docker/integration.yml"
-LOCALINTEGRATION="/tmp/patched-integration.yml"
+LOCALINTEGRATION="docker/local-integration.yml"
+CURRENTDIR=`pwd`
 
 # Build the project
 docker build -t ${PROJECT_NAME} -f docker/Dockerfile-build .
@@ -18,11 +19,16 @@ if [ -f "${INTEGRATION}" ]
 then
 	if [ ! -f "${LOCALINTEGRATION}" ] || [ "${INTEGRATION}" -nt "${LOCALINTEGRATION}" ]
 	then
+		# Copy the generic YML file
 		cp ${INTEGRATION} ${LOCALINTEGRATION}
+		
+		# Turn the local paths into absolute ones
         if [ ! "${JENKINS_HOME}" = '' ]
         then
             # Change "in-container" mount path to host mount path
             sed -i -e "s|- \./|- ${HOST_DATADIR}jobs/${JOB_NAME}/workspace/docker/|" ${LOCALINTEGRATION}
+    	else
+            sed -i -e "s|- \./|- ${CURRENTDIR}/|" ${LOCALINTEGRATION}
         fi
 	fi
 
