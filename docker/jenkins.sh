@@ -2,7 +2,6 @@
 DOCKER_REGISTRY="vm-10-100-0-25.ch.bbcarchdev.net"
 PROJECT_NAME="quilt"
 INTEGRATION="docker/integration.yml"
-LOCALINTEGRATION="docker/local-integration.yml"
 CURRENTDIR=`pwd`
 
 # Build the project
@@ -15,31 +14,28 @@ then
 	docker push ${DOCKER_REGISTRY}/${PROJECT_NAME}
 fi
 
-if [ -f "${INTEGRATION}" ]
+if [ -f "${INTEGRATION}.default" ]
 then
-	if [ ! -f "${LOCALINTEGRATION}" ] || [ "${INTEGRATION}" -nt "${LOCALINTEGRATION}" ]
-	then
 		# Copy the generic YML file
-		cp ${INTEGRATION} ${LOCALINTEGRATION}
+		cp ${INTEGRATION}.default ${INTEGRATION}
 		
 		# Turn the local paths into absolute ones
         if [ ! "${JENKINS_HOME}" = '' ]
         then
             # Change "in-container" mount path to host mount path
-            sed -i -e "s|- \./|- ${HOST_DATADIR}jobs/${JOB_NAME}/workspace/docker/|" ${LOCALINTEGRATION}
+            sed -i -e "s|- \./|- ${HOST_DATADIR}jobs/${JOB_NAME}/workspace/docker/|" ${INTEGRATION}
     	else
-            sed -i -e "s|- \./|- ${CURRENTDIR}/|" ${LOCALINTEGRATION}
+            sed -i -e "s|- \./|- ${CURRENTDIR}/|" ${INTEGRATION}
         fi
-	fi
 
 	# Tear down integration from previous run if it was still running
-	docker-compose -p ${PROJECT_NAME}-test -f ${LOCALINTEGRATION} stop
-	docker-compose -p ${PROJECT_NAME}-test -f ${LOCALINTEGRATION} rm -f
+	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} stop
+	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} rm -f
 
 	# Start project integration
-	docker-compose -p ${PROJECT_NAME}-test -f ${LOCALINTEGRATION} run cucumber
+	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} run cucumber
 
 	# Tear down integration
-	docker-compose -p ${PROJECT_NAME}-test -f ${LOCALINTEGRATION} stop
-	docker-compose -p ${PROJECT_NAME}-test -f ${LOCALINTEGRATION} rm -f
+	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} stop
+	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} rm -f
 fi

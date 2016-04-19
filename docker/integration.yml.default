@@ -1,0 +1,14 @@
+quilt:
+  image: quilt
+  environment:
+   - HOST_NAME=quilt
+   - ENGINE=file
+  volumes:
+   - ./docker/cucumber:/data
+   
+cucumber:
+  image: vm-10-100-0-25.ch.bbcarchdev.net/cucumber
+  links:
+   - quilt:quilt
+  volumes:
+   - ./docker/cucumber:/data
