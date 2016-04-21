@@ -12,7 +12,7 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends \
 	netcat netcat-traditional vim build-essential\
 	autoconf automake libtool libcurl4-gnutls-dev librdf0-dev liburi-dev \
 	libsparqlclient-dev libltdl-dev libfcgi-dev libjansson-dev \
-	libsparqlclient libjansson4 liburi libsparqlclient-dev libjansson-dev \ 
+	libsparqlclient libjansson4 liburi libsparqlclient-dev libjansson-dev \
 	liburi-dev libfcgi0ldbl apache2 libapache2-mod-fcgid libtwine-dev \
 	quilt-templates-res quilt-engine-spindle libawsclient-dev \
 	&& rm -rf /var/lib/apt/lists/*
@@ -23,7 +23,7 @@ WORKDIR /usr/local/src
 RUN autoreconf -i && \
 	./configure --prefix=/usr --enable-debug && \
 	make && make install
-	
+
 # Link the config file to its actual usage location
 RUN rm -f /usr/etc/quilt.conf
 RUN ln /usr/local/src/docker/quilt.conf /usr/etc/quilt.conf
@@ -55,7 +55,6 @@ ENTRYPOINT [ "/run.sh" ]
 # Define mount points and working directory, also used for static files
 VOLUME ["/data"]
 WORKDIR /data
-COPY . /data
 
 # Launch apache2
 CMD [ "apache2", "-DFOREGROUND" ]

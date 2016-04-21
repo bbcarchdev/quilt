@@ -2,7 +2,6 @@
 DOCKER_REGISTRY="vm-10-100-0-25.ch.bbcarchdev.net"
 PROJECT_NAME="quilt"
 INTEGRATION="docker/integration.yml"
-CURRENTDIR=`pwd`
 
 # Build the project
 docker build -t ${PROJECT_NAME} -f docker/Dockerfile-build .
@@ -16,16 +15,14 @@ fi
 
 if [ -f "${INTEGRATION}.default" ]
 then
-		# Copy the generic YML file
-		cp ${INTEGRATION}.default ${INTEGRATION}
-		
-		# Turn the local paths into absolute ones
+	# Copy the generic YML file
+	cp ${INTEGRATION}.default ${INTEGRATION}
+
+	# Turn the local paths into absolute ones
         if [ ! "${JENKINS_HOME}" = '' ]
         then
             # Change "in-container" mount path to host mount path
-            sed -i -e "s|- \./|- ${HOST_DATADIR}jobs/${JOB_NAME}/workspace/|" ${INTEGRATION}
-    	else
-            sed -i -e "s|- \./|- ${CURRENTDIR}/|" ${INTEGRATION}
+            sed -i -e "s|- \./|- ${HOST_DATADIR}jobs/${JOB_NAME}/workspace/docker/|" ${INTEGRATION}
         fi
 
 	# Tear down integration from previous run if it was still running
