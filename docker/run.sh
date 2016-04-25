@@ -18,7 +18,7 @@ if [ ! -f /init-done ]; then
 	sed -i -e "s|HOST_NAME|${HOST_NAME-http://acropolis.org.uk}|" /etc/apache2/sites-available/quilt
 	sed -i -e "s|HOST_NAME|http://${HOST_NAME-acropolis.org.uk}/|" /usr/etc/quilt.conf
 	sed -i -e "s|ENGINE|${ENGINE-file}|g" /usr/etc/quilt.conf
-	sed -i -e "s|DATA_DIR_TTL|${DATA_DIR_TTL-/share/quilt/sample}|" /usr/etc/quilt.conf
+	sed -i -e "s|DATA_DIR_TTL|${DATA_DIR_TTL-/data}|" /usr/etc/quilt.conf
 	# Triple store settings
 	sed -i -e "s|TRIPLESTORE_SPARQL|$TRIPLESTORE_SPARQL|" /usr/etc/quilt.conf
 	# s3 settings
