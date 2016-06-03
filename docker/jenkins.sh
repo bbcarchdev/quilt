@@ -4,7 +4,7 @@ PROJECT_NAME="quilt"
 INTEGRATION="docker/integration.yml"
 
 # Build the project
-docker build -t ${PROJECT_NAME} -f docker/Dockerfile-build .
+docker build -t ${PROJECT_NAME} -f docker/Dockerfile-build ../
 
 # If successfully built, tag and push to registry
 if [ ! "${JENKINS_HOME}" = '' ]
@@ -22,17 +22,15 @@ then
         if [ ! "${JENKINS_HOME}" = '' ]
         then
             # Change "in-container" mount path to host mount path
-            sed -i -e "s|- \./|- ${HOST_DATADIR}jobs/${JOB_NAME}/workspace/docker/|" ${INTEGRATION}
+            sed -i -e "s|- \./|- ${HOST_DATADIR}jobs/${JOB_NAME}/workspace/quilt/docker/|" ${INTEGRATION}
         fi
 
 	# Tear down integration from previous run if it was still running
-	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} stop
-	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} rm -f
+	docker-compose -p ${PROJECT_NAME} -f ${INTEGRATION} down
 
 	# Start project integration
-	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} run cucumber
+	docker-compose -p ${PROJECT_NAME} -f ${INTEGRATION} run cucumber
 
 	# Tear down integration
-	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} stop
-	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} rm -f
+	docker-compose -p ${PROJECT_NAME} -f ${INTEGRATION} down
 fi

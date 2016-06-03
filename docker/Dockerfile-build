@@ -18,38 +18,50 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Compile and install Quilt
-COPY . /usr/local/src
-WORKDIR /usr/local/src
+COPY quilt /usr/local/src/quilt
+WORKDIR /usr/local/src/quilt
 RUN autoreconf -i && \
 	./configure --prefix=/usr --enable-debug && \
 	make && make install
 
+# Take care of Spindle
+COPY spindle /usr/local/src/spindle
+WORKDIR /usr/local/src/spindle
+RUN autoreconf -i && \
+	./configure --prefix=/usr --enable-debug && \
+	make && \
+	make install
+
+WORKDIR /usr/local/src/quilt
+
 # Link the config file to its actual usage location
 RUN rm -f /usr/etc/quilt.conf
-RUN ln /usr/local/src/docker/quilt.conf /usr/etc/quilt.conf
+RUN ln docker/quilt.conf /usr/etc/quilt.conf
 RUN rm -f /etc/quilt.conf
-RUN ln /usr/local/src/docker/quilt.conf /etc/quilt.conf
+RUN ln docker/quilt.conf /etc/quilt.conf
 
 # Link the FCGI script
 RUN ln -s /usr/sbin/quilt-fcgid /usr/share/quilt-templates-res/public/index.fcgi
 
 # Configure apache
-ENV APACHE_RUN_USER	 www-data
-ENV APACHE_RUN_GROUP www-data
-ENV APACHE_LOG_DIR	 /var/log/apache2
-ENV APACHE_PID_FILE	 /var/run/apache2.pid
-ENV APACHE_RUN_DIR	 /var/run/apache2
-ENV APACHE_LOCK_DIR	 /var/lock/apache2
+ENV APACHE_RUN_USER	www-data
+ENV APACHE_RUN_GROUP	www-data
+ENV APACHE_LOG_DIR	/var/log/apache2
+ENV APACHE_PID_FILE	/var/run/apache2.pid
+ENV APACHE_RUN_DIR	/var/run/apache2
+ENV APACHE_LOCK_DIR	/var/lock/apache2
+
 RUN a2enmod rewrite
 RUN mkdir /var/run/apache2
-COPY docker/apache2.conf /etc/apache2/sites-available/quilt
+RUN cp docker/apache2.conf /etc/apache2/sites-available/quilt
 RUN a2dissite 000-default && a2ensite quilt
 RUN	ln -sf /dev/stdout /var/log/apache2/quilt.access.log && \
 	ln -sf /dev/stderr /var/log/apache2/error.log
+
 EXPOSE 80
 
 # Copy the run script for the configuration
-COPY docker/run.sh /
+RUN cp docker/run.sh /
 ENTRYPOINT [ "/run.sh" ]
 
 # Define mount points and working directory, also used for static files
