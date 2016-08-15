@@ -4,12 +4,12 @@ PROJECT_NAME="quilt"
 INTEGRATION="docker/integration.yml"
 
 # Build the project
-docker build -t ${PROJECT_NAME} -f docker/Dockerfile-build ../
+docker build --no-cache -t ${PROJECT_NAME} -f docker/Dockerfile-build ../
 
 # If successfully built, tag and push to registry
 if [ ! "${JENKINS_HOME}" = '' ]
 then
-	docker tag -f ${PROJECT_NAME} ${DOCKER_REGISTRY}/${PROJECT_NAME}
+	docker tag ${PROJECT_NAME} ${DOCKER_REGISTRY}/${PROJECT_NAME}
 	docker push ${DOCKER_REGISTRY}/${PROJECT_NAME}
 fi
 
