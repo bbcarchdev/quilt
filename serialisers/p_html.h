@@ -44,6 +44,9 @@ int html_add_common(json_t *dict, QUILTREQ *req);
 int html_add_request(json_t *dict, QUILTREQ *req);
 int html_add_model(json_t *dict, QUILTREQ *req);
 
+/* Make functions available for cunit */
+int sort_items_by_index(json_t **items, int size);
+
 /* Debian Wheezy ships with libjansson 2.3, which doesn't include
  * json_array_foreach()
  */

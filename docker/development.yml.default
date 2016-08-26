@@ -3,6 +3,7 @@
 quilt:
   build: ../../
   dockerfile: quilt/docker/Dockerfile-build
+  privileged: true
   ports:
    - "80:80"
   volumes:

@@ -20,6 +20,8 @@ AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libquilt -I$(top_srcdir)/libquilt \
 	-I$(top_builddir)/libliquify -I$(top_srcdir)/libliquify
 
+SUBDIRS = t
+
 moduledir = $(libdir)/quilt
 
 module_LTLIBRARIES = html.la text.la

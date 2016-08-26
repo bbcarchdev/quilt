@@ -37,6 +37,7 @@ AC_DEFINE_UNQUOTED([PACKAGE_SIGNATURE], ["Quilt/" PACKAGE_VERSION], [The server 
 BT_ENABLE_POSIX_FULL
 AC_SYS_LARGEFILE
 
+AC_CHECK_LIB([cunit], [CU_initialize_registry])
 AC_CHECK_FUNCS([strlcpy strlcat])
 
 BT_REQUIRE_LIBDL
@@ -105,6 +106,7 @@ public/Makefile
 libquilt/Makefile
 engines/Makefile
 serialisers/Makefile
+serialisers/t/Makefile
 sample-data/Makefile
 apache2-example.conf
 docbook-html5/Makefile

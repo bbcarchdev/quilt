@@ -22,19 +22,9 @@
 #endif
 
 #include "p_html.h"
-
-static json_t *html_model_items_(QUILTREQ *req, librdf_model *model);
-static int html_model_subject_(QUILTREQ *req, json_t *item, librdf_model *model, librdf_node *subject, const char *uri);
-static int html_model_predicate_(QUILTREQ *req, json_t *value, librdf_node *predicate, const char *uri);
-static int html_model_object_(QUILTREQ *req, json_t *value, librdf_node *object);
-static char *html_model_abstract_(QUILTREQ *req, librdf_model *model, json_t *items, json_t **item);
-static char *html_model_primaryTopic_(QUILTREQ *req, librdf_model *model, json_t *items, const char *abstractUri, json_t **item);
-static json_t *html_model_results_(QUILTREQ *req, librdf_model *model, json_t *items, json_t *primaryTopic);
-static int html_model_item_is_(json_t *item, const char *classuri);
-static char *get_title(QUILTREQ *req, librdf_model *model, librdf_node *subject);
-static char *get_shortdesc(QUILTREQ *req, librdf_model *model, librdf_node *subject);
-static char *get_longdesc(QUILTREQ *req, librdf_model *model, librdf_node *subject);
-static char *get_literal(QUILTREQ *req, librdf_model *model, librdf_node *subject, const char *predicate);
+#include <jansson.h>
+#include <libquilt.h>
+#include "model.h"
 
 /* Populate the template data with information from the RDF model.
  *
@@ -42,6 +32,7 @@ static char *get_literal(QUILTREQ *req, librdf_model *model, librdf_node *subjec
  *
  * 'data': a hash (where the subject URI is the key) of all of the data in
  *    the model.
+ * 'results': an ordered array of Result items.
  * 'abstractUri': the URI of the abstract document
  * 'abstract': copied from data[abstractUri]
  * 'primaryTopicUri': the URI of the primary topic in the model
@@ -89,15 +80,12 @@ html_add_model(json_t *dict, QUILTREQ *req)
 				json_object_set(dict, "title", k);
 			}
 		}
+		results = html_model_results_(req, items);
 	}
-	results = html_model_results_(req, model, items, primaryTopic);
-	if(results)
-	{
-		json_object_set(dict, "results", results);
-	}
+	json_object_set_new(dict, "results", results);
+	json_object_set_new(dict, "data", items);
 	free(abstractUri);
 	free(primaryTopicUri);
-	json_object_set_new(dict, "data", items);
 	return 0;
 }
 
@@ -147,7 +135,7 @@ html_model_primaryTopic_(QUILTREQ *req, librdf_model *model, json_t *items, cons
 	{	
 		json_object_set_new(*item, "me", json_true());
 	}
-	return uri;	
+	return uri;
 }
 
 /* Create an object based upon the content of the model, organised by subject.
@@ -155,25 +143,25 @@ html_model_primaryTopic_(QUILTREQ *req, librdf_model *model, json_t *items, cons
  * The resulting object is substituted into the template with the name 'data',
  * and takes the following form:
 
-	  data[subject] = {
-	     subject: 'http://...',
-		 subjectLink: '<a href="...">...</a>',
-		 classLabel: 'Thing',
-		 classSuffix: '(Thing)',
-		 props: {
-		   '@': [
-		     {
-                predicate: '...',
-				value: 'abc123',
-				htmlValue: '<a href="...">abc123</a>',
-				type: 'literal',
-				datatype: null,
-				language: null
-			 }
-		   ]
-		 }
-     }
-*/
+	data[subject] = {
+		subject: 'http://...',
+		subjectLink: '<a href="...">...</a>',
+		classLabel: 'Thing',
+		classSuffix: '(Thing)',
+		props: {
+			'@': [
+				{
+				    predicate: '...',
+				    value: 'abc123',
+				    htmlValue: '<a href="...">abc123</a>',
+				    type: 'literal',
+				    datatype: null,
+				    language: null
+				}
+			]
+		}
+	}
+ */
 static json_t *
 html_model_items_(QUILTREQ *req, librdf_model *model)
 {
@@ -213,7 +201,7 @@ html_model_items_(QUILTREQ *req, librdf_model *model)
 				json_object_set_new(item, "result", json_false());
 				json_object_set_new(item, "abstract", json_false());
 				html_model_subject_(req, item, model, subj, uri);
-				props = json_object();			   
+				props = json_object();
 				json_object_set_new(item, "props", props);
 			}
 
@@ -276,7 +264,7 @@ html_model_subject_(QUILTREQ *req, json_t *item, librdf_model *model, librdf_nod
 		buf = quilt_uri_contract(uri);
 		json_object_set_new(item, "link", json_string(uri));
 		json_object_set_new(item, "uri", json_string(buf));
-	}	
+	}
 	c = html_class_match(model, subject);
 	str = get_title(req, model, subject);
 	if(str)
@@ -334,7 +322,7 @@ html_model_subject_(QUILTREQ *req, json_t *item, librdf_model *model, librdf_nod
 		json_object_set_new(item, "class", json_string(""));
 		json_object_set_new(item, "classSuffix", json_string(""));
 	}
-	
+
 	if(quilt_model_find_double(model, uri, NS_GEO "long", &lon) == 1 &&
 	   quilt_model_find_double(model, uri, NS_GEO "lat", &lat) == 1)
 	{
@@ -401,7 +389,7 @@ html_model_object_(QUILTREQ *req, json_t *value, librdf_node *object)
 	else if(librdf_node_is_literal(object))
 	{
 		str = (const char *) librdf_node_get_literal_value(object);
-		
+
 		json_object_set_new(value, "type", json_string("literal"));
 		json_object_set_new(value, "isLiteral", json_true());
 		json_object_set_new(value, "value", json_string(str));
@@ -431,38 +419,107 @@ html_model_object_(QUILTREQ *req, json_t *value, librdf_node *object)
 	return 0;
 }
 
-/* Optionally generate and return 'results' array, which is an ordered list
+/* Generate and return 'results' array, which is an ordered list
  * of slot entries, each of which has the form:
- * { index: nnn, item: { ... } }
+ * [ {
+ *	   <result item data>...,
+ *	   slot: true/false,
+ *	   index: value of olo:index,
+ *	   key: value of olo:item,
+ *	   item: { <the item object referenced by olo:item> },
+ *	 }
+ * ]
  *
- * For each item matched by this, their 'result' member is set to to true.
- *
- * This only occurs if an ordered resultset is attached to the 
- * primaryTopic (if there is one).
- *
- * In either case, any objects in 'items' whose classes include olo:Slot have
+ * Any objects in 'items' whose classes include olo:Slot have
  * their 'slot' member set to true so that templates can skip them.
+ * 
+ * Returns:
+ *	 json_t *sorted_results
  */
 static json_t *
-html_model_results_(QUILTREQ *req, librdf_model *model, json_t *items, json_t *primaryTopic)
+html_model_results_(QUILTREQ *req, json_t *items)
 {
-	json_t *results, *value;
+	json_t *item, *value, *props;
 	const char *key;
+	int i;
+	int size = MAX(req->limit, req->deflimit);
+	json_t* results[size];
+	int item_index=0;
 
-	(void) req;
-	(void) model;
-	(void) primaryTopic;
-
-	results = NULL;	
-	json_object_foreach(items, key, value)
+	json_object_foreach(items, key, item)
 	{
-		if(html_model_item_is_(value, NS_OLO "Slot"))
+		quilt_logf(LOG_ERR, QUILT_PLUGIN_NAME "key: <%s>\n", key);
+		if(html_model_item_is_(item, NS_OLO "Slot"))
 		{
-			json_object_set_new(value, "slot", json_true());
+			json_object_set_new(item, "slot", json_true());
+			props = json_object_get(item, "props");
+
+			/* get the index value and store in item.index */
+			json_t *olo_index = json_object_get(props, NS_OLO "index");
+			json_array_foreach(olo_index, i, value)
+			{
+				json_t *index = json_object_get(value, "value");
+				if (json_typeof(index) == JSON_STRING)
+				{
+					json_object_set(item, "index", index);
+				}
+			}
+
+			/* get the item value and store in item.key */
+			json_t *olo_item = json_object_get(props, NS_OLO "item");
+			json_array_foreach(olo_item, i, value)
+			{
+				json_t *item_value = json_object_get(value, "value");
+				if (json_typeof(item_value) == JSON_STRING)
+				{
+					json_object_set(item, "key", item_value);
+					json_object_set(item, "item", json_object_get(items, json_string_value(item_value)));
+				}
+			}
+
+		/* store item in results array for sorting */
+		results[item_index++] = item;
 		}
 	}
-	return results;
+
+	sort_items_by_index(results, item_index);
+
+	/* Convert C array back to json */
+	json_t *sorted_items = json_array();
+	for (i=0; i<item_index; i++)
+	{
+		json_array_append(sorted_items, results[i]);
+	}
+
+	return sorted_items;
 }
+
+/* Compare two items by item.index */
+static int
+cmp_index(const void *a, const void *b)
+{
+	json_t *item_a = *(json_t * const *)a;
+	json_t *item_b = *(json_t * const *)b;
+	char *json_index_a = json_string_value(json_object_get(item_a, "index"));
+	char *json_index_b = json_string_value(json_object_get(item_b, "index"));
+	long index_a = strtol(json_index_a, NULL, 10);
+	long index_b = strtol(json_index_b, NULL, 10);
+
+	return (index_a - index_b);
+}
+
+
+/* Sort an array of result items by the item.index value
+ * Args:
+ *	json_t *items - json_object of key/value pairs where value is item
+ */
+int
+sort_items_by_index(json_t **items, int size)
+{
+	qsort(items, size, sizeof(items[0]), cmp_index);
+	return(0);
+}
+
 
 /* Determine if the object 'item' has the RDF class 'classuri' */
 static int
@@ -544,7 +601,7 @@ get_literal(QUILTREQ *req, librdf_model *model, librdf_node *subject, const char
 	const char *l, *value;
 
 	(void) req;
-	
+
 	world = quilt_librdf_world();
 	specific = NULL;
 	generic = NULL;

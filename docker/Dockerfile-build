@@ -9,13 +9,17 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 9E16A4D302DA096A &&
 
 # Install everything needed to compile and run Quilt
 RUN apt-get -y update && apt-get install -y --no-install-recommends \
-	netcat netcat-traditional vim build-essential\
+	netcat netcat-traditional vim build-essential \
 	autoconf automake libtool libcurl4-gnutls-dev librdf0-dev liburi-dev \
 	libsparqlclient-dev libltdl-dev libfcgi-dev libjansson-dev \
 	libsparqlclient libjansson4 liburi libsparqlclient-dev libjansson-dev \
-	liburi-dev libfcgi0ldbl apache2 libapache2-mod-fcgid libtwine-dev \
-	quilt-templates-res quilt-engine-spindle libawsclient-dev \
-	&& rm -rf /var/lib/apt/lists/*
+	liburi-dev libfcgi0ldbl apache2 libapache2-mod-fcgid
+
+RUN apt-get -y install libcunit1-ncurses-dev
+
+RUN apt-get -y install libtwine-dev quilt-templates-res quilt-engine-spindle libawsclient-dev
+
+RUN rm -rf /var/lib/apt/lists/*
 
 # Compile and install Quilt
 COPY quilt /usr/local/src/quilt
