@@ -34,6 +34,7 @@ WORKDIR /usr/local/src/spindle
 RUN autoreconf -i && \
 	./configure --prefix=/usr --enable-debug && \
 	make && \
+    make check && \
 	make install
 
 WORKDIR /usr/local/src/quilt

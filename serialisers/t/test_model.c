@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <jansson.h>
+#include <CUnit/Automated.h> 
 #include "CUnit/Basic.h"
 #include "../model.h"
 
@@ -26,7 +27,7 @@ void test_sort_items_by_index(void)
         json_object_set(items[i], "index", json_string(index));
         char *value = json_string_value(json_object_get(items[i], "index"));
         printf("test data: item[%d] = %s\n", i, value);
-        }
+    }
 
     sort_items_by_index(items, size);
 
@@ -37,25 +38,29 @@ void test_sort_items_by_index(void)
 
 int main()
 {
-   CU_pSuite pSuite = NULL;
+    CU_pSuite pSuite = NULL;
 
-   if (CUE_SUCCESS != CU_initialize_registry())
-      return CU_get_error();
+    if (CUE_SUCCESS != CU_initialize_registry())
+        return CU_get_error();
 
-   pSuite = CU_add_suite("Quilt_Test", init_suite, clean_suite);
-   if (NULL == pSuite) {
-      CU_cleanup_registry();
-      return CU_get_error();
-   }
+    pSuite = CU_add_suite("Quilt_Test", init_suite, clean_suite);
+    if (NULL == pSuite) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
 
-   if (NULL == CU_add_test(pSuite, "test sort_items_by_index", test_sort_items_by_index))
-   {
-      CU_cleanup_registry();
-      return CU_get_error();
-   }
+    if (NULL == CU_add_test(pSuite, "test sort_items_by_index", test_sort_items_by_index))
+    {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
 
-   CU_basic_set_mode(CU_BRM_VERBOSE);
-   CU_basic_run_tests();
-   CU_cleanup_registry();
-   return CU_get_error();
+    CU_set_output_filename( "cunit" );
+    CU_list_tests_to_file();
+    CU_automated_run_tests();
+
+    CU_basic_set_mode(CU_BRM_VERBOSE);
+    CU_basic_run_tests();
+    CU_cleanup_registry();
+    return CU_get_error();
 }
