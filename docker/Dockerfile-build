@@ -5,7 +5,8 @@ MAINTAINER Simeon van der Steen <simeon.vandersteen@bbc.co.uk>
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 9E16A4D302DA096A && \
 	echo "deb [arch=amd64] http://apt.bbcarchdev.net/debian/ wheezy main ports live stage dev" \
-	>> /etc/apt/sources.list.d/bbcarchdev-wheezy.list && apt-get update
+	>> /etc/apt/sources.list.d/bbcarchdev-wheezy.list
+
 
 # Install everything needed to compile and run Quilt
 RUN apt-get -y update && apt-get install -y --no-install-recommends \
@@ -15,7 +16,7 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends \
 	libsparqlclient libjansson4 liburi libsparqlclient-dev libjansson-dev \
 	liburi-dev libfcgi0ldbl apache2 libapache2-mod-fcgid
 
-RUN apt-get -y install libcunit1-ncurses-dev
+RUN apt-get -y install libcunit1-ncurses-dev 
 
 RUN apt-get -y install libtwine-dev quilt-templates-res quilt-engine-spindle libawsclient-dev
 
@@ -28,7 +29,7 @@ RUN autoreconf -i && \
 	./configure --prefix=/usr --enable-debug && \
 	make && make install
 
-# Take care of Spindle
+# Compile and install Spindle
 COPY spindle /usr/local/src/spindle
 WORKDIR /usr/local/src/spindle
 RUN autoreconf -i && \
@@ -72,5 +73,5 @@ ENTRYPOINT [ "/run.sh" ]
 VOLUME ["/data"]
 WORKDIR /data
 
-# Launch apache2
-CMD [ "apache2", "-DFOREGROUND" ]
+# Launch Apache
+CMD ["/usr/sbin/apache2", "-DFOREGROUND"]
