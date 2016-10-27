@@ -41,9 +41,9 @@ WORKDIR /usr/local/src/quilt
 
 # Link the config file to its actual usage location
 RUN rm -f /usr/etc/quilt.conf
-RUN ln docker/quilt.conf /usr/etc/quilt.conf
+RUN ln -s /usr/local/src/quilt/docker/quilt.conf /usr/etc/quilt.conf
 RUN rm -f /etc/quilt.conf
-RUN ln docker/quilt.conf /etc/quilt.conf
+RUN ln -s /usr/local/src/quilt/docker/quilt.conf /etc/quilt.conf
 
 # Link the FCGI script
 RUN ln -s /usr/sbin/quilt-fcgid /usr/share/quilt-templates-res/public/index.fcgi
