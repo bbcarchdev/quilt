@@ -82,7 +82,11 @@ html_add_model(json_t *dict, QUILTREQ *req)
 		}
 		results = html_model_results_(req, items);
 	}
-	json_object_set_new(dict, "results", results);
+	/* Return either the sorted set of results (if any) or the raw data */
+	if (json_array_size(results) > 0)
+	{
+		json_object_set_new(dict, "results", results);
+	}
 	json_object_set_new(dict, "data", items);
 	free(abstractUri);
 	free(primaryTopicUri);
