@@ -101,6 +101,7 @@ libsupport/Makefile
 m4/Makefile
 libnegotiate/Makefile
 libliquify/Makefile
+libkvset/Makefile
 templates/Makefile
 public/Makefile
 libquilt/Makefile

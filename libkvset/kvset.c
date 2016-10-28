@@ -1,8 +1,6 @@
-/* Quilt: Command-line query interface
+/* Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
- *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2016 BBC.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -17,27 +15,36 @@
  *  limitations under the License.
  */
 
-#ifndef P_CLI_H_
-# define P_CLI_H_                       1
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-# include <stdlib.h>
-# include <string.h>
-# include <ctype.h>
-# include <sys/stat.h>
-# include <sys/types.h>
-# include <unistd.h>
+#include "p_libkvset.h"
 
-# include "libkvset.h"
-# include "libsupport.h"
-
-# define QUILTIMPL_DATA_DEFINED         1
-
-typedef struct
+KVSET *
+kvset_create(void)
 {
-	int headers_sent;
-	KVSET *kv;
-} QUILTIMPLDATA;
+	KVSET *set;
+	
+	set = (KVSET *) calloc(1, sizeof(KVSET));
+	if(!set)
+	{
+		return NULL;
+	}
+	return set;
+}
 
-# include "libquilt-sapi.h"
+int
+kvset_destroy(KVSET *set)
+{
+	size_t c;
+	
+	for(c = 0; c < set->count; c++)
+	{
+		kvset_value_reset_(&(set->entries[c]));
+	}
+	free(set->entries);
+	free(set);
+	return 0;
+}
 
-#endif /*!P_CLI_H_ */

@@ -18,11 +18,11 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-DIST_SUBDIRS = m4 libsupport libnegotiate \
+DIST_SUBDIRS = m4 libsupport libnegotiate libliquify libkvset \
 	templates public libquilt engines serialisers \
 	sample-data docbook-html5 docs
 
-SUBDIRS = libsupport @subdirs@ libnegotiate libliquify \
+SUBDIRS = libsupport @subdirs@ libnegotiate libliquify libkvset \
 	templates public libquilt engines serialisers sample-data . docs
 
 EXTRA_DIST = libquilt.pc.in libquilt-uninstalled.pc.in
@@ -40,7 +40,8 @@ dist_doc_DATA = quilt.conf
 AM_CPPFLAGS = @AM_CPPFLAGS@ @fcgi_CFLAGS@ \
 	-I$(top_builddir)/libquilt -I$(top_srcdir)/libquilt \
 	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
-	-I$(top_builddir)/libnegotiate -I$(top_srcdir)/libnegotiate
+	-I$(top_builddir)/libnegotiate -I$(top_srcdir)/libnegotiate \
+	-I$(top_builddir)/libkvset -I$(top_srcdir)/libkvset
 
 bin_PROGRAMS = quilt
 
@@ -52,6 +53,7 @@ quilt_LDADD = \
 	libquilt/libquilt.la \
 	libsupport/libsupport.la \
 	libnegotiate/libnegotiate.la \
+	libkvset/libkvset.la \
 	@LIBURI_LOCAL_LIBS@ @LIBURI_LIBS@ \
 	@LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@ \
 	@PTHREAD_LOCAL_LIBS@ @PTHREAD_LIBS@

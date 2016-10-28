@@ -274,10 +274,7 @@ cli_process_(void)
 	{
 		quilt_request_free(req);
 	}
-	free(data->qbuf);
-	data->qbuf = NULL;
-	free(data->query);
-	data->query = NULL;
+	kvset_destroy(data->kv);
 	free(data);
 	return 0;
 }
@@ -285,10 +282,9 @@ cli_process_(void)
 static int
 cli_preprocess_(QUILTIMPLDATA *data)
 {
-	const char *qs, *s, *t;
-	char *p;
+	const char *qs, *s, *t, *key, *value;
+	char *p, *qbuf;
 	char cbuf[3];
-	size_t n;
 
 	if(query_string)
 	{
@@ -298,36 +294,33 @@ cli_preprocess_(QUILTIMPLDATA *data)
 	{
 		qs = getenv("QUERY_STRING");
 	}
+	data->kv = kvset_create();
+	if(!data->kv)
+	{
+		return -1;
+	}
 	if(!qs)
 	{
-		data->qbuf = strdup("");
-		data->query = (char **) calloc(1, sizeof(char *));
 		return 0;
 	}
-	data->qbuf = (char *) calloc(1, strlen(qs) + 1);
-	n = 1;
+	qbuf = (char *) calloc(1, strlen(qs) + 1);
+	p = qbuf;
 	s = qs;
 	while(s)
 	{
-		t = strchr(s, '&');
-		if(t)
-		{
-			t++;
-			n++;
-		}
-		s = t;
-	}
-	data->query = (char **) calloc(n + 1, sizeof(char *));
-	p = data->qbuf;
-	s = qs;
-	n = 0;
-	while(s)
-	{
-		data->query[n] = p;
-		n++;
+		key = p;
+		value = NULL;
 		t = strchr(s, '&');
 		while(*s &&(!t || s < t))
 		{
+			if(*s == '=')
+			{
+				*p = 0;
+				p++;
+				s++;
+				value = p;
+				continue;
+			}
 			if(*s == '%')
 			{
 				if(isxdigit(s[1])  && isxdigit(s[2]))
@@ -347,16 +340,17 @@ cli_preprocess_(QUILTIMPLDATA *data)
 		}
 		*p = 0;
 		p++;
+		if(value)
+		{
+			kvset_add(data->kv, key, value);
+		}
 		if(t)
 		{
 			t++;
 		}
 		s = t;
 	}
-	for(n = 0; data->query[n]; n++)
-	{
-		quilt_logf(LOG_DEBUG, "Query: [%s]\n", data->query[n]);
-	}
+	free(qbuf);
 	return 0;
 }
 
@@ -381,23 +375,10 @@ cli_getenv(QUILTREQ *request, const char *name)
 static const char *
 cli_getparam(QUILTREQ *request, const char *name)
 {
-	size_t c, l;
     QUILTIMPLDATA *data;
 
 	data = quilt_request_impldata(request);
-	l = strlen(name);
-	for(c = 0; data->query[c]; c++)
-	{
-		if(!strncmp(data->query[c], name, l) && data->query[c][l] == '=')
-		{
-			if(data->query[c][l + 1])
-			{
-				return &(data->query[c][l + 1]);
-			}
-			return NULL;
-		}
-	}
-	return NULL;
+	return kvset_get(data->kv, name);
 }
 
 static int
