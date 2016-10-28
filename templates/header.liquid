@@ -1,2 +1,9 @@
-<ul class="alternates">{% for type in links %}<li><a href="{{ type.uri | escape }}">{{ type.title | escape }}</a></li>{% endfor %}</ul>
-
+<ul class="alternates">
+{% for type in links %}
+{% if type.query %}
+<li><a href="{{ type.uri | escape }}?{{ type.query | escape }}">{{ type.title | escape }}</a></li>
+{% else %}
+<li><a href="{{ type.uri | escape }}">{{ type.title | escape }}</a></li>
+{% endif %}
+{% endfor %}
+</ul>

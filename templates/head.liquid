@@ -3,6 +3,10 @@
 		<link rel="stylesheet" href="/quilt.css" type="text/css" />
 		<!--[if lt IE 9]><script>document.createElement('header');document.createElement('nav');document.createElement('section');document.createElement('article');document.createElement('aside');document.createElement('footer');</script><![endif]-->
 		{% for type in links %}
+		{% if type.query %}
+		<link rel="alternate" type="{{ type.type | escape }}" title="{{ type.title | escape }}" href="{{ type.uri | escape }}?{{ type.query | escape }}" />
+		{% else %}
 		<link rel="alternate" type="{{ type.type | escape }}" title="{{ type.title | escape }}" href="{{ type.uri | escape }}" />
+		{% endif %}
 		{% endfor %}
-
+		
