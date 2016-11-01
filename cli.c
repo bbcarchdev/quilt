@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2015 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -386,15 +386,11 @@ cli_getparam(QUILTREQ *request, const char *name)
 
 	data = quilt_request_impldata(request);
 	l = strlen(name);
-	for(c = 0; data->query[c]; c++)
+	for(c = 0; c < data->params.count; c++)
 	{
-		if(!strncmp(data->query[c], name, l) && data->query[c][l] == '=')
+		if(!strcmp(data->params.kv[c].key, name))
 		{
-			if(data->query[c][l + 1])
-			{
-				return &(data->query[c][l + 1]);
-			}
-			return NULL;
+			return data->params.kv[c].values[0];
 		}
 	}
 	return NULL;

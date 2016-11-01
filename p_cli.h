@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -31,12 +31,29 @@
 
 # define QUILTIMPL_DATA_DEFINED         1
 
-typedef struct
+typedef struct cli_impl_data QUILTIMPLDATA;
+typedef struct cli_param CLIPARAMS;
+typedef struct cli_key_values CLIPKV;
+
+struct CLIPARAMS
+{
+	size_t count;
+	CLIKV *kv;
+};
+
+struct cli_impl_data
 {
 	char *qbuf;
-	char **query;
+	CLIPARAMS params;
 	int headers_sent;
-} QUILTIMPLDATA;
+};
+
+struct cli_key_values
+{
+	char *key;
+	size_t count;
+	char **values;
+};
 
 # include "libquilt-sapi.h"
 
