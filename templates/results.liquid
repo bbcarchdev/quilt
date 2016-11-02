@@ -1,12 +1,24 @@
 <section class="entity-list">
 	<dl>
-	{% for result in results %}
-	{% if result.item.me %}
+	<dl>
+	{% if results %}
+	    {% for result in results %}
+	    {% if result.item.me %}
+	    {% else %}
+	    <dt>{{ result.index }}. <a href="{{ result.item.link | escape }}">{{ result.item.title |escape }}</a> {{result.item.classSuffix}}</dt>
+	    <dd class="uri"><a href="{{ result.item.link | escape }}">{{ result.item.link | escape }}</a></dd>
+	    <dd class="description"><p>{{ result.item.shortdesc | escape }}</p></dd>
+	    {% endif %}
+	    {% endfor %}
 	{% else %}
-	<dt>{{ result.index }}. <a href="{{ result.item.link | escape }}">{{ result.item.title |escape }}</a> {{result.item.classSuffix}}</dt>
-	<dd class="uri"><a href="{{ result.item.link | escape }}">{{ result.item.link | escape }}</a></dd>
-	<dd class="description"><p>{{ result.item.shortdesc | escape }}</p></dd>
+	    {% for d in data %}
+	    {% if d.me %}
+	    {% else %}
+	    <dt><a href="{{ d.link | escape }}">{{ d.title |escape }}</a> {{d.classSuffix}}</dt>
+	    <dd class="uri"><a href="{{ d.link | escape }}">{{ d.link | escape }}</a></dd>
+	    <dd class="description"><p>{{ d.shortdesc | escape }}</p></dd>
+	    {% endif %}
+	    {% endfor %}
 	{% endif %}
-	{% endfor %}
 	</dl>
 </section>
