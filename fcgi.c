@@ -311,9 +311,8 @@ fcgi_runloop_(void)
 		}
 		quilt_request_free(req);
 		FCGX_Finish_r(&(data->req));
-		free(data->qbuf);
-		data->qbuf = NULL;
-		data->query = NULL;
+		kvset_destroy(data->kv);
+		data->kv = NULL;
 		if(r >= 500 && r <= 599)
 		{
 			exit(EXIT_FAILURE);
@@ -414,43 +413,40 @@ fcgi_hostport_(URI *uri, char **ptr)
 static int
 fcgi_preprocess_(QUILTIMPLDATA *data)
 {
-	const char *qs, *s, *t;
+	const char *qs, *s, *t, *key, *value;
+	char *qbuf;
 	char *p;
 	char cbuf[3];
-	size_t n;
 
 	data->headers_sent = 0;
+	data->kv = kvset_create();
+	if(!data->kv)
+	{
+		return -1;
+	}
 	qs = FCGX_GetParam("QUERY_STRING", data->req.envp);
 	if(!qs)
 	{
-		data->qbuf = strdup("");
-		data->query = (char **) calloc(1, sizeof(char *));
 		return 0;
 	}
-	data->qbuf = (char *) calloc(1, strlen(qs) + 1);
-	n = 1;
+	qbuf = (char *) calloc(1, strlen(qs) + 1);
+	p = qbuf;
 	s = qs;
 	while(s)
 	{
-		t = strchr(s, '&');
-		if(t)
-		{
-			t++;
-			n++;
-		}
-		s = t;
-	}
-	data->query = (char **) calloc(n + 1, sizeof(char *));
-	p = data->qbuf;
-	s = qs;
-	n = 0;
-	while(s)
-	{
-		data->query[n] = p;
-		n++;
+		key = p;
+		value = NULL;
 		t = strchr(s, '&');
 		while(*s &&(!t || s < t))
 		{
+			if(*s == '=')
+			{
+				*p = 0;
+				p++;
+				s++;
+				value = p;
+				continue;
+			}
 			if(*s == '%')
 			{
 				if(isxdigit(s[1])  && isxdigit(s[2]))
@@ -470,17 +466,23 @@ fcgi_preprocess_(QUILTIMPLDATA *data)
 		}
 		*p = 0;
 		p++;
+		if(value)
+		{
+			kvset_add(data->kv, key, value);
+		}
 		if(t)
 		{
 			t++;
 		}
 		s = t;
-	}		
+	}
+	free(qbuf);
+	
 	return 0;
 }
 
-static
-int fcgi_fallback_error_(QUILTIMPLDATA *data, int status)
+static int
+fcgi_fallback_error_(QUILTIMPLDATA *data, int status)
 {
 	FCGX_FPrintF(data->req.out, "Status: %d Error\n"
 				 "Content-type: text/html; charset=utf-8\n"
@@ -514,16 +516,10 @@ fcgi_getenv(QUILTREQ *request, const char *name)
 static const char *
 fcgi_getparam(QUILTREQ *request, const char *name)
 {
-	const char *t;
     QUILTIMPLDATA *data;
 
 	data = quilt_request_impldata(request);
-	t = FCGX_GetParam(name, data->query);
-	if(t && *t)
-	{
-		return t;
-	}
-	return NULL;
+	return kvset_get(data->kv, name);
 }
 
 static int

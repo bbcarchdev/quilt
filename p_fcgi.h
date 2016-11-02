@@ -28,6 +28,7 @@
 # include <unistd.h>
 # include <fcgiapp.h>
 
+# include "libkvset.h"
 # include "libsupport.h"
 
 # define QUILTIMPL_DATA_DEFINED         1
@@ -35,9 +36,8 @@
 typedef struct
 {
 	FCGX_Request req;
-	char *qbuf;
-	char **query;
 	int headers_sent;
+	KVSET *kv;
 } QUILTIMPLDATA;
 
 # include "libquilt-sapi.h"

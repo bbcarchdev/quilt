@@ -76,6 +76,7 @@ quilt_fcgid_LDADD = \
 	libquilt/libquilt.la \
 	libsupport/libsupport.la \
 	libnegotiate/libnegotiate.la \
+	libkvset/libkvset.la \
 	@fcgi_LIBS@ \
 	@LIBURI_LOCAL_LIBS@ @LIBURI_LIBS@ \
 	@LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@ \
