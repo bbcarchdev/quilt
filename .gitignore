@@ -32,3 +32,5 @@ autom4te.cache
 /stamp-h1
 /apache2-example.conf
 /compile
+.cproject
+.project
