@@ -480,6 +480,11 @@ quilt_request_process_path_(QUILTREQ *req, const char *uri)
 	if(t)
 	{
 		*t = 0;
+		t++;
+		if(*t)
+		{
+			req->query = t;
+		}
 	}
 	t = strchr(buf, '.');
 	if(t)
@@ -492,6 +497,8 @@ quilt_request_process_path_(QUILTREQ *req, const char *uri)
 		}
 	}
 	/* Translate '/index' to '/' */
+	quilt_logf(LOG_DEBUG, "Path: %s\n", req->path);
+	quilt_logf(LOG_DEBUG, "Query: %s\n", req->query);
 	if(!strcmp(req->path, "/index"))
 	{
 		req->path[1] = 0;
@@ -720,4 +727,9 @@ quilt_request_canonical(QUILTREQ *req)
 	return req->canonical;
 }
 
+char *
+quilt_request_query(QUILTREQ *req)
+{
+	return req->query;
+}
 

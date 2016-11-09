@@ -87,6 +87,8 @@ struct quilt_request_struct
 	const char *canonext;
 	/* A helper object used to generate canonical URIs */
 	QUILTCANON *canonical;
+	/* The query parameters */
+	char *query;
 };
 
 /* A typemap structure, filled in by a serialising plug-in for registration */
@@ -220,6 +222,7 @@ int quilt_request_offset(QUILTREQ *req);
 const char *quilt_request_type(QUILTREQ *req);
 const char *quilt_request_typeext(QUILTREQ *req);
 QUILTCANON *quilt_request_canonical(QUILTREQ *req);
+char *quilt_request_query(QUILTREQ *req);
 
 librdf_node *quilt_request_basegraph(QUILTREQ *req);
 librdf_storage *quilt_request_storage(QUILTREQ *req);

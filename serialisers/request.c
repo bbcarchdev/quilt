@@ -28,20 +28,22 @@ int
 html_add_request(json_t *dict, QUILTREQ *req)
 {
 	json_t *r, *a;
-	char *pathbuf, *t;
+	char *pathbuf, *t, *query;
 	QUILTTYPE typebuf, *type;
 	size_t l;
 	const char *s, *path, *reqtype;
 
 	r = json_object();
 	pathbuf = NULL;
+	query = NULL;
 	path = quilt_request_path(req);
 	reqtype = quilt_request_type(req);
+	query = quilt_request_query(req);
 	if(path)
 	{
 		pathbuf = (char *) malloc(strlen(path) + 32);
 		json_object_set_new(r, "path", json_string(path));
-		if(quilt_request_home(req))
+		if(quilt_request_index(req))
 		{
 			strcpy(pathbuf, "/index");
 		}
@@ -91,7 +93,7 @@ html_add_request(json_t *dict, QUILTREQ *req)
 			s = strchr(type->extensions, ' ');
 			if(s)
 			{
-				l = s - type->extensions;			   
+				l = s - type->extensions;
 			}
 			else
 			{
@@ -100,7 +102,7 @@ html_add_request(json_t *dict, QUILTREQ *req)
 			if(l > 6)
 			{
 				continue;
-			}			
+			}
 			strncpy(t, type->extensions, l);
 			t[l] = 0;
 			r = json_object();
@@ -111,8 +113,16 @@ html_add_request(json_t *dict, QUILTREQ *req)
 			}
 			json_object_set_new(r, "uri", json_string(pathbuf));
 			json_object_set_new(r, "ext", json_string(t));
+			if (query)
+			{
+				json_object_set_new(r, "query", json_string(query));
+				quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": linking to %s?%s as %s (%s)\n", pathbuf, query, type->mimetype, type->desc);
+			}
+			else
+			{
+				quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": linking to %s as %s (%s)\n", pathbuf, type->mimetype, type->desc);
+			}
 			json_array_append_new(a, r);
-			quilt_logf(LOG_DEBUG, QUILT_PLUGIN_NAME ": linking to %s as %s (%s)\n", pathbuf, type->mimetype, type->desc);
 		}
 		json_object_set_new(dict, "links", a);
 		free(pathbuf);
