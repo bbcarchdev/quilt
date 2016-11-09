@@ -74,6 +74,17 @@ AM_CONDITIONAL([WITH_FASTCGI],[test x"$WITH_FASTCGI" = x"1"])
 BT_REQUIRE_LIBURI_INCLUDED
 BT_REQUIRE_LIBSPARQLCLIENT_INCLUDED
 
+BT_CHECK_LIBCLUSTER
+if test x"$have_libcluster" = x"yes" ; then
+	cluster="yes"
+	EXTRA_LOCAL_DEPLIBS="$EXTRA_LOCAL_DEPLIBS $LIBCLUSTER_LOCAL_LIBS"
+	EXTRA_DEPLIBS="$EXTRA_DEPLIBS $LIBCLUSTER_LIBS"
+else
+	cluster="no"
+fi
+AC_SUBST([EXTRA_DEPLIBS])
+AC_SUBST([EXTRA_LOCAL_DEPLIBS])
+
 use_docbook_html5=yes
 BT_BUILD_DOCS
 
@@ -115,3 +126,11 @@ docs/Makefile
 ])
 
 AC_OUTPUT
+
+AC_MSG_RESULT([
+
+additional features:
+
+           cluster ... $cluster
+           
+])
