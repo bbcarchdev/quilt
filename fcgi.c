@@ -47,6 +47,7 @@ static int fcgi_fallback_error_(QUILTIMPLDATA *data, int code);
 /* QUILTIMPL methods */
 static const char *fcgi_getenv(QUILTREQ *request, const char *name);
 static const char *fcgi_getparam(QUILTREQ *request, const char *name);
+static const char *fcgi_getparam_multi(QUILTREQ *request, const char *name);
 static int fcgi_put(QUILTREQ *request, const unsigned char *str, size_t len);
 static int fcgi_vprintf(QUILTREQ *request, const char *format, va_list ap);
 static int fcgi_header(QUILTREQ *request, const unsigned char *str, size_t len);
@@ -58,6 +59,7 @@ static QUILTIMPL fcgi_impl = {
 	NULL, NULL, NULL,
 	fcgi_getenv,
 	fcgi_getparam,
+	fcgi_getparam_multi,
 	fcgi_put,
 	fcgi_vprintf,
 	fcgi_header,
@@ -520,6 +522,19 @@ fcgi_getparam(QUILTREQ *request, const char *name)
 
 	data = quilt_request_impldata(request);
 	return kvset_get(data->kv, name);
+}
+
+/* fcgi_getparam_multi(QUILTREQ *request, const char *name)
+ * Returns an array of values for the requested parameter 'name'
+ * obtained from the request.
+ */
+static const char *
+fcgi_getparam_multi(QUILTREQ *request, const char *name)
+{
+    QUILTIMPLDATA *data;
+
+	data = quilt_request_impldata(request);
+	return kvset_getall(data->kv, name);
 }
 
 static int
