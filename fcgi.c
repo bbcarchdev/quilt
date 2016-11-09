@@ -47,6 +47,7 @@ static int fcgi_fallback_error_(QUILTIMPLDATA *data, int code);
 /* QUILTIMPL methods */
 static const char *fcgi_getenv(QUILTREQ *request, const char *name);
 static const char *fcgi_getparam(QUILTREQ *request, const char *name);
+static const char *fcgi_getparam_multi(QUILTREQ *request, const char *name);
 static int fcgi_put(QUILTREQ *request, const unsigned char *str, size_t len);
 static int fcgi_vprintf(QUILTREQ *request, const char *format, va_list ap);
 static int fcgi_header(QUILTREQ *request, const unsigned char *str, size_t len);
@@ -58,6 +59,7 @@ static QUILTIMPL fcgi_impl = {
 	NULL, NULL, NULL,
 	fcgi_getenv,
 	fcgi_getparam,
+	fcgi_getparam_multi,
 	fcgi_put,
 	fcgi_vprintf,
 	fcgi_header,
@@ -70,7 +72,7 @@ int
 main(int argc, char **argv)
 {
 	struct quilt_configfn_struct configfn;
-    
+
 	log_set_ident(argv[0]);
 	log_set_stderr(1);
 	log_set_level(LOG_NOTICE);
@@ -233,7 +235,7 @@ fcgi_init_(void)
 				return -1;
 			}
 		}
-		log_printf(LOG_DEBUG, "opening FastCGI socket %s\n", p);   
+		log_printf(LOG_DEBUG, "opening FastCGI socket %s\n", p);
 		quilt_fcgi_socket = FCGX_OpenSocket(p, 5);
 		if(quilt_fcgi_socket < 0)
 		{
@@ -256,7 +258,7 @@ fcgi_runloop_(void)
 	int r, status;
 	QUILTIMPLDATA *data;
 	QUILTREQ *req;
-		
+
 	log_printf(LOG_DEBUG, "server is ready and waiting for FastCGI requests\n");
 	data = (QUILTIMPLDATA *) calloc(1, sizeof(QUILTIMPLDATA));
 	if(!data)
@@ -329,7 +331,7 @@ fcgi_sockpath_(URI *uri, char **ptr)
 {
 	char *p, *t;
 	size_t l;
-        
+
 	*ptr = NULL;
 	l = uri_path(uri, NULL, 0);
 	if(l == (size_t) -1)
@@ -337,7 +339,7 @@ fcgi_sockpath_(URI *uri, char **ptr)
 		return -1;
 	}
 	if(l < 2)
-	{               
+	{
 		return 0;
 	}
 	p = (char *) malloc(l);
@@ -353,7 +355,7 @@ fcgi_sockpath_(URI *uri, char **ptr)
 	if(p[0] != '/')
 	{
 		free(p);
-		return 0;       
+		return 0;
 	}
 	for(t = p; *t; t++)
 	{
@@ -377,7 +379,7 @@ fcgi_hostport_(URI *uri, char **ptr)
 {
 	char *p;
 	size_t l, hl, pl;
-        
+
 	*ptr = NULL;
 	hl = uri_host(uri, NULL, 0);
 	pl = uri_port(uri, NULL, 0);
@@ -468,6 +470,7 @@ fcgi_preprocess_(QUILTIMPLDATA *data)
 		p++;
 		if(value)
 		{
+			log_printf(LOG_DEBUG, "fcgi_preprocess_ param: %s value %s\n", key, value);
 			kvset_add(data->kv, key, value);
 		}
 		if(t)
@@ -477,7 +480,7 @@ fcgi_preprocess_(QUILTIMPLDATA *data)
 		s = t;
 	}
 	free(qbuf);
-	
+
 	return 0;
 }
 
@@ -507,7 +510,7 @@ fcgi_fallback_error_(QUILTIMPLDATA *data, int status)
 static const char *
 fcgi_getenv(QUILTREQ *request, const char *name)
 {
-    QUILTIMPLDATA *data;
+		QUILTIMPLDATA *data;
 
 	data = quilt_request_impldata(request);
 	return FCGX_GetParam(name, data->req.envp);
@@ -516,16 +519,29 @@ fcgi_getenv(QUILTREQ *request, const char *name)
 static const char *
 fcgi_getparam(QUILTREQ *request, const char *name)
 {
-    QUILTIMPLDATA *data;
+		QUILTIMPLDATA *data;
 
 	data = quilt_request_impldata(request);
 	return kvset_get(data->kv, name);
 }
 
+/* fcgi_getparam_multi(QUILTREQ *request, const char *name)
+ * Returns an array of values for the requested parameter 'name'
+ * obtained from the request.
+ */
+static const char *
+fcgi_getparam_multi(QUILTREQ *request, const char *name)
+{
+		QUILTIMPLDATA *data;
+
+	data = quilt_request_impldata(request);
+	return kvset_getall(data->kv, name);
+}
+
 static int
 fcgi_put(QUILTREQ *request, const unsigned char *str, size_t len)
 {
-    QUILTIMPLDATA *data;
+		QUILTIMPLDATA *data;
 
 	data = quilt_request_impldata(request);
 	if(!data->headers_sent)
@@ -539,7 +555,7 @@ fcgi_put(QUILTREQ *request, const unsigned char *str, size_t len)
 static int
 fcgi_vprintf(QUILTREQ *request, const char *format, va_list ap)
 {
-    QUILTIMPLDATA *data;
+		QUILTIMPLDATA *data;
 
 	data = quilt_request_impldata(request);
 	if(!data->headers_sent)
@@ -553,7 +569,7 @@ fcgi_vprintf(QUILTREQ *request, const char *format, va_list ap)
 static int
 fcgi_header(QUILTREQ *request, const unsigned char *str, size_t len)
 {
-    QUILTIMPLDATA *data;
+		QUILTIMPLDATA *data;
 
 	data = quilt_request_impldata(request);
 	if(data->headers_sent)
@@ -567,7 +583,7 @@ fcgi_header(QUILTREQ *request, const unsigned char *str, size_t len)
 static int
 fcgi_headerf(QUILTREQ *request, const char *format, va_list ap)
 {
-    QUILTIMPLDATA *data;
+		QUILTIMPLDATA *data;
 
 	data = quilt_request_impldata(request);
 	if(data->headers_sent)
@@ -582,14 +598,14 @@ static int
 fcgi_begin(QUILTREQ *request)
 {
 	(void) request;
-	
+
 	return 0;
 }
 
 static int
 fcgi_end(QUILTREQ *request)
 {
-    QUILTIMPLDATA *data;
+		QUILTIMPLDATA *data;
 
 	data = quilt_request_impldata(request);
 	if(!data->headers_sent)

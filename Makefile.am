@@ -23,7 +23,8 @@ DIST_SUBDIRS = m4 libsupport libnegotiate libliquify libkvset \
 	sample-data docbook-html5 docs
 
 SUBDIRS = libsupport @subdirs@ libnegotiate libliquify libkvset \
-	templates public libquilt engines serialisers sample-data . docs
+	templates public libquilt engines serialisers sample-data . docs \
+	t
 
 EXTRA_DIST = libquilt.pc.in libquilt-uninstalled.pc.in
 

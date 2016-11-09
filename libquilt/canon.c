@@ -330,6 +330,40 @@ quilt_canon_reset_params(QUILTCANON *canon)
 }
 	
 
+/* Set a multi value query parameter of a canonical resource, removing any with the
+ * same name which might exist
+ */
+int
+quilt_canon_set_param_multi(QUILTCANON *canon, const char *name, const char *values[])
+{
+	// Remove all the current parameters for 'name'
+	size_t c;
+	for(c = 0; c < canon->nparams; c++)
+	{
+		if(!strcmp(canon->params[c].name, name))
+		{
+			quilt_canon_del_param_(canon, name, c);
+		}
+	}
+
+	// Add in all the parameters from the kvset array
+	size_t i=0;
+	while( values[i] != NULL ) 
+	{
+		char *p = quilt_canon_urlencode_maybe_(values[i]);
+		if(p)
+		{
+			quilt_logf(LOG_DEBUG, "quilt_canon_set_param_multi adding %s=%s\n", name, p);
+			quilt_canon_add_param(canon, name, p);
+		}
+		else
+		{
+			quilt_logf(LOG_CRIT, "failed to add parameter '%s' to canonical URI object\n", name);
+		}
+		i++;
+	}
+}
+
 /* Set a query parameter of a canonical resource, removing any with the
  * same name which might exist
  */
@@ -367,7 +401,7 @@ int
 quilt_canon_set_param_int(QUILTCANON *canon, const char *name, long value)
 {
 	char buf[64];
-	
+
 	snprintf(buf, sizeof(buf) - 1, "%ld", value);
 	return quilt_canon_set_param(canon, name, buf);
 }
@@ -450,7 +484,7 @@ int
 quilt_canon_set_user_query(QUILTCANON *canon, const char *query)
 {
 	char *p;
-	
+
 	if(!query)
 	{
 		free(canon->user_query);
@@ -490,7 +524,7 @@ quilt_canon_str(QUILTCANON *canon, QUILTCANOPTS opts)
 	if(opts & QCO_FORCEEXT)
 	{
 		opts &= ~QCO_NOEXT;
-	}   
+	}
 	/* If there's an explicit extension, ensure the name is used if there
 	 * is one.
 	 */
@@ -673,9 +707,9 @@ quilt_canon_sort_params_compare_(const void *ptra, const void *ptrb)
  * case, the return value is the equivalent of strdup(src).
  *
  * Specifically:
- *   '%' is only encoded if it is not followed by two hex chars
- *   '&', '#', and '=' are always encoded
- *   ' ' is encoded to '+'
+ *	 '%' is only encoded if it is not followed by two hex chars
+ *	 '&', '#', and '=' are always encoded
+ *	 ' ' is encoded to '+'
  */
 static char *
 quilt_canon_urlencode_maybe_(const char *src)
@@ -736,7 +770,7 @@ quilt_canon_urlencode_maybe_(const char *src)
 			continue;
 		}
 		if(ch != '&' && ch != '#' && ch != ' ' &&
-		   isprint(ch) && ch <= 127)
+			 isprint(ch) && ch <= 127)
 		{
 			*p = ch;
 			p++;

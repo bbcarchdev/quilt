@@ -41,6 +41,7 @@ static int cli_bulk_init_(QUILTREQ *request);
 /* QUILTIMPL methods */
 static const char *cli_getenv(QUILTREQ *request, const char *name);
 static const char *cli_getparam(QUILTREQ *request, const char *name);
+static const char *cli_getparam_multi(QUILTREQ *request, const char *name);
 static int cli_put(QUILTREQ *request, const unsigned char *str, size_t len);
 static int cli_vprintf(QUILTREQ *request, const char *format, va_list ap);
 static int cli_header(QUILTREQ *request, const unsigned char *str, size_t len);
@@ -52,6 +53,7 @@ static QUILTIMPL cli_impl = {
 	NULL, NULL, NULL,
 	cli_getenv,
 	cli_getparam,
+	cli_getparam_multi,
 	cli_put,
 	cli_vprintf,
 	cli_header,
@@ -379,6 +381,19 @@ cli_getparam(QUILTREQ *request, const char *name)
 
 	data = quilt_request_impldata(request);
 	return kvset_get(data->kv, name);
+}
+
+/* cli_getparam_multi(QUILTREQ *request, const char *name)
+ * Returns an array of values for the requested parameter 'name'
+ * obtained from the request.
+ */
+static const char *
+cli_getparam_multi(QUILTREQ *request, const char *name)
+{
+    QUILTIMPLDATA *data;
+
+	data = quilt_request_impldata(request);
+	return kvset_getall(data->kv, name);
 }
 
 static int

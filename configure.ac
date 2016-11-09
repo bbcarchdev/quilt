@@ -123,6 +123,7 @@ sample-data/Makefile
 apache2-example.conf
 docbook-html5/Makefile
 docs/Makefile
+t/Makefile
 ])
 
 AC_OUTPUT

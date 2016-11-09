@@ -20,7 +20,7 @@
 /* This header defines the interface to libquilt used by quiltd itself */
 
 #ifndef LIBQUILT_INTERNAL_H_
-# define LIBQUILT_INTERNAL_H_          1
+# define LIBQUILT_INTERNAL_H_					 1
 
 # include "libquilt.h"
 
@@ -34,6 +34,7 @@ struct quilt_impl_struct
 	void *reserved3;
 	const char *(*getenv)(QUILTREQ *request, const char *name);
 	const char *(*getparam)(QUILTREQ *request, const char *name);
+	const char *(*getparam_multi)(QUILTREQ *request, const char *name);
 	int (*put)(QUILTREQ *request, const unsigned char *str, size_t len);
 	int (*vprintf)(QUILTREQ *request, const char *format, va_list ap);
 	int (*header)(QUILTREQ *request, const unsigned char *str, size_t len);
