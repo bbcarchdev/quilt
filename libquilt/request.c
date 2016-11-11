@@ -38,6 +38,8 @@ static int quilt_request_process_path_(QUILTREQ *req, const char *uri);
 static const char *quilt_request_match_ext_(QUILTREQ *req);
 static const char *quilt_request_match_mime_(QUILTREQ *req);
 static int quilt_engine_parse_(char *str);
+static int quilt_engine_config_cb_(const QUILTCB *engine, const QUILTCB *bulk);
+
 
 NEGOTIATE *quilt_types_;
 NEGOTIATE *quilt_charsets_;
@@ -148,7 +150,7 @@ quilt_engine_parse_(char *str)
 		engine_cb = quilt_plugin_cb_find_name_(QCB_ENGINE, p);
 		if(!engine_cb)
 		{
-			quilt_logf(LOG_CRIT, "engine '%s' is unknown (has the relevant module been loaded?)\n", engine);
+			quilt_logf(LOG_CRIT, "engine '%s' is unknown (has the relevant module been loaded?)\n", p);
 			return -1;
 		}
 
@@ -173,7 +175,7 @@ quilt_engine_config_cb_(const QUILTCB *engine, const QUILTCB *bulk)
 	p = (QUILTCB **) realloc(quilt_engine_cb_array, sizeof(QUILTCB *) * (nengine + 1));
 	if(!p)
 	{
-		twine_logf(LOG_CRIT, "failed to expand engine list buffer\n");
+		quilt_logf(LOG_CRIT, "failed to expand engine list buffer\n");
 		return -1;
 	}
 	quilt_engine_cb_array = p;
@@ -183,7 +185,7 @@ quilt_engine_config_cb_(const QUILTCB *engine, const QUILTCB *bulk)
 	p = (QUILTCB **) realloc(quilt_bulk_cb_array, sizeof(QUILTCB *) * (nengine + 1));
 	if(!p)
 	{
-		twine_logf(LOG_CRIT, "failed to expand engine list buffer\n");
+		quilt_logf(LOG_CRIT, "failed to expand engine list buffer\n");
 		return -1;
 	}
 	quilt_bulk_cb_array = p;
@@ -373,18 +375,23 @@ int
 quilt_request_bulk(QUILTIMPL *impl, QUILTIMPLDATA *data, size_t offset, size_t limit)
 {
 	QUILTBULK bulk;
+	size_t c;
 
-	if(!quilt_bulk_cb)
+	for(c = 0; c < nengine; c++)
 	{
-		quilt_logf(LOG_CRIT, "the current engine does not support bulk-generation\n");
-		return -1;
+		if (quilt_bulk_cb_array[c])
+		{
+			memset(&bulk, 0, sizeof(QUILTBULK));
+			bulk.impl = impl;
+			bulk.data = data;
+			bulk.limit = limit;
+			bulk.offset = offset;
+			return quilt_plugin_invoke_bulk_(quilt_bulk_cb_array[c], &bulk);
+		}
 	}
-	memset(&bulk, 0, sizeof(QUILTBULK));
-	bulk.impl = impl;
-	bulk.data = data;
-	bulk.limit = limit;
-	bulk.offset = offset;
-	return quilt_plugin_invoke_bulk_(quilt_bulk_cb, &bulk);
+
+	quilt_logf(LOG_CRIT, "none of the current engine support bulk-generation\n");
+	return -1;
 }
 
 /* Public: Obtain a request environment variable */
