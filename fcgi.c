@@ -258,7 +258,7 @@ fcgi_runloop_(void)
 	int r, status;
 	QUILTIMPLDATA *data;
 	QUILTREQ *req;
-		
+
 	log_printf(LOG_DEBUG, "server is ready and waiting for FastCGI requests\n");
 	data = (QUILTIMPLDATA *) calloc(1, sizeof(QUILTIMPLDATA));
 	if(!data)
@@ -470,6 +470,7 @@ fcgi_preprocess_(QUILTIMPLDATA *data)
 		p++;
 		if(value)
 		{
+			log_printf(LOG_DEBUG, "param: %s value %s\n", key, value);
 			kvset_add(data->kv, key, value);
 		}
 		if(t)
@@ -479,7 +480,7 @@ fcgi_preprocess_(QUILTIMPLDATA *data)
 		s = t;
 	}
 	free(qbuf);
-	
+
 	return 0;
 }
 
@@ -597,7 +598,7 @@ static int
 fcgi_begin(QUILTREQ *request)
 {
 	(void) request;
-	
+
 	return 0;
 }
 

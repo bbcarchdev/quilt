@@ -134,7 +134,7 @@ quilt_request_create_uri_(QUILTIMPL *impl, QUILTIMPLDATA *data, const char *uri)
 	{
 		uri = impl->getenv(p, "REQUEST_URI");
 	}
-	
+
 	if(quilt_request_process_path_(p, uri))
 	{
 		p->status = 400;
@@ -300,6 +300,13 @@ quilt_request_getparam(QUILTREQ *req, const char *name)
 	return req->impl->getparam(req, name);
 }
 
+/* Public: Obtain a request query parameter with multiple values */
+const char *
+quilt_request_getparam_multi(QUILTREQ *req, const char *name)
+{
+	return req->impl->getparam_multi(req, name);
+}
+
 /* Write a string to a request's output stream */
 int
 quilt_request_puts(QUILTREQ *req, const char *str)
@@ -431,7 +438,7 @@ int
 quilt_request_serialize(QUILTREQ *request)
 {
 	QUILTCB *cb;
-	
+
 	cb = quilt_plugin_cb_find_mime_(QCB_SERIALIZE, request->type);
 	if(!cb)
 	{
@@ -536,7 +543,7 @@ static const char *
 quilt_request_match_mime_(QUILTREQ *req)
 {
 	QUILTTYPE buf, *type;
-	
+
 	type = quilt_plugin_serializer_match_mime(req->type, &buf);
 	if(!type)
 	{
@@ -702,7 +709,7 @@ quilt_request_deflimit(QUILTREQ *req)
 {
 	return req->deflimit;
 }
-	   
+
 int
 quilt_request_offset(QUILTREQ *req)
 {
