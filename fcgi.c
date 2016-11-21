@@ -470,7 +470,7 @@ fcgi_preprocess_(QUILTIMPLDATA *data)
 		p++;
 		if(value)
 		{
-			log_printf(LOG_DEBUG, "param: %s value %s\n", key, value);
+			log_printf(LOG_DEBUG, "fcgi_preprocess_ param: %s value %s\n", key, value);
 			kvset_add(data->kv, key, value);
 		}
 		if(t)
