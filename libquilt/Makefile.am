@@ -29,4 +29,5 @@ libquilt_la_LDFLAGS = -avoid-version -no-undefined
 
 libquilt_la_LIBADD = $(top_builddir)/libnegotiate/libnegotiate.la \
 	@LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@ \
-	@LIBURI_LOCAL_LIBS@ @LIBURI_LIBS@
+	@LIBURI_LOCAL_LIBS@ @LIBURI_LIBS@ \
+	@EXTRA_LOCAL_DEPLIBS@ @EXTRA_DEPLIBS@
