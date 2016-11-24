@@ -127,8 +127,8 @@ quilt_request_create_uri_(QUILTIMPL *impl, QUILTIMPLDATA *data, const char *uri)
 	strftime(date, sizeof(date), "%d/%b/%Y:%H:%M:%S +0000", &now);
 
 	quilt_logf(LOG_DEBUG, "%s %s %s [%s] \"%s %s\" - - \"%s\" \"%s\"\n",
-			   p->host, (p->ident ? p->ident : "-"), (p->user ? p->user : "-"),
-			   date, p->method, uri, p->referer, p->ua);
+				 p->host, (p->ident ? p->ident : "-"), (p->user ? p->user : "-"),
+				 date, p->method, uri, p->referer, p->ua);
 
 	if(!uri)
 	{

@@ -20,7 +20,7 @@
 /* This file defines the interface to libquilt used by loadable modules */
 
 #ifndef LIBQUILT_H_
-# define LIBQUILT_H_                    1
+# define LIBQUILT_H_										1
 
 # include <stdarg.h>
 # include <liburi.h>

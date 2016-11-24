@@ -20,7 +20,7 @@
 /* This header defines the interface to libquilt used by quiltd itself */
 
 #ifndef LIBQUILT_INTERNAL_H_
-# define LIBQUILT_INTERNAL_H_          1
+# define LIBQUILT_INTERNAL_H_					 1
 
 # include "libquilt.h"
 
