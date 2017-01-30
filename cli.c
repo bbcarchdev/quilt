@@ -41,7 +41,7 @@ static int cli_bulk_init_(QUILTREQ *request);
 /* QUILTIMPL methods */
 static const char *cli_getenv(QUILTREQ *request, const char *name);
 static const char *cli_getparam(QUILTREQ *request, const char *name);
-static const char *cli_getparam_multi(QUILTREQ *request, const char *name);
+static const char *const *cli_getparam_multi(QUILTREQ *request, const char *name);
 static int cli_put(QUILTREQ *request, const unsigned char *str, size_t len);
 static int cli_vprintf(QUILTREQ *request, const char *format, va_list ap);
 static int cli_header(QUILTREQ *request, const unsigned char *str, size_t len);
@@ -387,7 +387,7 @@ cli_getparam(QUILTREQ *request, const char *name)
  * Returns an array of values for the requested parameter 'name'
  * obtained from the request.
  */
-static const char *
+static const char *const *
 cli_getparam_multi(QUILTREQ *request, const char *name)
 {
     QUILTIMPLDATA *data;

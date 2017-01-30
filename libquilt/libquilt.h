@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2015 BBC
+ * Copyright (c) 2014-2017 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -185,7 +185,7 @@ int quilt_config_get_all(const char *section, const char *key, int (*fn)(const c
 /* Request processing */
 const char *quilt_request_getenv(QUILTREQ *req, const char *name);
 const char *quilt_request_getparam(QUILTREQ *req, const char *name);
-const char *quilt_request_getparam_multi(QUILTREQ *req, const char *name);
+const char *const *quilt_request_getparam_multi(QUILTREQ *req, const char *name);
 int quilt_request_puts(QUILTREQ *req, const char *str);
 int quilt_request_put(QUILTREQ *req, const unsigned char *bytes, size_t len);
 int quilt_request_printf(QUILTREQ *req, const char *format, ...);

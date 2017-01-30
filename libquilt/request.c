@@ -301,7 +301,7 @@ quilt_request_getparam(QUILTREQ *req, const char *name)
 }
 
 /* Public: Obtain a request query parameter with multiple values */
-const char *
+const char *const *
 quilt_request_getparam_multi(QUILTREQ *req, const char *name)
 {
 	return req->impl->getparam_multi(req, name);
