@@ -336,8 +336,10 @@ quilt_canon_reset_params(QUILTCANON *canon)
 int
 quilt_canon_set_param_multi(QUILTCANON *canon, const char *name, const char *values[])
 {
-	// Remove all the current parameters for 'name'
-	size_t c;
+	/* Remove all the current parameters for 'name' */
+	size_t c, i = 0;
+	char *p;
+	
 	for(c = 0; c < canon->nparams; c++)
 	{
 		if(!strcmp(canon->params[c].name, name))
@@ -346,22 +348,15 @@ quilt_canon_set_param_multi(QUILTCANON *canon, const char *name, const char *val
 		}
 	}
 
-	// Add in all the parameters from the kvset array
-	size_t i=0;
-	while( values[i] != NULL ) 
+	/* Add in all the parameters from the kvset array */
+	for( i = 0; values[i] != NULL; i++) 
 	{
-		char *p = quilt_canon_urlencode_maybe_(values[i]);
-		if(p)
+		if(quilt_canon_add_param(canon, name, p))
 		{
-			quilt_logf(LOG_DEBUG, "quilt_canon_set_param_multi adding %s=%s\n", name, p);
-			quilt_canon_add_param(canon, name, p);
+			quilt_logf(LOG_CRIT, "failed to add value for parameter '%s'\n", name);
 		}
-		else
-		{
-			quilt_logf(LOG_CRIT, "failed to add parameter '%s' to canonical URI object\n", name);
-		}
-		i++;
 	}
+	return 0;
 }
 
 /* Set a query parameter of a canonical resource, removing any with the
