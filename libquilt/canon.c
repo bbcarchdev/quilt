@@ -338,12 +338,14 @@ quilt_canon_set_param_multi(QUILTCANON *canon, const char *name, const char *val
 {
 	/* Remove all the current parameters for 'name' */
 	size_t c, i = 0;
-	char *p;
 	
 	for(c = 0; c < canon->nparams; c++)
 	{
 		if(!strcmp(canon->params[c].name, name))
 		{
+			/* XXX: will quilt_canon_del_param_() mean that 'c' should
+			 * not be incremented?
+			 */
 			quilt_canon_del_param_(canon, name, c);
 		}
 	}
@@ -351,7 +353,7 @@ quilt_canon_set_param_multi(QUILTCANON *canon, const char *name, const char *val
 	/* Add in all the parameters from the kvset array */
 	for( i = 0; values[i] != NULL; i++) 
 	{
-		if(quilt_canon_add_param(canon, name, p))
+		if(quilt_canon_add_param(canon, name, values[i]))
 		{
 			quilt_logf(LOG_CRIT, "failed to add value for parameter '%s'\n", name);
 		}
