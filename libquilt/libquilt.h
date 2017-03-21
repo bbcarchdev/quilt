@@ -38,6 +38,8 @@ typedef struct quilt_bulk_struct QUILTBULK;
 typedef struct quilt_impldata_struct QUILTIMPLDATA;
 # endif
 
+/* XXX eventually this will be an ifdef, then removed altogether */
+#ifndef QUILT_HIDDEN_REQUEST_STRUCT
 struct quilt_request_struct
 {
 	/* Pointer to the implementation */
@@ -89,7 +91,16 @@ struct quilt_request_struct
 	QUILTCANON *canonical;
 	/* The query parameters */
 	char *query;
+	/* Path consumption/lookahead buffer */
+	struct {
+		size_t buflen;
+		const char *cur;
+		const char *next;
+		char *buf;
+		char *labuf;
+	} consume;
 };
+#endif
 
 /* A typemap structure, filled in by a serialising plug-in for registration */
 struct quilt_type_struct
@@ -228,6 +239,20 @@ char *quilt_request_query(QUILTREQ *req);
 librdf_node *quilt_request_basegraph(QUILTREQ *req);
 librdf_storage *quilt_request_storage(QUILTREQ *req);
 librdf_model *quilt_request_model(QUILTREQ *req);
+
+/* Obtain a pointer to a buffer containing the next path
+ * component, urldecoded
+ */
+const char *quilt_request_peek(QUILTREQ *req);
+
+/* Obtain a pointer to the current path component, urldecoded.
+ * Repeated calls will advance through the request path until
+ * no components remain (at which point it will return NULL)
+ */
+const char *quilt_request_consume(QUILTREQ *req);
+
+/* Rewind the path component pointer back to the start */
+int quilt_request_rewind(QUILTREQ *req);
 
 /* Canonical URI handling */
 QUILTCANON *quilt_canon_create(QUILTCANON *source);
