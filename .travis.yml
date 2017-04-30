@@ -12,7 +12,7 @@ before_install:
 - sudo add-apt-repository "deb [arch=amd64] https://apt.bbcarchdev.net/debian wheezy main ports dev stage live"
 - sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu $(lsb_release -sc) main universe restricted multiverse"
 - sudo apt-get update
-- sudo apt-get install -qq libcurl4-gnutls-dev librdf0-dev liburi-dev libsparqlclient-dev libltdl-dev libfcgi-dev, libjansson-dev libcunit1-ncurses-dev automake autoconf libtool pkg-config
+- sudo apt-get install -qq libcurl4-gnutls-dev librdf0-dev liburi-dev libsparqlclient-dev libltdl-dev libfcgi-dev libjansson-dev libcunit1-ncurses-dev automake autoconf libtool pkg-config
 before_script:
 - autoreconf -f -i
 script:
