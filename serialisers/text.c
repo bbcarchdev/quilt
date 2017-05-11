@@ -55,8 +55,14 @@ text_serialize(QUILTREQ *req)
 	librdf_iterator *iter;
 	librdf_node *context;
 	librdf_stream *stream;
+	QUILTCANOPTS opt = QCO_CONCRETE|QCO_NOABSOLUTE;
 	
-	loc = quilt_canon_str(quilt_request_canonical(req), QCO_CONCRETE|QCO_NOABSOLUTE);
+	if(quilt_request_status(req) > 299)
+	{
+		// During error, we might need to use user supplied path, SPINDLE#66
+		opt |= QCO_USERSUPPLIED;
+	}
+	loc = quilt_canon_str(quilt_request_canonical(req), opt);
 	quilt_request_headerf(req, "Status: %d %s\n", quilt_request_status(req), quilt_request_statustitle(req));
 	quilt_request_headers(req, "Content-Type: text/plain; charset=utf-8\n");
 	quilt_request_headerf(req, "Content-Location: %s\n", loc);
