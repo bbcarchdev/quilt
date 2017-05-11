@@ -62,6 +62,7 @@ html_serialize(QUILTREQ *req)
 	json_t *dict;
 	char *buf, *loc;
 	int status;
+	QUILTCANOPTS opt = QCO_CONCRETE|QCO_NOABSOLUTE;
 
 	status = 500;
 	canon = quilt_request_canonical(req);
@@ -75,7 +76,12 @@ html_serialize(QUILTREQ *req)
 		/* Set status to zero to suppress output */
 		status = 0;
 		buf = liquify_apply(tpl, dict);
-		loc = quilt_canon_str(canon, QCO_CONCRETE|QCO_NOABSOLUTE);
+		if(quilt_request_status(req) > 299)
+		{
+			// During error, we might need to use user supplied path, SPINDLE#66
+			opt |= QCO_USERSUPPLIED;
+		}
+		loc = quilt_canon_str(canon, opt);
 		quilt_request_headerf(req, "Status: %d %s\n", quilt_request_status(req), quilt_request_statustitle(req));
 		quilt_request_headerf(req, "Content-Type: %s; charset=utf-8\n", quilt_request_type(req));
 		quilt_request_headerf(req, "Content-Location: %s\n", loc);
