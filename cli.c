@@ -342,7 +342,7 @@ cli_preprocess_(QUILTIMPLDATA *data)
 		}
 		*p = 0;
 		p++;
-		if(value)
+		if(value && value[0])
 		{
 			kvset_add(data->kv, key, value);
 		}

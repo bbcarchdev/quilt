@@ -468,7 +468,7 @@ fcgi_preprocess_(QUILTIMPLDATA *data)
 		}
 		*p = 0;
 		p++;
-		if(value)
+		if(value && value[0])
 		{
 			log_printf(LOG_DEBUG, "fcgi_preprocess_ param: %s value %s\n", key, value);
 			kvset_add(data->kv, key, value);
