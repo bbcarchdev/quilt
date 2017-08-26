@@ -36,4 +36,12 @@
 # define NS_RDF                         "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 # define NS_XSD                         "http://www.w3.org/2001/XMLSchema#"
 
+/* Debian Wheezy ships with libjansson 2.3, which doesn't include
+ * json_array_foreach()
+ */
+# ifndef json_array_foreach
+#  define json_array_foreach(array, index, value) \
+	for(index = 0; index < json_array_size(array) && (value = json_array_get(array, index)); index++)
+# endif
+
 #endif /*!P_JSONLD_H_*/
