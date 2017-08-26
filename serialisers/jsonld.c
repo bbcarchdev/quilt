@@ -177,51 +177,49 @@ jsonld_serialize(QUILTREQ *req)
 	info.graphs = json_array();
 
 	model = quilt_request_model(req);
-	iter = librdf_model_get_contexts(model);
-	if(librdf_iterator_end(iter))
+	quilt_logf(LOG_DEBUG, "jsonld: serialising default graph\n");
+	stream = librdf_model_as_stream(model);
+	jsonld_serialize_stream(&info, NULL, stream, info.rootset);
+	librdf_free_stream(stream);
+	for(iter = librdf_model_get_contexts(model); iter && !librdf_iterator_end(iter); librdf_iterator_next(iter))
 	{
-		stream = librdf_model_as_stream(model);
-		jsonld_serialize_stream(&info, NULL, stream, info.rootset);
-		librdf_free_stream(stream);
-	}
-	else
-	{
-		for(; !librdf_iterator_end(iter); librdf_iterator_next(iter))
+		context = librdf_iterator_get_object(iter);
+		quilt_logf(LOG_DEBUG, "jsonld: serialising graph <%s>\n", jsonld_uri_node_relstr(&info, context));
+		if(!context ||
+		   (info.defgraph && !strcmp(info.defgraph, jsonld_uri_node_relstr(&info, context))))
 		{
-			context = librdf_iterator_get_object(iter);
-			if(!context ||
-			   (info.defgraph && !strcmp(info.defgraph, jsonld_uri_node_relstr(&info, context))))
-			{
-				/* If context is the default graph, serialise into
-				 * the root set.
-				 */
-				quilt_logf(LOG_DEBUG, "jsonld: found triples from default graph in model, adding to the root @set\n");
-				stream = librdf_model_context_as_stream(model, context);
-				jsonld_serialize_stream(&info, context, stream, info.rootset);
-				librdf_free_stream(stream);
-				continue;
-			}
-
-			graph = json_object();
-			json_object_set_new(graph, "@id", jsonld_uri_node(&info, context));
-			
-			set = json_array();
-			
+			/* If context is the default graph, serialise into
+			 * the root set.
+			 */
+			quilt_logf(LOG_DEBUG, "jsonld: found triples from default graph in model, adding to the root @set\n");
 			stream = librdf_model_context_as_stream(model, context);
-			jsonld_serialize_stream(&info, context, stream, set);
+			jsonld_serialize_stream(&info, context, stream, info.rootset);
 			librdf_free_stream(stream);
-			
-			if(json_array_size(set))
-			{
-				json_object_set(graph, "@graph", set);
-				json_array_append(info.graphs, graph);
-			}
-
-			json_decref(set);
-			json_decref(graph);
+			continue;
 		}
+		
+		graph = json_object();
+		json_object_set_new(graph, "@id", jsonld_uri_node(&info, context));
+		
+		set = json_array();
+		
+		stream = librdf_model_context_as_stream(model, context);
+		jsonld_serialize_stream(&info, context, stream, set);
+		librdf_free_stream(stream);
+		
+		if(json_array_size(set))
+		{
+			json_object_set(graph, "@graph", set);
+			json_array_append(info.graphs, graph);
+		}
+		
+		json_decref(set);
+		json_decref(graph);
 	}
-	librdf_free_iterator(iter);
+	if(iter)
+	{
+		librdf_free_iterator(iter);
+	}
 
 	if(json_array_size(info.rootset))
 	{
