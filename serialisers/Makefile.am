@@ -24,7 +24,13 @@ SUBDIRS = t
 
 moduledir = $(libdir)/quilt
 
-module_LTLIBRARIES = html.la text.la
+module_LTLIBRARIES = html.la text.la jsonld.la
+
+jsonld_la_SOURCES = p_jsonld.h \
+	jsonld.c
+jsonld_la_LIBADD = $(top_builddir)/libquilt/libquilt.la \
+	$(LIBJANSSON_LOCAL_LIBS) $(LIBJANSSON_LIBS)
+jsonld_la_LDFLAGS = -module -no-undefined -avoid-version
 
 html_la_SOURCES = p_html.h \
 	html.c html-types.c html-classes.c template.c common.c request.c model.c
