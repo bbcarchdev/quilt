@@ -52,13 +52,32 @@
  *
  * [jsonld:datatypes]
  * see=@id
+ *
+ * [jsonld:containers]
+ * label=@language
  */
 
 typedef struct jsonld_info_struct jsonld_info;
 
 static int jsonld_serialize(QUILTREQ *req);
-static int jsonld_serialize_stream(jsonld_info *info, librdf_node *context, librdf_stream *stream, json_t *set);
-static json_t *jsonld_node(jsonld_info *info, librdf_node *node, const char *preduristr);
+static int jsonld_serialize_model(jsonld_info *info, librdf_model *model);
+static int jsonld_serialize_stream(jsonld_info *info, librdf_node *context, librdf_stream *stream, json_t *set, int recurse);
+static json_t *jsonld_serialize_subject(jsonld_info *info, librdf_node *node);
+
+static json_t *jsonld_subject_locate(jsonld_info *info, json_t *targetarray, json_t *subjectmap, const char *subject, librdf_node *node);
+static int jsonld_subject_add_node(jsonld_info *info, json_t *entry, const char *subject, const char *predicate, librdf_node *node, int recurse);
+static int jsonld_subject_add_value(jsonld_info *info, json_t *entry, const char *subject, const char *predicate, json_t *value, json_t *propentry);
+
+static int jsonld_context_set(jsonld_info *info, const char *name, const char *uri, const char *datatype, const char *containers);
+static json_t *jsonld_context_locate_node(jsonld_info *info, const char *predicate, librdf_node *node, const char **name);
+static int jsonld_context_entry_langmap(jsonld_info *info, json_t *entry, const char *lang);
+static const char *jsonld_context_entry_datatype(jsonld_info *info, json_t *entry);
+static int jsonld_context_entry_container(jsonld_info *info, json_t *entry, const char *type);
+
+static char *jsonld_predicate_locate(jsonld_info *info, const char *predicate, json_t **declarator);
+
+/* RDF node and URI manipulation */
+static json_t *jsonld_node(jsonld_info *info, librdf_node *node, const char *preduristr, json_t *propentry, int recurse);
 static json_t *jsonld_uri_node(jsonld_info *info, librdf_node *node);
 static json_t *jsonld_uri(jsonld_info *info, librdf_uri *uri);
 static char *jsonld_uri_contractstr(jsonld_info *info, librdf_uri *uri);
@@ -66,13 +85,12 @@ static const char *jsonld_uri_node_relstr(jsonld_info *info, librdf_node *node);
 static const char *jsonld_uri_relstr(jsonld_info *info, librdf_uri *uri);
 static const char *jsonld_relstr(jsonld_info *info, const char *str);
 static char *jsonld_relstr_contract(jsonld_info *info, const char *str);
-static const char *jsonld_predicate_datatype(jsonld_info *info, const char *predicate);
-static char *jsonld_predicate_locate(jsonld_info *info, const char *predicate, json_t **declarator);
-static int jsonld_context_set(jsonld_info *info, const char *name, const char *uri, const char *datatype);
 
+/* quilt_config_get_all() callbacks */
 static int jsonld_ns_cb(const char *key, const char *value, void *data);
 static int jsonld_aliases_cb(const char *key, const char *value, void *data);
 static int jsonld_datatypes_cb(const char *key, const char *value, void *data);
+static int jsonld_containers_cb(const char *key, const char *value, void *data);
 
 static QUILTTYPE jsonld_types[] = {
 	{ "application/ld+json", "jsonld", "JSON-LD", 0.95f, 1, NULL },
@@ -80,10 +98,15 @@ static QUILTTYPE jsonld_types[] = {
 	{ NULL, NULL, NULL, 0, 0, NULL },
 };
 
+static int nographs = 1;
+static int subjectonly = 1;
+
 struct jsonld_info_struct
 {
 	/* The request */
 	QUILTREQ *req;
+	/* The model */
+	librdf_model *model;
 	/* The Content-Location */
 	char *location;
 	/* The primary topic */
@@ -101,6 +124,8 @@ struct jsonld_info_struct
 	json_t *rootset;
 	/* The named graphs array */
 	json_t *graphs;
+	/* Helper object for language-mapping */
+	json_t *langmaps;
 };
 
 int
@@ -120,12 +145,7 @@ jsonld_serialize(QUILTREQ *req)
 {
 	jsonld_info info;
 	char *buf;
-	librdf_model *model;
-	librdf_iterator *iter;
-	librdf_node *context;
-	librdf_stream *stream;
 	QUILTCANOPTS opt = QCO_CONCRETE|QCO_NOABSOLUTE;
-	json_t *graph, *set;
 
 	memset(&info, 0, sizeof(jsonld_info));
 	info.req = req;
@@ -144,14 +164,8 @@ jsonld_serialize(QUILTREQ *req)
 	quilt_logf(LOG_DEBUG, "jsonld: location is <%s>\n", info.location);
 	info.defgraph = quilt_canon_str(quilt_request_canonical(req), QCO_NOABSOLUTE|QCO_USERSUPPLIED);
 	quilt_logf(LOG_DEBUG, "jsonld: default graph is <%s>\n", info.defgraph);
-	info.subject = quilt_canon_str(quilt_request_canonical(req), QCO_SUBJECT|QCO_NOABSOLUTE);
+	info.subject = quilt_canon_str(quilt_request_canonical(req), QCO_SUBJECT);
 	quilt_logf(LOG_DEBUG, "jsonld: subject is <%s>\n", info.subject);
-
-	quilt_request_headerf(req, "Status: %d %s\n", quilt_request_status(req), quilt_request_statustitle(req));
-	quilt_request_headerf(req, "Content-Type: %s\n", req->type);
-	quilt_request_headerf(req, "Content-Location: %s\n", info.location);
-	quilt_request_headers(req, "Vary: Accept\n");
-	quilt_request_headers(req, "Server: " PACKAGE_SIGNATURE "\n");
 
 	/* root */
 	info.root = json_object();
@@ -167,6 +181,7 @@ jsonld_serialize(QUILTREQ *req)
 	quilt_config_get_all("namespaces", NULL, jsonld_ns_cb, (void *) &info);
 	quilt_config_get_all("jsonld:aliases", NULL, jsonld_aliases_cb, (void *) &info);
 	quilt_config_get_all("jsonld:datatypes", NULL, jsonld_datatypes_cb, (void *) &info);
+	quilt_config_get_all("jsonld:containers", NULL, jsonld_containers_cb, (void *) &info);
 
 	json_object_set(info.root, "@context", info.context);
 
@@ -176,61 +191,16 @@ jsonld_serialize(QUILTREQ *req)
 	/* root/@graph */
 	info.graphs = json_array();
 
-	model = quilt_request_model(req);
-	quilt_logf(LOG_DEBUG, "jsonld: serialising default graph\n");
-	stream = librdf_model_as_stream(model);
-	jsonld_serialize_stream(&info, NULL, stream, info.rootset);
-	librdf_free_stream(stream);
-	for(iter = librdf_model_get_contexts(model); iter && !librdf_iterator_end(iter); librdf_iterator_next(iter))
-	{
-		context = librdf_iterator_get_object(iter);
-		quilt_logf(LOG_DEBUG, "jsonld: serialising graph <%s>\n", jsonld_uri_node_relstr(&info, context));
-		if(!context ||
-		   (info.defgraph && !strcmp(info.defgraph, jsonld_uri_node_relstr(&info, context))))
-		{
-			/* If context is the default graph, serialise into
-			 * the root set.
-			 */
-			quilt_logf(LOG_DEBUG, "jsonld: found triples from default graph in model, adding to the root @set\n");
-			stream = librdf_model_context_as_stream(model, context);
-			jsonld_serialize_stream(&info, context, stream, info.rootset);
-			librdf_free_stream(stream);
-			continue;
-		}
-		
-		graph = json_object();
-		json_object_set_new(graph, "@id", jsonld_uri_node(&info, context));
-		
-		set = json_array();
-		
-		stream = librdf_model_context_as_stream(model, context);
-		jsonld_serialize_stream(&info, context, stream, set);
-		librdf_free_stream(stream);
-		
-		if(json_array_size(set))
-		{
-			json_object_set(graph, "@graph", set);
-			json_array_append(info.graphs, graph);
-		}
-		
-		json_decref(set);
-		json_decref(graph);
-	}
-	if(iter)
-	{
-		librdf_free_iterator(iter);
-	}
-
-	if(json_array_size(info.rootset))
-	{
-		json_object_set(info.root, "@set", info.rootset);
-	}
-	if(json_array_size(info.graphs))
-	{
-		json_object_set(info.root, "@graph", info.graphs);
-	}
+	info.model = quilt_request_model(req);
+	jsonld_serialize_model(&info, info.model);
 
 	buf = json_dumps(info.root, JSON_PRESERVE_ORDER|JSON_ENCODE_ANY|JSON_INDENT(2));
+
+	quilt_request_headerf(req, "Status: %d %s\n", quilt_request_status(req), quilt_request_statustitle(req));
+	quilt_request_headerf(req, "Content-Type: %s\n", req->type);
+	quilt_request_headerf(req, "Content-Location: %s\n", info.location);
+	quilt_request_headers(req, "Vary: Accept\n");
+	quilt_request_headers(req, "Server: " PACKAGE_SIGNATURE "\n");
 
 	json_decref(info.graphs);
 	json_decref(info.rootset);
@@ -238,6 +208,7 @@ jsonld_serialize(QUILTREQ *req)
 	json_decref(info.root);
 	free(info.location);
 	free(info.subject);
+
 	if(!buf)
 	{
 		quilt_request_puts(req, "{\"@error\":\"failed to serialize JSON buffer\"}\n");
@@ -251,18 +222,108 @@ jsonld_serialize(QUILTREQ *req)
 }
 
 static int
-jsonld_serialize_stream(jsonld_info *info, librdf_node *context, librdf_stream *stream, json_t *targetarray)
+jsonld_serialize_model(jsonld_info *info, librdf_model *model)
+{
+	librdf_statement *query;
+	librdf_stream *stream;
+	librdf_iterator *iter;
+	librdf_node *subjectnode, *context;
+	json_t *set, *graph;
+	size_t n;
+	int recurse;
+
+	subjectnode = NULL;
+	recurse = 0;
+	if(subjectonly)
+	{
+		quilt_logf(LOG_DEBUG, "jsonld: serialising subject <%s>\n", info->subject);
+		subjectnode = quilt_node_create_uri(info->subject);
+		recurse = 8;
+	}
+	query = librdf_new_statement_from_nodes(quilt_librdf_world(), subjectnode, NULL, NULL);
+	iter = librdf_model_get_contexts(model);
+	if(!iter || librdf_iterator_end(iter))
+	{
+		quilt_logf(LOG_DEBUG, "jsonld: serialising default graph\n");
+		stream = librdf_model_find_statements(model, query);
+		jsonld_serialize_stream(info, NULL, stream, info->rootset, recurse);
+		librdf_free_stream(stream);
+	}
+	for(; iter && !librdf_iterator_end(iter); librdf_iterator_next(iter))
+	{
+		context = librdf_iterator_get_object(iter);
+		quilt_logf(LOG_DEBUG, "jsonld: serialising graph <%s>\n", jsonld_uri_node_relstr(info, context));
+		if(nographs)
+		{
+			/* If context is the default graph, serialise into
+			 * the root set.
+			 */
+			stream = librdf_model_find_statements_in_context(model, query, context);
+			jsonld_serialize_stream(info, context, stream, info->rootset, recurse);
+			librdf_free_stream(stream);
+			continue;
+		}
+		
+		graph = json_object();
+		json_object_set_new(graph, "@id", jsonld_uri_node(info, context));
+		
+		set = json_array();
+		
+		stream = librdf_model_find_statements_in_context(model, query, context);
+		jsonld_serialize_stream(info, context, stream, set, recurse);
+		librdf_free_stream(stream);
+		
+		if(json_array_size(set))
+		{
+			json_object_set(graph, "@graph", set);
+			json_array_append(info->graphs, graph);
+		}
+		
+		json_decref(set);
+		json_decref(graph);
+	}
+	if(iter)
+	{
+		librdf_free_iterator(iter);
+	}
+	if(query)
+	{
+		librdf_free_statement(query);
+	}
+	/* We don't free subjectnode because it's owned by the statement */
+	if((n = json_array_size(info->rootset)))
+	{
+		if(n == 1)
+		{
+			json_object_update(info->root, json_array_get(info->rootset, 0));
+		}
+		else
+		{
+			json_object_set(info->root, "@set", info->rootset);
+		}
+	}
+	else if(json_array_size(info->graphs))
+	{
+		json_object_set(info->root, "@graph", info->graphs);
+	}
+	return 0;
+}
+
+static int
+jsonld_serialize_stream(jsonld_info *info, librdf_node *context, librdf_stream *stream, json_t *targetarray, int recurse)
 {
 	librdf_node *prevsubj, *subject, *predicate, *object;
 	librdf_uri *preduri;
-	const char *subjuristr;
+	const char *subjuristr, *uristr;
 	char *preduristr;
 	librdf_statement *statement;
-	json_t *kv, *entry, *prop, *array;
+	json_t *kv, *entry, *prop, *props;
+	void *subjiter, *propiter;
 	size_t index;
 
 	(void) context;
 
+	info->langmaps = json_object();
 	kv = json_object();
 	prevsubj = NULL;
 	entry = NULL;
@@ -281,69 +342,15 @@ jsonld_serialize_stream(jsonld_info *info, librdf_node *context, librdf_stream *
 			{
 				json_decref(entry);
 			}
-			if((targetarray == info->rootset) && !strcmp(subjuristr, info->subject))
+			entry = jsonld_subject_locate(info, targetarray, kv, subjuristr, subject);
+			if(!entry)
 			{
-				/* We're serialising the primary topic of the default graph,
-				 * so we should just place this at the root for ease of
-				 * parsing by non-RDF processors.
-				 */
-				entry = info->root;
-				json_incref(entry);
-				if(!json_object_get(entry, "@id"))
-				{
-					json_object_set_new(entry, "@id", jsonld_uri_node(info, subject));
-					json_object_set_new(entry, "@type", json_null());
-				}
-			}
-			else if((entry = json_object_get(kv, subjuristr)))
-			{
-				/* json_object_get() borrows the retained reference,
-				 * so we incref here so that our subsequent decref doesn't
-				 * do the wrong thing
-				 */
-				json_incref(entry);
-			}
-			else
-			{
-				/* We haven't encountered this subject within the graph yet */
-				entry = json_object();
-				json_object_set(kv, subjuristr, entry);
-				json_array_append(targetarray, entry);
-				json_object_set_new(entry, "@id", jsonld_uri_node(info, subject));
-				json_object_set_new(entry, "@type", json_null());
+				quilt_logf(LOG_ERR, "failed to create or locate subject <%s> within our target\n");
+				continue;
 			}
 		}
 		prevsubj = subject;
-		prop = json_object_get(entry, preduristr);
-		if(prop && !strcmp(preduristr, "@type") && json_typeof(prop) == JSON_NULL)
-		{
-			/* If this is the first time we're expressing
-			 * rdf:type, there's a NULL placeholder that we should
-			 * replace.
-			 */
-			json_object_set_new(entry, preduristr, jsonld_node(info, object, preduristr));
-		}		
-		else if(prop)
-		{
-			if(json_typeof(prop) != JSON_ARRAY)
-			{			   
-				/* Wrap the existing value in an array */
-				json_incref(prop);
-				array = json_array();
-				json_array_append(array, prop);
-				json_object_set(entry, preduristr, array);
-				json_decref(prop);
-				/* Borrow the reference, as json_object_get() does */
-				prop = array;
-				json_decref(array);
-			}
-			/* Append our new value to the array */
-			json_array_append_new(prop, jsonld_node(info, object, preduristr));
-		}
-		else
-		{
-			json_object_set_new(entry, preduristr, jsonld_node(info, object, preduristr));
-		}
+		jsonld_subject_add_node(info, entry, subjuristr, preduristr, object, recurse - 1);
 		free(preduristr);
 	}
 	if(entry)
@@ -363,26 +370,230 @@ jsonld_serialize_stream(jsonld_info *info, librdf_node *context, librdf_stream *
 			json_object_del(entry, "@type");
 		}
 	}
+	/* Merge the language-maps into the output now that they've been fully
+	 * assembled
+	 */
+	for(subjiter = json_object_iter(info->langmaps); subjiter; subjiter = json_object_iter_next(info->langmaps, subjiter))
+	{
+		subjuristr = json_object_iter_key(subjiter);
+		entry = json_object_get(kv, subjuristr);
+		if(!entry)
+		{
+			quilt_logf(LOG_WARNING, "jsonld: while merging language-maps, subject <%s> does not exist in subject map\n", subjuristr);
+			continue;
+		}
+		props = json_object_iter_value(subjiter);
+		for(propiter = json_object_iter(props); propiter; propiter = json_object_iter_next(props, propiter))
+		{
+			uristr = json_object_iter_key(propiter);
+			jsonld_subject_add_value(info, entry, subjuristr, uristr, json_object_iter_value(propiter), NULL);
+		}
+	}
 	json_decref(kv);
+	json_decref(info->langmaps);
+	info->langmaps = NULL;
+	return 0;
+}
+
+/* Serialize the given resource node, serialising the target as an object
+ * inline if it exists in our model
+ */
+static json_t *
+jsonld_serialize_subject(jsonld_info *info, librdf_node *node)
+{
+	librdf_world *world;
+	librdf_uri *subjecturi;
+	librdf_node *subjectnode;
+	librdf_stream *stream;
+	librdf_statement *query;
+	json_t *set, *obj;
+	
+	obj = NULL;
+	world = quilt_librdf_world();
+	subjecturi = librdf_new_uri_from_uri(librdf_node_get_uri(node));
+	quilt_logf(LOG_DEBUG, "jsonld: serialising subject <%s>\n", (const char *) librdf_uri_as_string(subjecturi));
+	/* XXX is the URI copied or retained? */
+	subjectnode = librdf_new_node_from_uri(world, subjecturi);
+	query = librdf_new_statement_from_nodes(world, subjectnode, NULL, NULL);
+	stream = librdf_model_find_statements(info->model, query);	
+	set = json_array();
+	jsonld_serialize_stream(info, NULL, stream, set, 1);
+	librdf_free_stream(stream);
+	librdf_free_statement(query);
+	if(json_array_size(set))
+	{
+		obj = json_array_get(set, 0);
+		json_incref(obj);
+	}
+	json_decref(set);
+	return obj;
+}
+
+/* Helper used to locate (creating if needed) an entry for a subject within a
+ * target @set
+ */
+static json_t *
+jsonld_subject_locate(jsonld_info *info, json_t *targetarray, json_t *subjectmap, const char *subject, librdf_node *node)
+{
+	json_t *entry;
+
+	/* If the entry already exists within our subject map,
+	 * just return it
+	 */
+	if((entry = json_object_get(subjectmap, subject)))
+	{
+		/* json_object_get() borrows the retained reference,
+		 * so we incref here so our caller's subsequent decref
+		 * doesn't do the wrong thing
+		 */
+		json_incref(entry);
+		return entry;
+	}
+	/* We haven't encountered this subject within the graph yet */
+	entry = json_object();
+	json_object_set_new(entry, "@id", jsonld_uri_node(info, node));
+	json_object_set_new(entry, "@type", json_null());
+	json_object_set(subjectmap, subject, entry);
+	json_array_append(targetarray, entry);	
+	return entry;
+}
+
+/* Helper used to add a property value to a subject */
+static int
+jsonld_subject_add_node(jsonld_info *info, json_t *entry, const char *subject, const char *predicate, librdf_node *node, int recurse)
+{
+	json_t *propentry;
+	const char *propname;
+
+	json_t *value, *langprops, *langentry;
+	const char *lang;
+
+	propentry = jsonld_context_locate_node(info, predicate, node, &propname);
+	if(propentry)
+	{
+		if(propname)
+		{
+			predicate = propname;
+		}
+		/* Should we use one of the abbreviated forms? */
+		if(!librdf_node_get_literal_value_datatype_uri(node))
+		{
+			lang = librdf_node_get_literal_value_language(node);
+			if(jsonld_context_entry_langmap(info, propentry, lang))
+			{
+				/* Express this value as part of a language map */
+				langprops = json_object_get(info->langmaps, subject);
+				if(!langprops)
+				{
+					langprops = json_object();
+					json_object_set_new(info->langmaps, subject, langprops);
+					/* implicitly borrow the reference */
+				}
+				langentry = json_object_get(langprops, predicate);
+				if(!langentry)
+				{
+					langentry = json_object();
+					json_object_set_new(langprops, predicate, langentry);
+					/* implicitly borrow the reference */
+				}
+				quilt_logf(LOG_DEBUG, "adding %s[%s]\n", predicate, lang);
+				json_object_set_new(langentry, lang, json_string((const char *) librdf_node_get_literal_value(node)));
+				return 0;
+			}
+		}		
+	}
+	value = jsonld_node(info, node, predicate, propentry, recurse);
+	jsonld_subject_add_value(info, entry, subject, predicate, value, propentry);
+	json_decref(value);
+	return 0;
+}
+
+/* Helper used to add a property value to a subject */
+static int
+jsonld_subject_add_value(jsonld_info *info, json_t *entry, const char *subject, const char *predicate, json_t *value, json_t *propentry)
+{
+	json_t *prop, *array;
+
+	(void) info;
+	(void) subject;
+
+	prop = json_object_get(entry, predicate);
+	if(prop && !strcmp(predicate, "@type") && json_typeof(prop) == JSON_NULL)
+	{
+		/* If this is the first time we're expressing
+		 * rdf:type, there's a NULL placeholder that we should
+		 * replace.
+		 */
+		json_object_set(entry, predicate, value);
+		return 0;
+	}
+	if(prop && json_typeof(prop) != JSON_ARRAY)
+	{
+		/* A single value for this property exists; convert it to an array
+		 * and then append the new value to it
+		 */
+		json_incref(prop);
+		array = json_array();
+		json_array_append(array, prop);
+		json_object_set(entry, predicate, array);
+		json_decref(prop);
+		/* Borrow the reference, as json_object_get() does */
+		prop = array;
+		json_decref(array);
+		/* Append the new value */
+		json_array_append(prop, value);
+		return 0;
+	}
+	if(prop)
+	{
+		/* The property exists and is an array, simply append */
+		json_array_append(prop, value);
+		return 0;
+	}
+	if(jsonld_context_entry_container(info, propentry, "@list") ||
+	   jsonld_context_entry_container(info, propentry, "@set"))
+	{
+		/* The context specifies that we should always express the property as
+		 * an array
+		 */
+		array = json_array();
+		json_array_append(prop, value);
+		json_object_set(entry, predicate, array);
+		json_decref(array);
+		return 0;
+	}
+	/* This is the first time we've encountered this property, simply
+	 * set it; if there are multiple values, the code above will wrap
+	 * this first value in an array when the second relevant triple is
+	 * encountered.
+	 */
+	json_object_set(entry, predicate, value);
 	return 0;
 }
 
 /* Return a JSON object for a node */
 static json_t *
-jsonld_node(jsonld_info *info, librdf_node *node, const char *preduristr)
+jsonld_node(jsonld_info *info, librdf_node *node, const char *preduristr, json_t *propentry, int recurse)
 {
 	json_t *obj;
 	librdf_uri *nodedt;
-	const char *dturi, *nodedturistr, *value;
+	const char *dturi, *nodedturistr, *value, *lang;
 	json_int_t intval;
 	double realval;
 	char *endp, *nodetype;
+	json_t *set;
+
+	(void) preduristr;
 
 	endp = NULL;
-	if(preduristr)
+	if(propentry)
 	{
 		/* Is a datatype specified in the context for this predicate? */
-		dturi = jsonld_predicate_datatype(info, preduristr);
+		dturi = jsonld_context_entry_datatype(info, propentry);
+	}
+	else if(!strcmp(preduristr, "@type"))
+	{
+		dturi = "@id";
 	}
 	else
 	{
@@ -390,6 +601,14 @@ jsonld_node(jsonld_info *info, librdf_node *node, const char *preduristr)
 	}
 	if(librdf_node_is_resource(node))
 	{
+		if(recurse)
+		{
+			obj = jsonld_serialize_subject(info, node);
+			if(obj)
+			{
+				return obj;
+			}
+		}
 		if(dturi && !strcmp(dturi, "@id"))
 		{
 			/* The datatype is @id - i.e., return a bare URI-string */
@@ -399,13 +618,14 @@ jsonld_node(jsonld_info *info, librdf_node *node, const char *preduristr)
 		json_object_set_new(obj, "@id", jsonld_uri_node(info, node));
 		return obj;
 	}
+
 	if(librdf_node_is_literal(node))
 	{
 		/* Serialise a literal, according to the built-in optimal serialisation
 		 * rules (e.g., encoding xsd:boolean values) along with the information
 		 * in the context.
 		 */
-		value = (const char *) librdf_node_get_literal_value(node);
+		value = (const char *) librdf_node_get_literal_value(node);		
 		if((nodedt = librdf_node_get_literal_value_datatype_uri(node)))
 		{
 			nodedturistr = (const char *) librdf_uri_as_string(nodedt);
@@ -491,6 +711,13 @@ jsonld_node(jsonld_info *info, librdf_node *node, const char *preduristr)
 			json_object_set_new(obj, "@value", json_string(value));
 			json_object_set_new(obj, "@type", json_string(nodetype));
 			free(nodetype);
+			return obj;
+		}
+		if((lang = (const char *) librdf_node_get_literal_value_language(node)))
+		{
+			obj = json_object();
+			json_object_set_new(obj, "@value", json_string(value));
+			json_object_set_new(obj, "@language", json_string(lang));
 			return obj;
 		}
 		return json_string(value);
@@ -610,35 +837,6 @@ jsonld_relstr(jsonld_info *info, const char *str)
 	return str;
 }	
 
-/* Look up a predicate in the @context and determine whether it has a
- * specified datatype. If so, jsonld_node() can use this to encode the
- * abbreviated form of the node if the node's type matches.
- */
-static const char *
-jsonld_predicate_datatype(jsonld_info *info, const char *predicate)
-{
-	char *name;
-	json_t *obj, *str;
-
-	if(!strcmp(predicate, "@id") || !strcmp(predicate, "@type"))
-	{
-		/* @id and @type always have the type '@id' (i.e., resource
-		 * nodes are encoded as a bare URI-string
-		 */
-		return "@id";
-	}
-	name = jsonld_predicate_locate(info, predicate, &obj);
-	if(name)
-	{
-		free(name);
-		if((str = json_object_get(obj, "@type")))
-		{
-			return json_string_value(str);
-		}
-	}
-	return NULL;
-}
-
 char *
 jsonld_predicate_locate(jsonld_info *info, const char *predicate, json_t **declarator)
 {
@@ -673,13 +871,14 @@ jsonld_predicate_locate(jsonld_info *info, const char *predicate, json_t **decla
 }
 
 /* Add an entry to a the @context object (if it does not already exist), and set
- * either of the URI (@id) or datatype (@type) or both.
+ * any combination of the URI (@id), datatype (@type), container (@container).
  *
  * This function always adds/updates the entry, never replaces, so it is safe to
  * do the following:
  *
- * jsonld_context_set(info, "topic", "foaf:topic", NULL);
- * jsonld_context_set(info, "topic", NULL, "@id");
+ * jsonld_context_set(info, "topic", "foaf:topic", NULL, NULL);
+ * jsonld_context_set(info, "topic", NULL, "@id", NULL);
+ * jsonld_context_set(info, "label", "rdfs:label", NULL, "@language");
  *
  * The resulting entry would be:
  *
@@ -687,7 +886,7 @@ jsonld_predicate_locate(jsonld_info *info, const char *predicate, json_t **decla
  */
 
 static int
-jsonld_context_set(jsonld_info *info, const char *name, const char *uri, const char *datatype)
+jsonld_context_set(jsonld_info *info, const char *name, const char *uri, const char *datatype, const char *containers)
 {
 	json_t *obj;
 	char *s;
@@ -715,11 +914,142 @@ jsonld_context_set(jsonld_info *info, const char *name, const char *uri, const c
 		json_object_set_new(obj, "@type", json_string(s));
 		free(s);
 	}
+	if(containers)
+	{
+		json_object_set_new(obj, "@container", json_string(containers));
+	}
 	if(add && json_object_size(obj))
 	{
 		json_object_set(info->context, name, obj);
 	}
 	json_decref(obj);
+	return 0;
+}
+
+/* Locate an entry within an @context; the predicate URI should be in contracted form */
+static json_t *
+jsonld_context_locate_node(jsonld_info *info, const char *predicate, librdf_node *node, const char **name)
+{
+	const char *key, *entryuristr;
+	json_t *value, *entryuri;
+
+	const char *default_key, *lang_key, *datatype_key;
+	json_t *default_value, *lang_value, *datatype_value;
+
+	default_key = lang_key = datatype_key = NULL;
+	default_value = lang_value = datatype_value = NULL;
+	/* There may be multiple entries within a context with different names
+	 * and datatypes or languages, so we need to attempt to find the most
+	 * appropriate match for the node we're serialising.
+	 */
+
+	json_object_foreach(info->context, key, value)
+	{
+		if(key[0] == '@' || json_typeof(value) != JSON_OBJECT)
+		{
+			continue;
+		}
+		if((entryuri = json_object_get(value, "@id")))
+		{
+			entryuristr = json_string_value(entryuri);
+		}
+		else
+		{
+			entryuristr = NULL;
+		}
+		if(!strcmp(key, predicate) || (entryuristr && !strcmp(entryuristr, predicate)))
+		{
+			/* We have a match of some kind */
+			default_key = key;
+			default_value = value;
+		}
+	}
+	if(datatype_key)
+	{
+		if(name)
+		{
+			*name = datatype_key;
+		}
+		return datatype_value;
+	}
+	if(lang_key)
+	{
+		if(name)
+		{
+			*name = lang_key;
+		}
+		return lang_value;
+	}
+	if(name)
+	{
+		*name = default_key;
+	}
+	return default_value;
+}
+
+/* Should a literal value be expressed as part of a language-map? */
+static int
+jsonld_context_entry_langmap(jsonld_info *info, json_t *entry, const char *lang)
+{
+	(void) lang;
+
+	if(jsonld_context_entry_container(info, entry, "@language"))
+	{
+		return 1;
+	}
+	return 0;
+}
+
+/* Return the datatype, if any, specified in a context entry */
+static const char *
+jsonld_context_entry_datatype(jsonld_info *info, json_t *entry)
+{
+	json_t *type;
+
+	(void) info;
+
+	type = json_object_get(entry, "@type");
+	if(type)
+	{
+		return json_string_value(type);
+	}
+	return NULL;
+}
+
+/* Does the context entry specify: @container: <type>? */
+static int
+jsonld_context_entry_container(jsonld_info *info, json_t *entry, const char *type)
+{
+	json_t *container, *value;
+	size_t index;
+	const char *valstr;
+
+	container = json_object_get(entry, "@container");
+	if(!container)
+	{
+		return 0;
+	}
+	if(json_typeof(container) == JSON_STRING)
+	{
+		valstr = json_string_value(container);
+		if(valstr && !strcmp(valstr, type))
+		{
+			return 1;
+		}
+		return 0;
+	}
+	if(json_typeof(container) != JSON_ARRAY)
+	{
+		return 0;
+	}
+	json_array_foreach(container, index, value)
+	{
+		valstr = json_string_value(value);
+		if(valstr && !strcmp(valstr, type))
+		{
+			return 1;
+		}
+	}
 	return 0;
 }
 
@@ -754,7 +1084,7 @@ jsonld_aliases_cb(const char *key, const char *value, void *data)
 	}
 	key += 15; /* jsonld:aliases: */
 	info = (jsonld_info *) data;
-	jsonld_context_set(info, key, value, NULL);
+	jsonld_context_set(info, key, value, NULL, NULL);
 	return 0;
 }
 
@@ -770,6 +1100,22 @@ jsonld_datatypes_cb(const char *key, const char *value, void *data)
 	}
 	key += 17; /* jsonld:datatypes: */
 	info = (jsonld_info *) data;
-	jsonld_context_set(info, key, NULL, value);
+	jsonld_context_set(info, key, NULL, value, NULL);
+	return 0;
+}
+
+/* Invoked for each key/value pair in the [jsonld:containers] section */
+static int
+jsonld_containers_cb(const char *key, const char *value, void *data)
+{
+	jsonld_info *info;
+
+	if(strncmp(key, "jsonld:containers:", 18))
+	{
+		return 0;
+	}
+	key += 18; /* jsonld:containers: */
+	info = (jsonld_info *) data;
+	jsonld_context_set(info, key, NULL, NULL, value);
 	return 0;
 }
