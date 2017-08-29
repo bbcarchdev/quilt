@@ -99,6 +99,10 @@ struct quilt_request_struct
 		char *buf;
 		char *labuf;
 	} consume;
+	/* The current graph */
+	URI *graphuri;
+	char *graphuristr;
+	librdf_node *graph;
 };
 #endif
 
@@ -235,6 +239,10 @@ const char *quilt_request_type(QUILTREQ *req);
 const char *quilt_request_typeext(QUILTREQ *req);
 QUILTCANON *quilt_request_canonical(QUILTREQ *req);
 char *quilt_request_query(QUILTREQ *req);
+
+int quilt_request_set_graph_uristr(QUILTREQ *req, const char *graph);
+librdf_node *quilt_request_graph(QUILTREQ *req);
+const char *quilt_request_graph_uristr(QUILTREQ *req);
 
 librdf_node *quilt_request_basegraph(QUILTREQ *req);
 librdf_storage *quilt_request_storage(QUILTREQ *req);

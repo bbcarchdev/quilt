@@ -740,6 +740,82 @@ quilt_request_query(QUILTREQ *req)
 	return req->query;
 }
 
+int
+quilt_request_set_graph_uristr(QUILTREQ *req, const char *graph)
+{
+	URI *uri;
+	char *uristr;
+	librdf_node *node;
+
+	if(!graph)
+	{
+		return -1;
+	}
+	uri = uri_create_str(graph, req->baseuri);
+	if(!uri)
+	{
+		return -1;
+	}
+	uristr = uri_stralloc(uri);
+	if(!uristr)
+	{
+		uri_destroy(uri);
+		return -1;
+	}
+	node = librdf_new_node_from_uri_string(quilt_librdf_world(), (const unsigned char *) uristr);
+	if(!node)
+	{
+		free(uristr);
+		uri_destroy(uri);
+		return -1;
+	}
+	if(req->graph)
+	{
+		librdf_free_node(req->graph);
+	}
+	if(req->graphuristr)
+	{
+		free(req->graphuristr);
+	}
+	if(req->graphuri)
+	{
+		uri_destroy(req->graphuri);
+	}
+	req->graphuri = uri;
+	req->graphuristr = uristr;
+	req->graph = node;
+	return 0;
+}
+
+librdf_node *
+quilt_request_graph(QUILTREQ *req)
+{
+	char *concrete;
+	int r;
+
+	if(!req->graph)
+	{
+		concrete = quilt_canon_str(req->canonical, ((req->ext != NULL) ? QCO_REQUEST : QCO_CONCRETE));
+		r = quilt_request_set_graph_uristr(req, concrete);
+		free(concrete);
+		if(r)
+		{
+			return NULL;
+		}
+	}
+	return req->graph;
+}
+
+const char *
+quilt_request_graph_uristr(QUILTREQ *req)
+{
+	if(!quilt_request_graph(req))
+	{
+		return NULL;
+	}
+	return req->graphuristr;
+}
+
 /* Path consumption:
  *
  * quilt_request_rewind() resets the pointer to the start of the path
