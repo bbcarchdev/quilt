@@ -29,10 +29,10 @@ quilt_SOURCES = p_cli.h cli.c
 quilt_LDFLAGS = -R$(libdir)
 
 quilt_LDADD = \
-	libquilt/libquilt.la \
-	libsupport/libsupport.la \
-	libnegotiate/libnegotiate.la \
-	libkvset/libkvset.la \
+	$(top_builddir)/libquilt/libquilt.la \
+	$(top_builddir)/libsupport/libsupport.la \
+	$(top_builddir)/libnegotiate/libnegotiate.la \
+	$(top_builddir)/libkvset/libkvset.la \
 	@LIBURI_LOCAL_LIBS@ @LIBURI_LIBS@ \
 	@LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@ \
 	@PTHREAD_LOCAL_LIBS@ @PTHREAD_LIBS@

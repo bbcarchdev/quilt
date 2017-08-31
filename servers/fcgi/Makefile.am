@@ -39,10 +39,10 @@ quilt_fcgid_SOURCES = p_fcgi.h fcgi.c
 quilt_fcgid_LDFLAGS = -R$(libdir) @fcgi_LDFLAGS@
 
 quilt_fcgid_LDADD = \
-	libquilt/libquilt.la \
-	libsupport/libsupport.la \
-	libnegotiate/libnegotiate.la \
-	libkvset/libkvset.la \
+	$(top_builddir)/libquilt/libquilt.la \
+	$(top_builddir)/libsupport/libsupport.la \
+	$(top_builddir)/libnegotiate/libnegotiate.la \
+	$(top_builddir)/libkvset/libkvset.la \
 	@fcgi_LIBS@ \
 	@LIBURI_LOCAL_LIBS@ @LIBURI_LIBS@ \
 	@LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@ \

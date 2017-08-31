@@ -129,7 +129,6 @@ serialisers/jsonld/Makefile
 sample-data/Makefile
 docbook-html5/Makefile
 docs/Makefile
-t/Makefile
 ])
 
 AC_OUTPUT
