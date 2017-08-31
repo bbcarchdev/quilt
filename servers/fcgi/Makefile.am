@@ -18,6 +18,8 @@
 
 EXTRA_DIST = apache2-example.conf.in
 
+nodist_doc_DATA = apache2-example.conf
+
 AM_CPPFLAGS = @AM_CPPFLAGS@ @fcgi_CFLAGS@ \
 	-I$(top_builddir)/libquilt -I$(top_srcdir)/libquilt \
 	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
