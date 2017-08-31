@@ -16,5 +16,17 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-SUBDIRS = html text jsonld
+AM_CPPFLAGS = @AM_CPPFLAGS@ \
+	-I$(top_builddir)/libquilt -I$(top_srcdir)/libquilt
 
+moduledir = $(libdir)/quilt
+
+module_LTLIBRARIES = jsonld.la
+
+jsonld_la_SOURCES = p_jsonld.h \
+	jsonld.c
+
+jsonld_la_LIBADD = $(top_builddir)/libquilt/libquilt.la \
+	$(LIBJANSSON_LOCAL_LIBS) $(LIBJANSSON_LIBS)
+
+jsonld_la_LDFLAGS = -module -no-undefined -avoid-version

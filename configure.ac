@@ -118,7 +118,9 @@ public/Makefile
 libquilt/Makefile
 engines/Makefile
 serialisers/Makefile
-serialisers/t/Makefile
+serialisers/html/Makefile
+serialisers/text/Makefile
+serialisers/jsonld/Makefile
 sample-data/Makefile
 apache2-example.conf
 docbook-html5/Makefile
