@@ -13,9 +13,6 @@
 Makefile.in
 Makefile
 autom4te.cache
-/quilt-fcgid
-/quilt-cgid
-/quilt
 /aclocal.m4
 /config.guess
 /config.h
@@ -24,13 +21,8 @@ autom4te.cache
 /config.status
 /config.sub
 /configure
-/depcomp
-/install-sh
 /libtool
 /ltmain.sh
-/missing
 /stamp-h1
-/apache2-example.conf
-/compile
 .cproject
 .project

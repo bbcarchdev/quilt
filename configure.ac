@@ -18,6 +18,7 @@
 
 AC_INIT([quilt],m4_esyscmd([/bin/sh m4/get-version.sh]),[RESFeedback@bbc.co.uk],,[https://github.com/bbcarchdev/quilt])
 AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_AUX_DIR([scripts])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_MAINTAINER_MODE
 
@@ -116,13 +117,16 @@ libkvset/Makefile
 templates/Makefile
 public/Makefile
 libquilt/Makefile
+servers/Makefile
+servers/cli/Makefile
+servers/fcgi/Makefile
+servers/fcgi/apache2-example.conf
 engines/Makefile
 serialisers/Makefile
 serialisers/html/Makefile
 serialisers/text/Makefile
 serialisers/jsonld/Makefile
 sample-data/Makefile
-apache2-example.conf
 docbook-html5/Makefile
 docs/Makefile
 t/Makefile
