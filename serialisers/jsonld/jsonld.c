@@ -186,8 +186,6 @@ jsonld_serialize(QUILTREQ *req)
 	quilt_config_get_all("jsonld:datatypes", NULL, jsonld_datatypes_cb, (void *) &info);
 	quilt_config_get_all("jsonld:containers", NULL, jsonld_containers_cb, (void *) &info);
 
-	json_object_set(info.root, "@context", info.context);
-
 	/* root/@set */
 	info.rootset = json_array();
 
@@ -196,6 +194,8 @@ jsonld_serialize(QUILTREQ *req)
 
 	info.model = quilt_request_model(req);
 	jsonld_serialize_model(&info, info.model);
+
+	json_object_set(info.root, "@context", info.context);
 
 	buf = json_dumps(info.root, JSON_PRESERVE_ORDER|JSON_ENCODE_ANY|JSON_INDENT(2));
 
