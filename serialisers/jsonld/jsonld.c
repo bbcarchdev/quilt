@@ -63,6 +63,7 @@ static int jsonld_serialize(QUILTREQ *req);
 static int jsonld_serialize_model(jsonld_info *info, librdf_model *model);
 static int jsonld_serialize_stream(jsonld_info *info, librdf_node *context, librdf_stream *stream, json_t *set, int recurse);
 static json_t *jsonld_serialize_subject(jsonld_info *info, librdf_node *node);
+static int jsonld_serialize_langmaps(jsonld_info *info);
 
 static json_t *jsonld_subject_locate(jsonld_info *info, json_t *targetarray, json_t *subjectmap, const char *subject, librdf_node *node);
 static int jsonld_subject_add_node(jsonld_info *info, json_t *entry, const char *subject, const char *predicate, librdf_node *node, int recurse);
@@ -126,6 +127,8 @@ struct jsonld_info_struct
 	json_t *graphs;
 	/* Helper object for language-mapping */
 	json_t *langmaps;
+	/* The set of subjects in the current graph */
+	json_t *kvset;
 };
 
 int
@@ -245,6 +248,8 @@ jsonld_serialize_model(jsonld_info *info, librdf_model *model)
 	if(!iter || librdf_iterator_end(iter))
 	{
 		quilt_logf(LOG_DEBUG, "jsonld: serialising default graph\n");
+		info->langmaps = json_object();
+		info->kvset = json_object();
 		stream = librdf_model_find_statements(model, query);
 		jsonld_serialize_stream(info, NULL, stream, info->rootset, recurse);
 		librdf_free_stream(stream);
@@ -258,12 +263,29 @@ jsonld_serialize_model(jsonld_info *info, librdf_model *model)
 			/* If context is the default graph, serialise into
 			 * the root set.
 			 */
+			if(!info->langmaps)
+			{
+				info->langmaps = json_object();
+			}
+			if(!info->kvset)
+			{
+				info->kvset = json_object();
+			}
 			stream = librdf_model_find_statements_in_context(model, query, context);
 			jsonld_serialize_stream(info, context, stream, info->rootset, recurse);
 			librdf_free_stream(stream);
 			continue;
+		}	   
+		if(info->langmaps)
+		{
+			json_decref(info->langmaps);
 		}
-		
+		if(info->kvset)
+		{
+			json_decref(info->kvset);
+		}
+		info->langmaps = json_object();
+		info->kvset = json_object();
 		graph = json_object();
 		json_object_set_new(graph, "@id", jsonld_uri_node(info, context));
 		
@@ -271,6 +293,7 @@ jsonld_serialize_model(jsonld_info *info, librdf_model *model)
 		
 		stream = librdf_model_find_statements_in_context(model, query, context);
 		jsonld_serialize_stream(info, context, stream, set, recurse);
+		jsonld_serialize_langmaps(info);
 		librdf_free_stream(stream);
 		
 		if(json_array_size(set))
@@ -281,6 +304,20 @@ jsonld_serialize_model(jsonld_info *info, librdf_model *model)
 		
 		json_decref(set);
 		json_decref(graph);
+	}
+	if(nographs && info->langmaps && info->kvset)
+	{
+		jsonld_serialize_langmaps(info);
+	}
+	if(info->langmaps)
+	{
+		json_decref(info->langmaps);
+		info->langmaps = NULL;
+	}
+	if(info->kvset)
+	{
+		json_decref(info->kvset);
+		info->kvset = NULL;
 	}
 	if(iter)
 	{
@@ -317,14 +354,11 @@ jsonld_serialize_stream(jsonld_info *info, librdf_node *context, librdf_stream *
 	const char *subjuristr, *uristr;
 	char *preduristr;
 	librdf_statement *statement;
-	json_t *kv, *entry, *prop, *props;
-	void *subjiter, *propiter;
+	json_t *entry, *prop, *props;
 	size_t index;
 
 	(void) context;
 
-	info->langmaps = json_object();
-	kv = json_object();
 	prevsubj = NULL;
 	entry = NULL;
 	for(; !librdf_stream_end(stream); librdf_stream_next(stream))
@@ -342,7 +376,7 @@ jsonld_serialize_stream(jsonld_info *info, librdf_node *context, librdf_stream *
 			{
 				json_decref(entry);
 			}
-			entry = jsonld_subject_locate(info, targetarray, kv, subjuristr, subject);
+			entry = jsonld_subject_locate(info, targetarray, info->kvset, subjuristr, subject);
 			if(!entry)
 			{
 				quilt_logf(LOG_ERR, "failed to create or locate subject <%s> within our target\n");
@@ -370,13 +404,23 @@ jsonld_serialize_stream(jsonld_info *info, librdf_node *context, librdf_stream *
 			json_object_del(entry, "@type");
 		}
 	}
-	/* Merge the language-maps into the output now that they've been fully
-	 * assembled
-	 */
+	return 0;
+}
+
+/* Merge the language-maps into the output now that they've been fully
+ * assembled
+ */
+static int
+jsonld_serialize_langmaps(jsonld_info *info)
+{
+	void *subjiter, *propiter;
+	const char *subjuristr, *uristr;
+	json_t *entry, *props;
+
 	for(subjiter = json_object_iter(info->langmaps); subjiter; subjiter = json_object_iter_next(info->langmaps, subjiter))
 	{
 		subjuristr = json_object_iter_key(subjiter);
-		entry = json_object_get(kv, subjuristr);
+		entry = json_object_get(info->kvset, subjuristr);
 		if(!entry)
 		{
 			quilt_logf(LOG_WARNING, "jsonld: while merging language-maps, subject <%s> does not exist in subject map\n", subjuristr);
@@ -389,9 +433,6 @@ jsonld_serialize_stream(jsonld_info *info, librdf_node *context, librdf_stream *
 			jsonld_subject_add_value(info, entry, subjuristr, uristr, json_object_iter_value(propiter), NULL);
 		}
 	}
-	json_decref(kv);
-	json_decref(info->langmaps);
-	info->langmaps = NULL;
 	return 0;
 }
 
