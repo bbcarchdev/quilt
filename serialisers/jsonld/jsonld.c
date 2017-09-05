@@ -69,6 +69,9 @@ static json_t *jsonld_subject_locate(jsonld_info *info, json_t *targetarray, jso
 static int jsonld_subject_add_node(jsonld_info *info, json_t *entry, const char *subject, const char *predicate, librdf_node *node, int recurse);
 static int jsonld_subject_add_value(jsonld_info *info, json_t *entry, const char *subject, const char *predicate, json_t *value, json_t *propentry);
 
+static int jsonld_value_equals(jsonld_info *info, json_t *a, json_t *b);
+static int jsonld_value_present(jsonld_info *info, json_t *list, json_t *value);
+
 static int jsonld_context_set(jsonld_info *info, const char *name, const char *uri, const char *datatype, const char *containers);
 static json_t *jsonld_context_locate_node(jsonld_info *info, const char *predicate, librdf_node *node, const char **name);
 static int jsonld_context_entry_langmap(jsonld_info *info, json_t *entry, const char *lang);
@@ -541,7 +544,7 @@ jsonld_subject_add_node(jsonld_info *info, json_t *entry, const char *subject, c
 				json_object_set_new(langentry, lang, json_string((const char *) librdf_node_get_literal_value(node)));
 				return 0;
 			}
-		}		
+		}
 	}
 	value = jsonld_node(info, node, predicate, propentry, recurse);
 	jsonld_subject_add_value(info, entry, subject, predicate, value, propentry);
@@ -573,22 +576,28 @@ jsonld_subject_add_value(jsonld_info *info, json_t *entry, const char *subject, 
 		/* A single value for this property exists; convert it to an array
 		 * and then append the new value to it
 		 */
-		json_incref(prop);
-		array = json_array();
-		json_array_append(array, prop);
-		json_object_set(entry, predicate, array);
-		json_decref(prop);
-		/* Borrow the reference, as json_object_get() does */
-		prop = array;
-		json_decref(array);
-		/* Append the new value */
-		json_array_append(prop, value);
+		if(!jsonld_value_equals(info, prop, value))
+		{
+			json_incref(prop);
+			array = json_array();
+			json_array_append(array, prop);
+			json_object_set(entry, predicate, array);
+			json_decref(prop);
+			/* Borrow the reference, as json_object_get() does */
+			prop = array;
+			json_decref(array);
+			/* Append the new value */
+			json_array_append(prop, value);
+		}
 		return 0;
 	}
 	if(prop)
 	{
 		/* The property exists and is an array, simply append */
-		json_array_append(prop, value);
+		if(!jsonld_value_present(info, prop, value))
+		{
+			json_array_append(prop, value);
+		}
 		return 0;
 	}
 	if(jsonld_context_entry_container(info, propentry, "@list") ||
@@ -610,6 +619,35 @@ jsonld_subject_add_value(jsonld_info *info, json_t *entry, const char *subject, 
 	 */
 	json_object_set(entry, predicate, value);
 	return 0;
+}
+
+/* Compare two property values and return nonzero if they're equal */
+static int
+jsonld_value_equals(jsonld_info *info, json_t *a, json_t *b)
+{
+	(void) info;
+
+	return json_equal(a, b);
+}
+
+/* Determine whether a value is already present in a property array */
+static int
+jsonld_value_present(jsonld_info *info, json_t *list, json_t *value)
+{
+	size_t index;
+	json_t *obj;
+	int r;
+
+	r = 0;
+	json_array_foreach(list, index, obj)
+	{
+		if(jsonld_value_equals(info, obj, value))
+		{
+			r = 1;
+			break;
+		}
+	}
+	return r;
 }
 
 /* Return a JSON object for a node */
