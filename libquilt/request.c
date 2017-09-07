@@ -300,6 +300,28 @@ quilt_request_getparam(QUILTREQ *req, const char *name)
 	return req->impl->getparam(req, name);
 }
 
+/* Public: Obtain a request query parameter as an integer */
+long
+quilt_request_getparam_int(QUILTREQ *req, const char *name)
+{
+	const char *t;
+	long l;
+	char *endp;
+
+	t = req->impl->getparam(req, name);
+	if(!t)
+	{
+		return 0;
+	}
+	endp = NULL;
+	l = strtol(t, &endp, 10);
+	if(endp && endp[0])
+	{
+		return 0;
+	}
+	return l;
+}
+
 /* Public: Obtain a request query parameter with multiple values */
 const char *const *
 quilt_request_getparam_multi(QUILTREQ *req, const char *name)
