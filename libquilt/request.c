@@ -703,6 +703,21 @@ quilt_request_subject(QUILTREQ *req)
 }
 
 int
+quilt_request_set_subject_uristr(QUILTREQ *req, const char *uristr)
+{
+	char *p;
+
+	p = strdup(uristr);
+	if(!p)
+	{
+		return -1;
+	}
+	free(req->subject);
+	req->subject = p;
+	return 0;
+}
+
+int
 quilt_request_home(QUILTREQ *req)
 {
 	return req->home;

@@ -230,6 +230,7 @@ int quilt_request_status(QUILTREQ *req);
 const char *quilt_request_statustitle(QUILTREQ *req);
 const char *quilt_request_statusdesc(QUILTREQ *req);
 const char *quilt_request_subject(QUILTREQ *req);
+int quilt_request_set_subject_uristr(QUILTREQ *req, const char *uristr);
 int quilt_request_home(QUILTREQ *req);
 int quilt_request_index(QUILTREQ *req);
 const char *quilt_request_indextitle(QUILTREQ *req);
