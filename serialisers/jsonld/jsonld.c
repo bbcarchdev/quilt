@@ -114,9 +114,9 @@ struct jsonld_info_struct
 	/* The Content-Location */
 	char *location;
 	/* The primary topic */
-	char *subject;
+	const char *subject;
 	/* The default graph */
-	char *defgraph;
+	const char *defgraph;
 	/* The base graph */
 	const char *basegraph;
 	size_t basegraphlen;
@@ -168,9 +168,9 @@ jsonld_serialize(QUILTREQ *req)
 	}
 	info.location = quilt_canon_str(quilt_request_canonical(req), opt);
 	quilt_logf(LOG_DEBUG, "jsonld: location is <%s>\n", info.location);
-	info.defgraph = quilt_canon_str(quilt_request_canonical(req), QCO_NOABSOLUTE|QCO_USERSUPPLIED);
+	info.defgraph = quilt_request_graph_uristr(req);
 	quilt_logf(LOG_DEBUG, "jsonld: default graph is <%s>\n", info.defgraph);
-	info.subject = quilt_canon_str(quilt_request_canonical(req), QCO_SUBJECT);
+	info.subject = quilt_request_subject(req);
 	quilt_logf(LOG_DEBUG, "jsonld: subject is <%s>\n", info.subject);
 
 	/* root */
@@ -213,7 +213,6 @@ jsonld_serialize(QUILTREQ *req)
 	json_decref(info.context);
 	json_decref(info.root);
 	free(info.location);
-	free(info.subject);
 
 	if(!buf)
 	{
@@ -459,7 +458,7 @@ jsonld_serialize_subject(jsonld_info *info, librdf_node *node)
 	/* XXX is the URI copied or retained? */
 	subjectnode = librdf_new_node_from_uri(world, subjecturi);
 	query = librdf_new_statement_from_nodes(world, subjectnode, NULL, NULL);
-	stream = librdf_model_find_statements(info->model, query);	
+	stream = librdf_model_find_statements(info->model, query);
 	set = json_array();
 	jsonld_serialize_stream(info, NULL, stream, set, 1);
 	librdf_free_stream(stream);
