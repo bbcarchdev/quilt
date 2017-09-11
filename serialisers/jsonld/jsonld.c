@@ -436,6 +436,7 @@ jsonld_recurse(jsonld_info *info, json_t *entry, int recurse)
 	{
 		return 0;
 	}
+	json_object_set_new(entry, "@recurse", json_true());
 	json_incref(idprops);
 	json_object_del(entry, "@idprops");
 	json_object_foreach(idprops, key, dummy)
@@ -444,6 +445,7 @@ jsonld_recurse(jsonld_info *info, json_t *entry, int recurse)
 		newval = jsonld_recurse_value(info, obj, recurse);
 		json_object_set(entry, key, newval);
 	}
+	json_object_del(entry, "@recurse");
 	return 0;
 }
 
@@ -468,9 +470,12 @@ jsonld_recurse_value(jsonld_info *info, json_t *value, int recurse)
 		obj = json_object_get(info->kvset, json_string_value(value));
 		if(obj)
 		{
-			json_incref(obj);
-			jsonld_recurse(info, obj, recurse - 1);
-			return obj;
+			if(!json_object_get(obj, "@recurse"))
+			{
+				json_incref(obj);
+				jsonld_recurse(info, obj, recurse - 1);
+				return obj;
+			}
 		}
 	}
 	else if(json_typeof(value) == JSON_OBJECT)
@@ -481,9 +486,12 @@ jsonld_recurse_value(jsonld_info *info, json_t *value, int recurse)
 			obj = json_object_get(info->kvset, json_string_value(id));
 			if(obj)
 			{
-				json_incref(obj);
-				jsonld_recurse(info, obj, recurse - 1);
-				return obj;
+				if(!json_object_get(obj, "@recurse"))
+				{
+					json_incref(obj);
+					jsonld_recurse(info, obj, recurse - 1);
+					return obj;
+				}
 			}
 		}
 	}
