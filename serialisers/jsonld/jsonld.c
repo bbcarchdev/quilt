@@ -148,11 +148,13 @@ quilt_plugin_init(void)
 	return 0;
 }
 
-static int
-jsonld_serialize(QUILTREQ *req)
+/* This method is not static because it can be used by other modules to obtain
+ * a json_t representation of the model
+ */
+json_t *
+jsonld_serialize_json(QUILTREQ *req)
 {
 	jsonld_info info;
-	char *buf;
 	QUILTCANOPTS opt = QCO_CONCRETE|QCO_NOABSOLUTE;
 
 	memset(&info, 0, sizeof(jsonld_info));
@@ -201,20 +203,41 @@ jsonld_serialize(QUILTREQ *req)
 	jsonld_serialize_model(&info, info.model);
 
 	json_object_set(info.root, "@context", info.context);
-
-	buf = json_dumps(info.root, JSON_PRESERVE_ORDER|JSON_ENCODE_ANY|JSON_INDENT(2));
-
-	quilt_request_headerf(req, "Status: %d %s\n", quilt_request_status(req), quilt_request_statustitle(req));
-	quilt_request_headerf(req, "Content-Type: %s\n", req->type);
-	quilt_request_headerf(req, "Content-Location: %s\n", info.location);
-	quilt_request_headers(req, "Vary: Accept\n");
-	quilt_request_headers(req, "Server: " PACKAGE_SIGNATURE "\n");
-
 	json_decref(info.graphs);
 	json_decref(info.rootset);
 	json_decref(info.context);
-	json_decref(info.root);
 	free(info.location);
+
+	return info.root;
+}
+
+static int
+jsonld_serialize(QUILTREQ *req)
+{
+	json_t *root;
+	char *location;
+	QUILTCANOPTS opt = QCO_CONCRETE|QCO_NOABSOLUTE;
+	char *buf;
+
+	root = jsonld_serialize_json(req);
+	if(!root)
+	{
+		return 500;
+	}
+	buf = json_dumps(root, JSON_PRESERVE_ORDER|JSON_ENCODE_ANY|JSON_INDENT(2));
+	if(quilt_request_status(req) > 299)
+	{
+		// During error, we might need to use user supplied path, SPINDLE#66
+		opt |= QCO_USERSUPPLIED;
+	}
+	location = quilt_canon_str(quilt_request_canonical(req), opt);
+	quilt_request_headerf(req, "Status: %d %s\n", quilt_request_status(req), quilt_request_statustitle(req));
+	quilt_request_headerf(req, "Content-Type: %s\n", req->type);
+	quilt_request_headerf(req, "Content-Location: %s\n", location);
+	quilt_request_headers(req, "Vary: Accept\n");
+	quilt_request_headers(req, "Server: " PACKAGE_SIGNATURE "\n");
+
+	json_decref(root);
 
 	if(!buf)
 	{

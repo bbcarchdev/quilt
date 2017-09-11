@@ -44,4 +44,6 @@
 	for(index = 0; index < json_array_size(array) && (value = json_array_get(array, index)); index++)
 # endif
 
+json_t *jsonld_serialize_json(QUILTREQ *req);
+
 #endif /*!P_JSONLD_H_*/
