@@ -277,7 +277,7 @@ int quilt_canon_add_path(QUILTCANON *canon, const char *path);
 int quilt_canon_reset_params(QUILTCANON *canon);
 int quilt_canon_set_param(QUILTCANON *canon, const char *name, const char *value);
 int quilt_canon_set_param_int(QUILTCANON *canon, const char *name, long value);
-int quilt_canon_set_param_multi(QUILTCANON *canon, const char *name, const char *values[]);
+int quilt_canon_set_param_multi(QUILTCANON *canon, const char *name, const char *const *values);
 int quilt_canon_add_param(QUILTCANON *canon, const char *name, const char *value);
 int quilt_canon_add_param_int(QUILTCANON *canon, const char *name, long value);
 int quilt_canon_set_user_path(QUILTCANON *canon, const char *userpath);
