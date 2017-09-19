@@ -5,15 +5,24 @@ compiler: clang
 before_install:
 - curl https://letsencrypt.org/certs/isrgrootx1.pem.txt | sudo tee /usr/share/ca-certificates/isrgrootx1.crt
 - echo "isrgrootx1.crt" | sudo tee -a /etc/ca-certificates.conf
-- curl https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem.txt | sudo tee /usr/share/ca-certificates/lets-encrypt-x3-cross-signed.crt
+- curl https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem.txt | sudo tee
+  /usr/share/ca-certificates/lets-encrypt-x3-cross-signed.crt
 - echo "lets-encrypt-x3-cross-signed.crt" | sudo tee -a /etc/ca-certificates.conf
 - sudo update-ca-certificates
-- curl https://raw.githubusercontent.com/bbcarchdev/bbcarchdev-keys/main/bbcarchdev-apt.asc | sudo apt-key add -
-- sudo add-apt-repository "deb [arch=amd64] https://apt.bbcarchdev.net/debian wheezy main ports dev stage live"
-- sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu $(lsb_release -sc) main universe restricted multiverse"
+- curl https://raw.githubusercontent.com/bbcarchdev/bbcarchdev-keys/main/bbcarchdev-apt.asc
+  | sudo apt-key add -
+- sudo add-apt-repository "deb [arch=amd64] https://apt.bbcarchdev.net/debian wheezy
+  main ports dev stage live"
+- sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu $(lsb_release -sc)
+  main universe restricted multiverse"
 - sudo apt-get update
-- sudo apt-get install -qq libcurl4-gnutls-dev librdf0-dev liburi-dev libsparqlclient-dev libltdl-dev libfcgi-dev libjansson-dev libcunit1-ncurses-dev automake autoconf libtool pkg-config
+- sudo apt-get install -qq libcurl4-gnutls-dev librdf0-dev liburi-dev libsparqlclient-dev
+  libltdl-dev libfcgi-dev libjansson-dev libcunit1-ncurses-dev automake autoconf libtool
+  pkg-config
 before_script:
 - autoreconf -f -i
 script:
 - ./configure && make && make check
+notifications:
+  slack:
+    secure: NQSyeSESIdGc0YnpvYqzOfz+fMJWzkMh7tp1I5o2bdSlTwRyGxGyrnrGeIpRxBxdDz6Gv7LxgJ2iy+J6i+53xAiAEx94RLOTDyt4kGzUJOMFJBGvjzmQqlelAC/rJ+NQFhMun984r5lSDmtycIyi/EFE+lOKCvwKF2l4kUDrSYs=
