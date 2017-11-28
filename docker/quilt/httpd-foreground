@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Run Apache on Debian in the foreground, taking take to source environment
+# Run Apache on Debian in the foreground, taking care to source environment
 # variables (which are referenced by the configuration) and remove the PID
 # file if it already exists (because Apache gets unhappy about it existing).
 
