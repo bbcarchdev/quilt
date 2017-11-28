@@ -129,6 +129,8 @@ serialisers/jsonld/Makefile
 sample-data/Makefile
 docbook-html5/Makefile
 docs/Makefile
+docker/Makefile
+docker/quilt/Makefile
 ])
 
 AC_OUTPUT
