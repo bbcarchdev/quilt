@@ -28,6 +28,8 @@ size_t html_baseurilen;
 
 static int html_serialize(QUILTREQ *req);
 
+static json_t *(*json_serialize)(QUILTREQ *req);
+
 /* Quilt plug-in entry-point */
 int
 quilt_plugin_init(void)
@@ -59,23 +61,38 @@ html_serialize(QUILTREQ *req)
 {
 	QUILTCANON *canon;
 	LIQUIFYTPL *tpl;
-	json_t *dict;
+	json_t *dict, *jsonld;
 	char *buf, *loc;
 	int status;
+	QUILTCANOPTS opt = QCO_CONCRETE|QCO_NOABSOLUTE;
 
+	if(!json_serialize)
+	{
+		json_serialize = dlsym(NULL, "jsonld_serialize_json");
+	}
 	status = 500;
 	canon = quilt_request_canonical(req);
 	dict = json_object();
 	html_add_common(dict, req);
 	html_add_request(dict, req);
 	html_add_model(dict, req);
+	if(json_serialize)
+	{
+		jsonld = json_serialize(req);
+		json_object_set_new(dict, "jsonld", jsonld);
+	}
 	tpl = html_template(req);
 	if(tpl)
 	{
 		/* Set status to zero to suppress output */
 		status = 0;
 		buf = liquify_apply(tpl, dict);
-		loc = quilt_canon_str(canon, QCO_CONCRETE|QCO_NOABSOLUTE);
+		if(quilt_request_status(req) > 299)
+		{
+			// During error, we might need to use user supplied path, SPINDLE#66
+			opt |= QCO_USERSUPPLIED;
+		}
+		loc = quilt_canon_str(canon, opt);
 		quilt_request_headerf(req, "Status: %d %s\n", quilt_request_status(req), quilt_request_statustitle(req));
 		quilt_request_headerf(req, "Content-Type: %s; charset=utf-8\n", quilt_request_type(req));
 		quilt_request_headerf(req, "Content-Location: %s\n", loc);

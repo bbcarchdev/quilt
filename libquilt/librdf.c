@@ -137,6 +137,7 @@ int quilt_librdf_serialize_(QUILTREQ *request)
 {
 	const char *tsuffix;
 	char *buf, *loc;
+	QUILTCANOPTS opt = QCO_CONCRETE|QCO_NOABSOLUTE;
 	
 	buf = quilt_model_serialize(request->model, request->type);
 	if(!buf)
@@ -152,7 +153,14 @@ int quilt_librdf_serialize_(QUILTREQ *request)
 	{
 		tsuffix = "";
 	}
-	loc = quilt_canon_str(request->canonical, QCO_CONCRETE|QCO_NOABSOLUTE);
+
+	if(request->status > 299)
+	{
+		// During error, we might need to use user supplied path, SPINDLE#66
+		opt |= QCO_USERSUPPLIED;
+	}
+
+	loc = quilt_canon_str(request->canonical, opt);
 	quilt_request_headerf(request, "Status: %d %s\n", request->status, request->statustitle);
 	quilt_request_headerf(request, "Content-Type: %s%s\n", request->type, tsuffix);
 	quilt_request_headerf(request, "Content-Location: %s\n", loc);

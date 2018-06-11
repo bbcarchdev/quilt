@@ -19,12 +19,13 @@
 ACLOCAL_AMFLAGS = -I m4
 
 DIST_SUBDIRS = m4 libsupport libnegotiate libliquify libkvset \
-	templates public libquilt engines serialisers \
+	templates public libquilt servers engines serialisers \
 	sample-data docbook-html5 docs
 
 SUBDIRS = libsupport @subdirs@ libnegotiate libliquify libkvset \
-	templates public libquilt engines serialisers sample-data . docs \
-	t
+	libquilt \
+	servers engines serialisers \
+	templates public sample-data . docs
 
 EXTRA_DIST = libquilt.pc.in libquilt-uninstalled.pc.in
 
@@ -34,56 +35,7 @@ pkgconfig_DATA = libquilt.pc
 
 noinst_DATA = libquilt-uninstalled.pc.in
 
-doc_DATA = apache2-example.conf
-
 dist_doc_DATA = quilt.conf
-
-AM_CPPFLAGS = @AM_CPPFLAGS@ @fcgi_CFLAGS@ \
-	-I$(top_builddir)/libquilt -I$(top_srcdir)/libquilt \
-	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
-	-I$(top_builddir)/libnegotiate -I$(top_srcdir)/libnegotiate \
-	-I$(top_builddir)/libkvset -I$(top_srcdir)/libkvset
-
-bin_PROGRAMS = quilt
-
-quilt_SOURCES = p_cli.h cli.c
-
-quilt_LDFLAGS = -R$(libdir)
-
-quilt_LDADD = \
-	libquilt/libquilt.la \
-	libsupport/libsupport.la \
-	libnegotiate/libnegotiate.la \
-	libkvset/libkvset.la \
-	@LIBURI_LOCAL_LIBS@ @LIBURI_LIBS@ \
-	@LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@ \
-	@PTHREAD_LOCAL_LIBS@ @PTHREAD_LIBS@
-
-if WITH_FASTCGI
-
-sbin_PROGRAMS = quilt-fcgid
-
-quilt_fcgid_SOURCES = p_fcgi.h fcgi.c
-
-# On some systems, while $(libdir) appears in the system library search list,
-# the loader is unable to find libraries installed there without an
-# intermediate step being performed. Using -R$(libdir) prevents the issue
-# from occurring (by including a DT_RPATH hint, or equivalent in the quiltd
-# executable), but packaging scripts may wish to use chrpath(1) or similar
-# to strip it out of packaged binaries.
-quilt_fcgid_LDFLAGS = -R$(libdir) @fcgi_LDFLAGS@
-
-quilt_fcgid_LDADD = \
-	libquilt/libquilt.la \
-	libsupport/libsupport.la \
-	libnegotiate/libnegotiate.la \
-	libkvset/libkvset.la \
-	@fcgi_LIBS@ \
-	@LIBURI_LOCAL_LIBS@ @LIBURI_LIBS@ \
-	@LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@ \
-	@PTHREAD_LOCAL_LIBS@ @PTHREAD_LIBS@
-
-endif
 
 install-data-hook:
 	$(INSTALL) -m 755 -d "$(DESTDIR)$(sysconfdir)"

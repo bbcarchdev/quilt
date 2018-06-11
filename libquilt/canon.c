@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2015 BBC
+ * Copyright (c) 2014-2017 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -330,24 +330,24 @@ quilt_canon_reset_params(QUILTCANON *canon)
 }
 	
 
-/* Set a multi value query parameter of a canonical resource, removing any with the
+/* Set a multi-value query parameter of a canonical resource, removing any with the
  * same name which might exist
  */
 int
-quilt_canon_set_param_multi(QUILTCANON *canon, const char *name, const char *values[])
+quilt_canon_set_param_multi(QUILTCANON *canon, const char *name, const char *const *values)
 {
 	/* Remove all the current parameters for 'name' */
 	size_t c, i = 0;
 	
-	for(c = 0; c < canon->nparams; c++)
+	for(c = 0; c < canon->nparams; )
 	{
 		if(!strcmp(canon->params[c].name, name))
 		{
-			/* XXX: will quilt_canon_del_param_() mean that 'c' should
-			 * not be incremented?
-			 */
 			quilt_canon_del_param_(canon, name, c);
+			continue;
 		}
+		/* Only increment if we didn't delete a parameter */
+		c++;
 	}
 
 	/* Add in all the parameters from the kvset array */

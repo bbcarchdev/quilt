@@ -5,6 +5,7 @@
 # include <string.h>
 # include <errno.h>
 # include <librdf.h>
+# include <dlfcn.h>
 
 # include "libquilt.h"
 # include "libliquify.h"

@@ -16,5 +16,4 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-SUBDIRS = html text jsonld
-
+SUBDIRS = quilt

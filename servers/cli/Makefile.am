@@ -16,5 +16,23 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-SUBDIRS = html text jsonld
+AM_CPPFLAGS = @AM_CPPFLAGS@ @fcgi_CFLAGS@ \
+	-I$(top_builddir)/libquilt -I$(top_srcdir)/libquilt \
+	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
+	-I$(top_builddir)/libnegotiate -I$(top_srcdir)/libnegotiate \
+	-I$(top_builddir)/libkvset -I$(top_srcdir)/libkvset
 
+bin_PROGRAMS = quilt
+
+quilt_SOURCES = p_cli.h cli.c
+
+quilt_LDFLAGS = -R$(libdir)
+
+quilt_LDADD = \
+	$(top_builddir)/libquilt/libquilt.la \
+	$(top_builddir)/libsupport/libsupport.la \
+	$(top_builddir)/libnegotiate/libnegotiate.la \
+	$(top_builddir)/libkvset/libkvset.la \
+	@LIBURI_LOCAL_LIBS@ @LIBURI_LIBS@ \
+	@LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@ \
+	@PTHREAD_LOCAL_LIBS@ @PTHREAD_LIBS@

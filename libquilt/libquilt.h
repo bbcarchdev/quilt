@@ -38,6 +38,8 @@ typedef struct quilt_bulk_struct QUILTBULK;
 typedef struct quilt_impldata_struct QUILTIMPLDATA;
 # endif
 
+/* XXX eventually this will be an ifdef, then removed altogether */
+#ifndef QUILT_HIDDEN_REQUEST_STRUCT
 struct quilt_request_struct
 {
 	/* Pointer to the implementation */
@@ -89,7 +91,20 @@ struct quilt_request_struct
 	QUILTCANON *canonical;
 	/* The query parameters */
 	char *query;
+	/* Path consumption/lookahead buffer */
+	struct {
+		size_t buflen;
+		const char *cur;
+		const char *next;
+		char *buf;
+		char *labuf;
+	} consume;
+	/* The current graph */
+	URI *graphuri;
+	char *graphuristr;
+	librdf_node *graph;
 };
+#endif
 
 /* A typemap structure, filled in by a serialising plug-in for registration */
 struct quilt_type_struct
@@ -185,6 +200,7 @@ int quilt_config_get_all(const char *section, const char *key, int (*fn)(const c
 /* Request processing */
 const char *quilt_request_getenv(QUILTREQ *req, const char *name);
 const char *quilt_request_getparam(QUILTREQ *req, const char *name);
+long quilt_request_getparam_int(QUILTREQ *req, const char *name);
 const char *const *quilt_request_getparam_multi(QUILTREQ *req, const char *name);
 int quilt_request_puts(QUILTREQ *req, const char *str);
 int quilt_request_put(QUILTREQ *req, const unsigned char *bytes, size_t len);
@@ -214,6 +230,7 @@ int quilt_request_status(QUILTREQ *req);
 const char *quilt_request_statustitle(QUILTREQ *req);
 const char *quilt_request_statusdesc(QUILTREQ *req);
 const char *quilt_request_subject(QUILTREQ *req);
+int quilt_request_set_subject_uristr(QUILTREQ *req, const char *uristr);
 int quilt_request_home(QUILTREQ *req);
 int quilt_request_index(QUILTREQ *req);
 const char *quilt_request_indextitle(QUILTREQ *req);
@@ -225,9 +242,27 @@ const char *quilt_request_typeext(QUILTREQ *req);
 QUILTCANON *quilt_request_canonical(QUILTREQ *req);
 char *quilt_request_query(QUILTREQ *req);
 
+int quilt_request_set_graph_uristr(QUILTREQ *req, const char *graph);
+librdf_node *quilt_request_graph(QUILTREQ *req);
+const char *quilt_request_graph_uristr(QUILTREQ *req);
+
 librdf_node *quilt_request_basegraph(QUILTREQ *req);
 librdf_storage *quilt_request_storage(QUILTREQ *req);
 librdf_model *quilt_request_model(QUILTREQ *req);
+
+/* Obtain a pointer to a buffer containing the next path
+ * component, urldecoded
+ */
+const char *quilt_request_peek(QUILTREQ *req);
+
+/* Obtain a pointer to the current path component, urldecoded.
+ * Repeated calls will advance through the request path until
+ * no components remain (at which point it will return NULL)
+ */
+const char *quilt_request_consume(QUILTREQ *req);
+
+/* Rewind the path component pointer back to the start */
+int quilt_request_rewind(QUILTREQ *req);
 
 /* Canonical URI handling */
 QUILTCANON *quilt_canon_create(QUILTCANON *source);
@@ -242,6 +277,7 @@ int quilt_canon_add_path(QUILTCANON *canon, const char *path);
 int quilt_canon_reset_params(QUILTCANON *canon);
 int quilt_canon_set_param(QUILTCANON *canon, const char *name, const char *value);
 int quilt_canon_set_param_int(QUILTCANON *canon, const char *name, long value);
+int quilt_canon_set_param_multi(QUILTCANON *canon, const char *name, const char *const *values);
 int quilt_canon_add_param(QUILTCANON *canon, const char *name, const char *value);
 int quilt_canon_add_param_int(QUILTCANON *canon, const char *name, long value);
 int quilt_canon_set_user_path(QUILTCANON *canon, const char *userpath);

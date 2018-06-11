@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2015 BBC
+ * Copyright (c) 2014-2017 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -298,6 +298,28 @@ const char *
 quilt_request_getparam(QUILTREQ *req, const char *name)
 {
 	return req->impl->getparam(req, name);
+}
+
+/* Public: Obtain a request query parameter as an integer */
+long
+quilt_request_getparam_int(QUILTREQ *req, const char *name)
+{
+	const char *t;
+	long l;
+	char *endp;
+
+	t = req->impl->getparam(req, name);
+	if(!t)
+	{
+		return 0;
+	}
+	endp = NULL;
+	l = strtol(t, &endp, 10);
+	if(endp && endp[0])
+	{
+		return 0;
+	}
+	return l;
 }
 
 /* Public: Obtain a request query parameter with multiple values */
@@ -681,6 +703,21 @@ quilt_request_subject(QUILTREQ *req)
 }
 
 int
+quilt_request_set_subject_uristr(QUILTREQ *req, const char *uristr)
+{
+	char *p;
+
+	p = strdup(uristr);
+	if(!p)
+	{
+		return -1;
+	}
+	free(req->subject);
+	req->subject = p;
+	return 0;
+}
+
+int
 quilt_request_home(QUILTREQ *req)
 {
 	return req->home;
@@ -740,3 +777,247 @@ quilt_request_query(QUILTREQ *req)
 	return req->query;
 }
 
+int
+quilt_request_set_graph_uristr(QUILTREQ *req, const char *graph)
+{
+	URI *uri;
+	char *uristr;
+	librdf_node *node;
+
+	if(!graph)
+	{
+		return -1;
+	}
+	uri = uri_create_str(graph, req->baseuri);
+	if(!uri)
+	{
+		return -1;
+	}
+	uristr = uri_stralloc(uri);
+	if(!uristr)
+	{
+		uri_destroy(uri);
+		return -1;
+	}
+	node = librdf_new_node_from_uri_string(quilt_librdf_world(), (const unsigned char *) uristr);
+	if(!node)
+	{
+		free(uristr);
+		uri_destroy(uri);
+		return -1;
+	}
+	if(req->graph)
+	{
+		librdf_free_node(req->graph);
+	}
+	if(req->graphuristr)
+	{
+		free(req->graphuristr);
+	}
+	if(req->graphuri)
+	{
+		uri_destroy(req->graphuri);
+	}
+	req->graphuri = uri;
+	req->graphuristr = uristr;
+	req->graph = node;
+	return 0;
+}
+
+librdf_node *
+quilt_request_graph(QUILTREQ *req)
+{
+	char *concrete;
+	int r;
+
+	if(!req->graph)
+	{
+		concrete = quilt_canon_str(req->canonical, ((req->ext != NULL) ? QCO_REQUEST : QCO_CONCRETE));
+		r = quilt_request_set_graph_uristr(req, concrete);
+		free(concrete);
+		if(r)
+		{
+			return NULL;
+		}
+	}
+	return req->graph;
+}
+
+const char *
+quilt_request_graph_uristr(QUILTREQ *req)
+{
+	if(!quilt_request_graph(req))
+	{
+		return NULL;
+	}
+	return req->graphuristr;
+}
+
+/* Path consumption:
+ *
+ * quilt_request_rewind() resets the pointer to the start of the path
+ * buffer
+ *
+ * quilt_request_peek() returns the next component of the path, after
+ * urldecoding, but keeps the pointer where it is
+ *
+ * quilt_request_consume() returns the next component of the path, after
+ * urldecoding, but advances the pointer to the component following it,
+ * which would be returned by subsequent calls to quilt_request_peek()
+ * or quilt_request_consume()
+ *
+ * Both peek and consume will return NULL if the end of the path is
+ * reached, and will continue to return NULL until quilt_request_rewind()
+ * is called.
+ */
+
+int
+quilt_request_rewind(QUILTREQ *req)
+{
+	/* If the structure has not been initialised yet, allocate our buffers
+	 */
+	if(!req->consume.buf)
+	{
+		req->consume.buflen = strlen(req->path) + 8;
+		req->consume.buf = (char *) calloc(1, req->consume.buflen);
+		req->consume.labuf = (char *) calloc(1, req->consume.buflen);
+	}
+
+	/* Now set the pointers to the right places: initially
+	 * req->consume.cur will be NULL, and req->consume.next
+	 * will point to the start of the first path component,
+	 * or to the end of the string, whichever comes first.
+	 */
+	req->consume.cur = NULL;
+	/* Skip any leading slashes */
+	for(req->consume.next = req->path; req->consume.next[0] && req->consume.next[0] == '/'; req->consume.next++);
+	return 0;
+}
+
+/* Peek at the next path component (i.e., where req->consume.next points) */
+const char *
+quilt_request_peek(QUILTREQ *req)
+{
+	unsigned long chr, n;
+	const char *endp;
+	int q;
+	size_t c;
+
+	if(!req->consume.buf)
+	{
+		if(quilt_request_rewind(req))
+		{
+			return NULL;
+		}
+	}
+	if(!req->consume.next[0])
+	{
+		/* End of path */
+		return NULL;
+	}
+	/* If the look-ahead buffer, req->consume.labuf, is empty, populate
+	 * it with the urldecoded version of the next path component
+	 */
+	if(!req->consume.labuf[0])
+	{
+		c = 0;
+		q = 0;
+		for(endp = req->consume.next; *endp && *endp != '/'; endp++)
+		{
+			if(q)
+			{
+				if(isxdigit(*endp))
+				{
+					/* XXX this will break on EBCDIC or other non-ASCII systems */
+					if(*endp >= '0' && *endp <= '9')
+					{
+						n = *endp - '0';
+					}
+					else if(*endp >= 'A' && *endp <= 'F')
+					{
+						n = *endp - 'A' + 10;
+					}
+					else if(*endp >= 'a' && *endp <= 'f')
+					{
+						n = *endp - 'a' + 10;
+					}
+					chr = (chr << 4) | n;
+					continue;
+				}
+				else
+				{
+					req->consume.labuf[c] = chr;
+					q = 0;
+					c++;
+				}
+			}
+			if(!q)
+			{
+				if(*endp == '%')
+				{
+					q = 1;
+					chr = 0;
+					continue;
+				}
+				req->consume.labuf[c] = *endp;
+				c++;
+			}
+		}	   
+		if(q)
+		{
+			req->consume.labuf[c] = *endp;
+			c++;
+		}
+		req->consume.labuf[c] = 0;
+	}
+	return req->consume.labuf;
+}
+
+/* Consume the next path component, advancing the pointer */
+const char *
+quilt_request_consume(QUILTREQ *req)
+{
+	/* Invoking quilt_request_peek() ensures that the consume
+	 * structure is properly populated, and the look-ahead buffer
+	 * and 'next' pointer are both pointing to where they're meant
+	 * to be.
+	 */
+	if(!quilt_request_peek(req))
+	{
+		/* Nothing left in the path */
+		return NULL;
+	}
+	/* After quilt_request_peek(), req->consume.next and req->consume.labuf
+	 * contain everything we need to return, so copy them before advancing to
+	 * the next component.
+	 */
+	req->consume.cur = req->consume.next;
+	strcpy(req->consume.buf, req->consume.labuf);
+	/* Reset the look-ahead buffer so that the next peek or consume operation
+	 * will repopulate it.
+	 */
+	req->consume.labuf[0] = 0;
+	/* Update req->consume.next to point to the start of the
+	 * NEXT component after this one
+	 */
+	for(; req->consume.next[0]; req->consume.next++)
+	{
+		if(req->consume.next[0] == '/')
+		{
+			break;
+		}
+	}
+	if(req->consume.next[0])
+	{
+		/* Skip any slashes */
+		for(; req->consume.next[0] == '/'; req->consume.next++);
+	}
+	/* At this point:
+	 *   req->consume.buf contains what was in the look-ahead buffer
+	 *   req->consume.cur points to the start of that component in the path
+	 *   req->consume.labuf is empty
+	 *   req->consume.next points to the start of the next component, or the
+	 *     end of the path string, whichever arrived first.
+	 */
+	return req->consume.buf;
+}

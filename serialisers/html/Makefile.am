@@ -16,5 +16,19 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-SUBDIRS = html text jsonld
+AM_CPPFLAGS = @AM_CPPFLAGS@ \
+	-I$(top_builddir)/libquilt -I$(top_srcdir)/libquilt \
+	-I$(top_builddir)/libliquify -I$(top_srcdir)/libliquify
 
+moduledir = $(libdir)/quilt
+
+module_LTLIBRARIES = html.la
+
+html_la_SOURCES = p_html.h \
+	html.c html-types.c html-classes.c template.c common.c request.c model.c
+
+html_la_LIBADD = $(top_builddir)/libquilt/libquilt.la \
+	$(top_builddir)/libliquify/libliquify.la \
+	@LIBJANSSON_LOCAL_LIBS@ @LIBJANSSON_LIBS@
+
+html_la_LDFLAGS = -module -no-undefined -avoid-version

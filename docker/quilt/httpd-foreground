@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Run Apache on Debian in the foreground, taking care to source environment
+# variables (which are referenced by the configuration) and remove the PID
+# file if it already exists (because Apache gets unhappy about it existing).
+
+set -e
+
+. /etc/apache2/envvars
+
+rm -f /var/run/apache2.pid
+
+exec /usr/sbin/apache2 -DFOREGROUND
