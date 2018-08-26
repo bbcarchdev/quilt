@@ -23,13 +23,23 @@
 
 #include "p_libquilt.h"
 
+// The base URI used to prefix all the URIs
 static URI *quilt_base_uri;
-static QUILTCB *quilt_engine_cb;
-static QUILTCB *quilt_bulk_cb;
+
+// Array of pointers for each engine normal and bulk callbacks
+static QUILTCB **quilt_engine_cb_array;
+static QUILTCB **quilt_bulk_cb_array;
+static size_t nengine;
+
+// Stacking mode
+static char* quilt_engine_stacking_mode;
 
 static int quilt_request_process_path_(QUILTREQ *req, const char *uri);
 static const char *quilt_request_match_ext_(QUILTREQ *req);
 static const char *quilt_request_match_mime_(QUILTREQ *req);
+static int quilt_engine_parse_(char *str);
+static int quilt_engine_config_cb_(const QUILTCB *engine, const QUILTCB *bulk);
+
 
 NEGOTIATE *quilt_types_;
 NEGOTIATE *quilt_charsets_;
@@ -72,23 +82,116 @@ quilt_request_init_(void)
 int
 quilt_request_sanity_(void)
 {
+	int r;
 	char *engine;
 
+	// Get a stacking mode
+	quilt_engine_stacking_mode = quilt_config_geta("quilt:stacking", "fallback");
+
+	// Get a (list) of engines
 	engine = quilt_config_geta("quilt:engine", NULL);
 	if(!engine)
 	{
 		quilt_logf(LOG_CRIT, "no engine was specified in the [quilt] section of the configuration file\n");
 		return -1;
 	}
-	quilt_engine_cb = quilt_plugin_cb_find_name_(QCB_ENGINE, engine);
-	if(!quilt_engine_cb)
+	else
 	{
-		quilt_logf(LOG_CRIT, "engine '%s' is unknown (has the relevant module been loaded?)\n", engine);
+		r = quilt_engine_parse_(engine);
 		free(engine);
+		if(r < 0)
+		{
+			return -1;
+		}
+	}
+	return 0;
+}
+
+/* Internal: Parses a engines=foo,bar,baz configuration option
+ * Note that processor names can be separated either with whitespace or
+ * with commas or semicolons (or any combination of them), and empty
+ * elements in the list are skipped.
+ */
+static int
+quilt_engine_parse_(char *str)
+{
+	char *p, *s;
+	QUILTCB *engine_cb, *bulk_cb;
+
+	for(p = str; *p; p = s)
+	{
+		// Skip spaces and separators
+		while(isspace(*p) || *p == ',' || *p == ';')
+		{
+			p++;
+		}
+
+		// Stop if we reached the end of the string
+		if(!*p)
+		{
+			break;
+		}
+
+		// Get the name of the engine by inserting an end of string
+		for(s = p; *s && !isspace(*s) && *s != ',' && *s != ';'; s++) { }
+		if(*s)
+		{
+			*s = 0;
+			s++;
+		}
+
+		// If that did not work skip
+		if(!*p)
+		{
+			continue;
+		}
+
+		// Check if it is a known engine and get its callback
+		engine_cb = quilt_plugin_cb_find_name_(QCB_ENGINE, p);
+		if(!engine_cb)
+		{
+			quilt_logf(LOG_CRIT, "engine '%s' is unknown (has the relevant module been loaded?)\n", p);
+			return -1;
+		}
+
+		// Get its bulk callback too (will be NULL if not available)
+		bulk_cb = quilt_plugin_cb_find_name_(QCB_BULK, p);
+
+		// Try to register those two callbacks
+		if(quilt_engine_config_cb_(engine_cb, bulk_cb) < 0)
+		{
+			return -1;
+		}
+	}
+	return 0;
+}
+
+static int
+quilt_engine_config_cb_(const QUILTCB *engine, const QUILTCB *bulk)
+{
+	QUILTCB **p;
+
+	// Add the engine to the array of engines
+	p = (QUILTCB **) realloc(quilt_engine_cb_array, sizeof(QUILTCB *) * (nengine + 1));
+	if(!p)
+	{
+		quilt_logf(LOG_CRIT, "failed to expand engine list buffer\n");
 		return -1;
 	}
-	quilt_bulk_cb = quilt_plugin_cb_find_name_(QCB_BULK, engine);	
-	free(engine);
+	quilt_engine_cb_array = p;
+	p[nengine] = engine;
+
+	// Add the bulk to the array of bulk
+	p = (QUILTCB **) realloc(quilt_bulk_cb_array, sizeof(QUILTCB *) * (nengine + 1));
+	if(!p)
+	{
+		quilt_logf(LOG_CRIT, "failed to expand engine list buffer\n");
+		return -1;
+	}
+	quilt_bulk_cb_array = p;
+	p[nengine] = bulk;
+
+	nengine++;
 	return 0;
 }
 
@@ -272,18 +375,23 @@ int
 quilt_request_bulk(QUILTIMPL *impl, QUILTIMPLDATA *data, size_t offset, size_t limit)
 {
 	QUILTBULK bulk;
+	size_t c;
 
-	if(!quilt_bulk_cb)
+	for(c = 0; c < nengine; c++)
 	{
-		quilt_logf(LOG_CRIT, "the current engine does not support bulk-generation\n");
-		return -1;
+		if (quilt_bulk_cb_array[c])
+		{
+			memset(&bulk, 0, sizeof(QUILTBULK));
+			bulk.impl = impl;
+			bulk.data = data;
+			bulk.limit = limit;
+			bulk.offset = offset;
+			return quilt_plugin_invoke_bulk_(quilt_bulk_cb_array[c], &bulk);
+		}
 	}
-	memset(&bulk, 0, sizeof(QUILTBULK));
-	bulk.impl = impl;
-	bulk.data = data;
-	bulk.limit = limit;
-	bulk.offset = offset;
-	return quilt_plugin_invoke_bulk_(quilt_bulk_cb, &bulk);
+
+	quilt_logf(LOG_CRIT, "none of the current engine support bulk-generation\n");
+	return -1;
 }
 
 /* Public: Obtain a request environment variable */
@@ -426,6 +534,7 @@ int
 quilt_request_process(QUILTREQ *request)
 {
 	int r;
+	size_t c;
 
 	r = request->impl->begin(request);
 	if(r)
@@ -438,16 +547,27 @@ quilt_request_process(QUILTREQ *request)
 		quilt_logf(LOG_CRIT, "failed to unparse subject URI\n");
 		return 500;
 	}
-	quilt_logf(LOG_DEBUG, "query subject URI is <%s>\n", request->subject);	
-	r = quilt_plugin_invoke_engine_(quilt_engine_cb, request);
-	/* A zero return means the engine performed output itself; any other
-	 * status indicates that output should be generated. If the status is 200,
-	 * pass the request to the serializer.
-	 */	
+	quilt_logf(LOG_DEBUG, "query subject URI is <%s>\n", request->subject);
+
+	for(c = 0; c < nengine; c++)
+	{
+		r = quilt_plugin_invoke_engine_(quilt_engine_cb_array[c], request);
+
+		/* A zero return means the engine performed output itself; any other
+		 * status indicates that output should be generated. If the status is 200,
+		 * pass the request to the serializer.
+		 */
+		if(r == 200 && !strcmp(quilt_engine_stacking_mode, "fallback"))
+		{
+			break; // Don't try the other engines
+		}
+	}
+
 	if(r == 200)
 	{
 		r = quilt_request_serialize(request);
 	}
+
 	free(request->subject);
 	request->subject = NULL;
 	return r;
